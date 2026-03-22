@@ -42,9 +42,14 @@ import {
 } from './admin-companies.js';
 import {
   populateNewCompanyPlans,
-  submitNewCompany
+  submitNewCompany,
+  refreshNewCompanyBillingModeUI
 } from './admin-new-company.js';
 import { listTenants } from '../services/tenant-service.js';
+import {
+  bindBillingModeVisibility,
+  refreshBillingModeVisibility
+} from './admin-billing-mode-ui.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -71,6 +76,27 @@ const companyAdminCancelEditButton = document.getElementById('company-admin-canc
 const newCompanyForm = document.getElementById('new-company-form');
 const newCompanyFeedback = document.getElementById('new-company-feedback');
 
+const PLAN_BILLING_FIELDS = {
+  monthlyPriceId: 'plan-form-price',
+  annualPriceId: 'plan-form-annual-price',
+  annualBillingMonthId: 'plan-form-annual-billing-month',
+  perServicePriceId: 'plan-form-price-per-service'
+};
+
+const COMPANY_BILLING_FIELDS = {
+  monthlyPriceId: 'company-admin-fixed-price',
+  annualPriceId: 'company-admin-annual-price',
+  annualBillingMonthId: 'company-admin-annual-billing-month',
+  perServicePriceId: 'company-admin-price-per-service'
+};
+
+const NEW_COMPANY_BILLING_FIELDS = {
+  monthlyPriceId: 'new-company-fixed-price',
+  annualPriceId: 'new-company-annual-price',
+  annualBillingMonthId: 'new-company-annual-billing-month',
+  perServicePriceId: 'new-company-price-per-service'
+};
+
 function resolveEffectiveBillingMode(company, billingSettings, plan) {
   return (
     billingSettings?.billingMode ||
@@ -87,6 +113,23 @@ function resolveEffectiveFixedPrice(company, billingSettings, plan) {
     company?.fixedMonthlyPrice ??
     0
   );
+}
+
+function resolveEffectiveAnnualPrice(company, billingSettings, plan) {
+  return Number(
+    billingSettings?.annualPrice ??
+    plan?.annualPrice ??
+    company?.annualPrice ??
+    0
+  );
+}
+
+function resolveEffectiveAnnualBillingMonth(company, billingSettings) {
+  return Number(
+    billingSettings?.annualBillingMonth ??
+    company?.annualBillingMonth ??
+    0
+  ) || null;
 }
 
 function resolveEffectiveUnitPrice(company, billingSettings, plan) {
@@ -196,6 +239,7 @@ newCompanyForm?.addEventListener('submit', async (event) => {
 
     if (success) {
       newCompanyForm.reset();
+      refreshNewCompanyBillingModeUI();
       await populateNewCompanyPlans();
       await populateCompanyPlanFilters();
       await renderAdminCompaniesList();
@@ -259,6 +303,16 @@ function bindQuickActions() {
     generateMonthBillingButton?.click();
     activateAdminTab('billing-tab');
   });
+}
+
+function bindAdminBillingModeUI() {
+  bindBillingModeVisibility('plan-form-billing-mode', PLAN_BILLING_FIELDS);
+  bindBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
+  bindBillingModeVisibility('new-company-billing-mode', NEW_COMPANY_BILLING_FIELDS);
+
+  refreshBillingModeVisibility('plan-form-billing-mode', PLAN_BILLING_FIELDS);
+  refreshBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
+  refreshBillingModeVisibility('new-company-billing-mode', NEW_COMPANY_BILLING_FIELDS);
 }
 
 async function loadMetrics() {
@@ -360,16 +414,32 @@ async function loadCompaniesTable() {
       plan
     );
 
+    const effectiveAnnualPrice = resolveEffectiveAnnualPrice(
+      company,
+      billingSettings,
+      plan
+    );
+
+    const effectiveAnnualBillingMonth = resolveEffectiveAnnualBillingMonth(
+      company,
+      billingSettings
+    );
+
     const effectiveUnitPrice = resolveEffectiveUnitPrice(
       company,
       billingSettings,
       plan
     );
 
+    const currentMonthNumber = new Date().getMonth() + 1;
+
     const totalAmount = calculateBillingForPeriod({
       billingMode: effectiveBillingMode,
       completedAppointments,
       fixedMonthlyPrice: effectiveFixedPrice,
+      annualPrice: effectiveAnnualPrice,
+      annualBillingMonth: effectiveAnnualBillingMonth,
+      currentMonthNumber,
       pricePerExecutedService: effectiveUnitPrice
     });
 
@@ -393,6 +463,7 @@ async function init() {
     bindAdminTabs();
     bindQuickActions();
     bindBillingFilters();
+    bindAdminBillingModeUI();
 
     bindCompanyFilters(() => {
       renderAdminCompaniesList();
