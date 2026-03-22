@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -94,6 +95,14 @@ export async function updateTenantCustomer(customerId, data) {
   });
 }
 
+export async function deleteTenantCustomer(customerId) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para exclusão.');
+  }
+
+  await deleteDoc(doc(db, 'customers', customerId));
+}
+
 export async function saveTenantCustomer(customerId, data) {
   if (customerId) {
     await updateTenantCustomer(customerId, data);
@@ -126,4 +135,8 @@ export async function createCustomer(data) {
 
 export async function updateCustomer(customerId, data) {
   return updateTenantCustomer(customerId, data);
+}
+
+export async function deleteCustomer(customerId) {
+  return deleteTenantCustomer(customerId);
 }
