@@ -14,7 +14,7 @@ import {
 } from './billing-service.js';
 import { getPlanById } from './plan-service.js';
 import { countCompletedAppointments } from './appointment-service.js';
-import { getStartAndEndOfCurrentMonth, getMonthReference } from '../utils/date-utils.js';
+import { getStartAndEndOfCurrentMonth, getMonthReference, getMonthNumberFromReference } from '../utils/date-utils.js';
 
 function resolveEffectiveBillingMode(company, billingSettings, plan) {
   return (
@@ -41,6 +41,14 @@ function resolveEffectiveAnnualPrice(company, billingSettings, plan) {
     company?.annualPrice ??
     0
   );
+}
+
+function resolveEffectiveAnnualBillingMonth(company, billingSettings) {
+  return Number(
+    billingSettings?.annualBillingMonth ??
+    company?.annualBillingMonth ??
+    0
+  ) || null;
 }
 
 function resolveEffectiveUnitPrice(company, billingSettings, plan) {
@@ -82,6 +90,8 @@ export async function savePlatformSettings(data) {
 export async function getAdminDashboardMetrics() {
   const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
+  const monthReference = normalizeMonthReference(getMonthReference());
+  const currentMonthNumber = getMonthNumberFromReference(monthReference);
 
   let trialCount = 0;
   let activeCount = 0;
@@ -103,7 +113,6 @@ export async function getAdminDashboardMetrics() {
     }
   }
 
-  const monthReference = normalizeMonthReference(getMonthReference());
   const currentMonthRecords = await listBillingRecordsByMonth(monthReference);
 
   if (currentMonthRecords.length > 0) {
@@ -123,6 +132,7 @@ export async function getAdminDashboardMetrics() {
       const effectiveBillingMode = resolveEffectiveBillingMode(company, billingSettings, plan);
       const effectiveFixedPrice = resolveEffectiveFixedPrice(company, billingSettings, plan);
       const effectiveAnnualPrice = resolveEffectiveAnnualPrice(company, billingSettings, plan);
+      const effectiveAnnualBillingMonth = resolveEffectiveAnnualBillingMonth(company, billingSettings);
       const effectiveUnitPrice = resolveEffectiveUnitPrice(company, billingSettings, plan);
 
       const totalAmount = calculateBillingForPeriod({
@@ -130,6 +140,8 @@ export async function getAdminDashboardMetrics() {
         completedAppointments,
         fixedMonthlyPrice: effectiveFixedPrice,
         annualPrice: effectiveAnnualPrice,
+        annualBillingMonth: effectiveAnnualBillingMonth,
+        currentMonthNumber,
         pricePerExecutedService: effectiveUnitPrice
       });
 
