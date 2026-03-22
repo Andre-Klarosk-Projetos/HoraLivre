@@ -89,29 +89,6 @@ export function getStartAndEndOfCurrentMonth() {
   };
 }
 
-export function getStartAndEndOfMonth(monthReference) {
-  const normalized = normalizeMonthReference(monthReference);
-
-  if (!normalized) {
-    return {
-      startIso: '',
-      endIso: ''
-    };
-  }
-
-  const [yearText, monthText] = normalized.split('/');
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
-
-  const startDate = new Date(year, monthIndex, 1, 0, 0, 0, 0);
-  const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
-
-  return {
-    startIso: startDate.toISOString(),
-    endIso: endDate.toISOString()
-  };
-}
-
 export function normalizeMonthReference(value) {
   const raw = String(value || '').trim();
 
@@ -163,6 +140,67 @@ export function convertMonthReferenceToInputValue(monthReference) {
   return normalized.replace('/', '-');
 }
 
+export function getMonthNumberFromReference(monthReference) {
+  const normalized = normalizeMonthReference(monthReference);
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const parts = normalized.split('/');
+
+  if (parts.length !== 2) {
+    return 0;
+  }
+
+  return Number(parts[1] || 0);
+}
+
+export function getYearFromReference(monthReference) {
+  const normalized = normalizeMonthReference(monthReference);
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const parts = normalized.split('/');
+
+  if (parts.length !== 2) {
+    return 0;
+  }
+
+  return Number(parts[0] || 0);
+}
+
+export function getStartAndEndOfMonth(monthReference) {
+  const normalized = normalizeMonthReference(monthReference);
+
+  if (!normalized) {
+    return {
+      startIso: '',
+      endIso: ''
+    };
+  }
+
+  const year = getYearFromReference(normalized);
+  const monthNumber = getMonthNumberFromReference(normalized);
+
+  if (!year || !monthNumber) {
+    return {
+      startIso: '',
+      endIso: ''
+    };
+  }
+
+  const startDate = new Date(year, monthNumber - 1, 1, 0, 0, 0, 0);
+  const endDate = new Date(year, monthNumber, 0, 23, 59, 59, 999);
+
+  return {
+    startIso: startDate.toISOString(),
+    endIso: endDate.toISOString()
+  };
+}
+
 export function getPreviousMonthReference(monthReference) {
   const normalized = normalizeMonthReference(monthReference || getMonthReference());
 
@@ -170,11 +208,14 @@ export function getPreviousMonthReference(monthReference) {
     return '';
   }
 
-  const [yearText, monthText] = normalized.split('/');
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
+  const year = getYearFromReference(normalized);
+  const monthNumber = getMonthNumberFromReference(normalized);
 
-  const previousMonthDate = new Date(year, monthIndex - 1, 1);
+  if (!year || !monthNumber) {
+    return '';
+  }
+
+  const previousMonthDate = new Date(year, monthNumber - 2, 1);
 
   return getMonthReference(previousMonthDate);
 }
@@ -186,11 +227,14 @@ export function getNextMonthReference(monthReference) {
     return '';
   }
 
-  const [yearText, monthText] = normalized.split('/');
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
+  const year = getYearFromReference(normalized);
+  const monthNumber = getMonthNumberFromReference(normalized);
 
-  const nextMonthDate = new Date(year, monthIndex + 1, 1);
+  if (!year || !monthNumber) {
+    return '';
+  }
+
+  const nextMonthDate = new Date(year, monthNumber, 1);
 
   return getMonthReference(nextMonthDate);
 }
