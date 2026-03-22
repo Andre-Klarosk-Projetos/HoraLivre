@@ -15,11 +15,13 @@ import {
   formatCurrencyBRL,
   formatBillingMode,
   buildWhatsAppLink,
-  formatPhone
+  formatPhone,
+  formatMonthNumberToName
 } from '../utils/formatters.js';
 import {
   getMonthReference,
-  getStartAndEndOfCurrentMonth
+  getStartAndEndOfCurrentMonth,
+  getMonthNumberFromReference
 } from '../utils/date-utils.js';
 import {
   clearElement,
@@ -58,6 +60,14 @@ function resolveEffectiveAnnualPrice(company, billingSettings, plan) {
     company?.annualPrice ??
     0
   );
+}
+
+function resolveEffectiveAnnualBillingMonth(company, billingSettings) {
+  return Number(
+    billingSettings?.annualBillingMonth ??
+    company?.annualBillingMonth ??
+    0
+  ) || null;
 }
 
 function resolveEffectiveUnitPrice(company, billingSettings, plan) {
@@ -159,6 +169,7 @@ export async function generateCurrentMonthBillingForAllTenants() {
   const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
   const monthReference = normalizeMonthReference(getMonthReference());
+  const currentMonthNumber = getMonthNumberFromReference(monthReference);
 
   for (const company of companies) {
     if (company.subscriptionStatus === 'blocked' || company.isBlocked === true) {
@@ -176,6 +187,7 @@ export async function generateCurrentMonthBillingForAllTenants() {
     const effectiveBillingMode = resolveEffectiveBillingMode(company, billingSettings, plan);
     const effectiveFixedPrice = resolveEffectiveFixedPrice(company, billingSettings, plan);
     const effectiveAnnualPrice = resolveEffectiveAnnualPrice(company, billingSettings, plan);
+    const effectiveAnnualBillingMonth = resolveEffectiveAnnualBillingMonth(company, billingSettings);
     const effectiveUnitPrice = resolveEffectiveUnitPrice(company, billingSettings, plan);
 
     const totalAmount = calculateBillingForPeriod({
@@ -183,8 +195,14 @@ export async function generateCurrentMonthBillingForAllTenants() {
       completedAppointments,
       fixedMonthlyPrice: effectiveFixedPrice,
       annualPrice: effectiveAnnualPrice,
+      annualBillingMonth: effectiveAnnualBillingMonth,
+      currentMonthNumber,
       pricePerExecutedService: effectiveUnitPrice
     });
+
+    if (Number(totalAmount || 0) <= 0) {
+      continue;
+    }
 
     await createOrReplaceBillingRecord(`billing_${monthReference}_${company.id}`, {
       tenantId: company.id,
@@ -194,6 +212,7 @@ export async function generateCurrentMonthBillingForAllTenants() {
       unitPrice: effectiveUnitPrice,
       fixedAmount: effectiveFixedPrice,
       annualAmount: effectiveAnnualPrice,
+      annualBillingMonth: effectiveAnnualBillingMonth,
       totalAmount,
       status: 'pending',
       notes: '',
@@ -228,7 +247,7 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
   if (!filteredRecords.length) {
     element.appendChild(createListItem(`
       <strong>Nenhum registro de cobrança encontrado</strong><br>
-      Ajuste os filtros ou gere a cobrança mensal.
+      Ajuste os filtros ou gere a cobrança do período.
     `));
     return;
   }
@@ -245,6 +264,10 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
       record.companyWhatsappSnapshot ||
       '';
 
+    const annualBillingMonthText = record.annualBillingMonth
+      ? formatMonthNumberToName(record.annualBillingMonth)
+      : '-';
+
     element.appendChild(createListItem(`
       <strong>${companyName}</strong><br>
       Mês: ${record.monthRef || '-'}<br>
@@ -254,6 +277,7 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
       Valor salvo: ${formatCurrencyBRL(record.totalAmount || 0)}<br>
       Valor mensal: ${formatCurrencyBRL(record.fixedAmount || 0)}<br>
       Valor anual: ${formatCurrencyBRL(record.annualAmount || 0)}<br>
+      Mês anual: ${annualBillingMonthText}<br>
       Valor unitário: ${formatCurrencyBRL(record.unitPrice || 0)}<br>
       Status: ${record.status || '-'}<br><br>
       <div class="billing-actions">
