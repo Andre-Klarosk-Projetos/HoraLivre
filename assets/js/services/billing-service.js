@@ -2,8 +2,10 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
+  setDoc,
   updateDoc,
   where,
   orderBy
@@ -63,19 +65,29 @@ function buildBillingSettingsPayload(tenantId, data = {}) {
   };
 }
 
-function buildBillingRecordPayload(tenantId, reference, data = {}) {
+function buildBillingRecordPayload(data = {}) {
+  const monthRef = normalizeMonthReference(data.monthRef || data.reference || getMonthReference());
+
   return {
-    tenantId: tenantId || '',
-    reference: normalizeMonthReference(reference || getMonthReference()),
+    tenantId: data.tenantId || '',
+    monthRef,
+    reference: monthRef,
     billingMode: normalizeBillingMode(data.billingMode),
     completedAppointments: toNumber(data.completedAppointments, 0),
     unitPrice: toNumber(data.unitPrice, 0),
-    fixedMonthlyPrice: toNumber(data.fixedMonthlyPrice, 0),
-    annualPrice: toNumber(data.annualPrice, 0),
+    fixedAmount: toNumber(data.fixedAmount ?? data.fixedMonthlyPrice, 0),
+    fixedMonthlyPrice: toNumber(data.fixedMonthlyPrice ?? data.fixedAmount, 0),
+    annualAmount: toNumber(data.annualAmount ?? data.annualPrice, 0),
+    annualPrice: toNumber(data.annualPrice ?? data.annualAmount, 0),
     annualBillingMonth: data.annualBillingMonth ? toNumber(data.annualBillingMonth, 0) : null,
-    amount: toNumber(data.amount, 0),
+    totalAmount: toNumber(data.totalAmount ?? data.amount, 0),
+    amount: toNumber(data.amount ?? data.totalAmount, 0),
     status: normalizeBillingStatus(data.status),
     notes: data.notes || '',
+    companyNameSnapshot: data.companyNameSnapshot || '',
+    companyWhatsappSnapshot: data.companyWhatsappSnapshot || '',
+    planIdSnapshot: data.planIdSnapshot || '',
+    subscriptionStatusSnapshot: data.subscriptionStatusSnapshot || '',
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -164,6 +176,20 @@ export async function saveBillingSettingsForTenant(tenantId, data = {}) {
   };
 }
 
+export async function listBillingRecords() {
+  const recordsQuery = query(
+    collection(db, BILLING_RECORDS_COLLECTION),
+    orderBy('monthRef', 'desc')
+  );
+
+  const snapshot = await getDocs(recordsQuery);
+
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
+  }));
+}
+
 export async function listBillingRecordsByTenant(tenantId) {
   if (!tenantId) {
     return [];
@@ -172,7 +198,7 @@ export async function listBillingRecordsByTenant(tenantId) {
   const recordsQuery = query(
     collection(db, BILLING_RECORDS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('reference', 'desc')
+    orderBy('monthRef', 'desc')
   );
 
   const snapshot = await getDocs(recordsQuery);
@@ -184,11 +210,11 @@ export async function listBillingRecordsByTenant(tenantId) {
 }
 
 export async function listBillingRecordsByMonth(monthReference) {
-  const normalizedReference = normalizeMonthReference(monthReference);
+  const monthRef = normalizeMonthReference(monthReference);
 
   const recordsQuery = query(
     collection(db, BILLING_RECORDS_COLLECTION),
-    where('reference', '==', normalizedReference),
+    where('monthRef', '==', monthRef),
     orderBy('tenantId')
   );
 
@@ -205,12 +231,12 @@ export async function getBillingRecordByTenantAndMonth(tenantId, monthReference)
     return null;
   }
 
-  const normalizedReference = normalizeMonthReference(monthReference);
+  const monthRef = normalizeMonthReference(monthReference);
 
   const recordsQuery = query(
     collection(db, BILLING_RECORDS_COLLECTION),
     where('tenantId', '==', tenantId),
-    where('reference', '==', normalizedReference)
+    where('monthRef', '==', monthRef)
   );
 
   const snapshot = await getDocs(recordsQuery);
@@ -231,38 +257,43 @@ export async function getCurrentMonthBillingRecordForTenant(tenantId) {
   return getBillingRecordByTenantAndMonth(tenantId, getMonthReference());
 }
 
+export async function createOrReplaceBillingRecord(recordId, data = {}) {
+  if (!recordId) {
+    throw new Error('Identificador da cobrança é obrigatório.');
+  }
+
+  const payload = buildBillingRecordPayload(data);
+  const reference = doc(db, BILLING_RECORDS_COLLECTION, recordId);
+  const snapshot = await getDoc(reference);
+
+  const finalPayload = {
+    ...payload,
+    createdAt: snapshot.exists()
+      ? snapshot.data()?.createdAt || payload.createdAt
+      : payload.createdAt
+  };
+
+  await setDoc(reference, finalPayload, { merge: true });
+
+  return {
+    id: recordId,
+    ...finalPayload
+  };
+}
+
 export async function createBillingRecordForTenant(tenantId, monthReference, data = {}) {
   if (!tenantId) {
     throw new Error('Tenant inválido para criar cobrança.');
   }
 
-  const reference = normalizeMonthReference(monthReference || getMonthReference());
-  const existingRecord = await getBillingRecordByTenantAndMonth(tenantId, reference);
-  const payload = buildBillingRecordPayload(tenantId, reference, data);
+  const monthRef = normalizeMonthReference(monthReference || getMonthReference());
+  const recordId = `billing_${monthRef}_${tenantId}`;
 
-  if (existingRecord?.id) {
-    await updateDoc(doc(db, BILLING_RECORDS_COLLECTION, existingRecord.id), {
-      ...payload,
-      createdAt: existingRecord.createdAt || payload.createdAt
-    });
-
-    return {
-      id: existingRecord.id,
-      ...payload,
-      createdAt: existingRecord.createdAt || payload.createdAt
-    };
-  }
-
-  const createdReference = await addDoc(collection(db, BILLING_RECORDS_COLLECTION), payload);
-
-  return {
-    id: createdReference.id,
-    ...payload
-  };
-}
-
-export async function createOrReplaceBillingRecord(tenantId, monthReference, data = {}) {
-  return createBillingRecordForTenant(tenantId, monthReference, data);
+  return createOrReplaceBillingRecord(recordId, {
+    ...data,
+    tenantId,
+    monthRef
+  });
 }
 
 export async function updateBillingRecord(recordId, data = {}) {
@@ -273,24 +304,40 @@ export async function updateBillingRecord(recordId, data = {}) {
   const reference = doc(db, BILLING_RECORDS_COLLECTION, recordId);
 
   await updateDoc(reference, {
+    ...(data.monthRef !== undefined
+      ? {
+          monthRef: normalizeMonthReference(data.monthRef),
+          reference: normalizeMonthReference(data.monthRef)
+        }
+      : {}),
     ...(data.reference !== undefined
-      ? { reference: normalizeMonthReference(data.reference) }
+      ? {
+          reference: normalizeMonthReference(data.reference),
+          monthRef: normalizeMonthReference(data.reference)
+        }
       : {}),
     ...(data.billingMode !== undefined ? { billingMode: normalizeBillingMode(data.billingMode) } : {}),
     ...(data.completedAppointments !== undefined
       ? { completedAppointments: toNumber(data.completedAppointments, 0) }
       : {}),
     ...(data.unitPrice !== undefined ? { unitPrice: toNumber(data.unitPrice, 0) } : {}),
-    ...(data.fixedMonthlyPrice !== undefined
-      ? { fixedMonthlyPrice: toNumber(data.fixedMonthlyPrice, 0) }
-      : {}),
+    ...(data.fixedAmount !== undefined ? { fixedAmount: toNumber(data.fixedAmount, 0) } : {}),
+    ...(data.fixedMonthlyPrice !== undefined ? { fixedMonthlyPrice: toNumber(data.fixedMonthlyPrice, 0) } : {}),
+    ...(data.annualAmount !== undefined ? { annualAmount: toNumber(data.annualAmount, 0) } : {}),
     ...(data.annualPrice !== undefined ? { annualPrice: toNumber(data.annualPrice, 0) } : {}),
     ...(data.annualBillingMonth !== undefined
       ? { annualBillingMonth: data.annualBillingMonth ? toNumber(data.annualBillingMonth, 0) : null }
       : {}),
+    ...(data.totalAmount !== undefined ? { totalAmount: toNumber(data.totalAmount, 0) } : {}),
     ...(data.amount !== undefined ? { amount: toNumber(data.amount, 0) } : {}),
     ...(data.status !== undefined ? { status: normalizeBillingStatus(data.status) } : {}),
     ...(data.notes !== undefined ? { notes: data.notes || '' } : {}),
+    ...(data.companyNameSnapshot !== undefined ? { companyNameSnapshot: data.companyNameSnapshot || '' } : {}),
+    ...(data.companyWhatsappSnapshot !== undefined ? { companyWhatsappSnapshot: data.companyWhatsappSnapshot || '' } : {}),
+    ...(data.planIdSnapshot !== undefined ? { planIdSnapshot: data.planIdSnapshot || '' } : {}),
+    ...(data.subscriptionStatusSnapshot !== undefined
+      ? { subscriptionStatusSnapshot: data.subscriptionStatusSnapshot || '' }
+      : {}),
     updatedAt: new Date().toISOString()
   });
 }
@@ -298,6 +345,12 @@ export async function updateBillingRecord(recordId, data = {}) {
 export async function markBillingRecordAsPaid(recordId) {
   await updateBillingRecord(recordId, {
     status: 'paid'
+  });
+}
+
+export async function markBillingRecordAsPending(recordId) {
+  await updateBillingRecord(recordId, {
+    status: 'pending'
   });
 }
 
@@ -312,10 +365,10 @@ export async function generateBillingRecordForTenant({
   pricePerExecutedService = 0,
   notes = ''
 }) {
-  const reference = normalizeMonthReference(monthReference || getMonthReference());
-  const currentMonthNumber = getMonthNumberFromReference(reference);
+  const monthRef = normalizeMonthReference(monthReference || getMonthReference());
+  const currentMonthNumber = getMonthNumberFromReference(monthRef);
 
-  const amount = calculateBillingForPeriod({
+  const totalAmount = calculateBillingForPeriod({
     billingMode,
     completedAppointments,
     fixedMonthlyPrice,
@@ -325,14 +378,19 @@ export async function generateBillingRecordForTenant({
     pricePerExecutedService
   });
 
-  return createBillingRecordForTenant(tenantId, reference, {
+  return createBillingRecordForTenant(tenantId, monthRef, {
+    tenantId,
+    monthRef,
     billingMode,
     completedAppointments,
     unitPrice: pricePerExecutedService,
+    fixedAmount: fixedMonthlyPrice,
     fixedMonthlyPrice,
+    annualAmount: annualPrice,
     annualPrice,
     annualBillingMonth,
-    amount,
+    totalAmount,
+    amount: totalAmount,
     status: 'pending',
     notes
   });
