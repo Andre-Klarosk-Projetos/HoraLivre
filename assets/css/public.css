@@ -1,9 +1,45 @@
+.public-page {
+  display: grid;
+  gap: 20px;
+}
+
 .public-hero h1 {
   margin-bottom: 8px;
 }
 
 .public-page .card h2 {
   margin-top: 0;
+}
+
+.public-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.public-brand-text {
+  min-width: 0;
+}
+
+.public-logo {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.public-company-meta {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .public-scroll-panel {
@@ -40,5 +76,10 @@
 @media (max-width: 960px) {
   .times-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .public-logo {
+    width: 72px;
+    height: 72px;
   }
 }
