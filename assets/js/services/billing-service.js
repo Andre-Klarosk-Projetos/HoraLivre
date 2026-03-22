@@ -29,6 +29,24 @@ export function calculateBillingForPeriod({
   return 0;
 }
 
+export function normalizeMonthReference(value) {
+  const raw = String(value || '').trim();
+
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\d{4}\/\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  if (/^\d{4}-\d{2}$/.test(raw)) {
+    return raw.replace('-', '/');
+  }
+
+  return raw;
+}
+
 export async function getBillingSettingsByTenant(tenantId) {
   if (!tenantId) {
     return null;
@@ -64,6 +82,12 @@ export async function createOrReplaceBillingRecord(recordId, data) {
 
   await setDoc(reference, {
     ...data,
+    monthRef: normalizeMonthReference(data.monthRef),
+    totalAmount: Number(data.totalAmount || 0),
+    completedAppointments: Number(data.completedAppointments || 0),
+    unitPrice: Number(data.unitPrice || 0),
+    fixedAmount: Number(data.fixedAmount || 0),
+    status: data.status || 'pending',
     updatedAt: new Date().toISOString()
   }, { merge: true });
 }
@@ -78,8 +102,58 @@ export async function listBillingRecords() {
 
   return snapshot.docs.map((documentItem) => ({
     id: documentItem.id,
-    ...documentItem.data()
+    ...documentItem.data(),
+    monthRef: normalizeMonthReference(documentItem.data().monthRef)
   }));
+}
+
+export async function listBillingRecordsByMonth(monthRef) {
+  const normalizedMonthRef = normalizeMonthReference(monthRef);
+
+  if (!normalizedMonthRef) {
+    return [];
+  }
+
+  const recordsQuery = query(
+    collection(db, 'billingRecords'),
+    where('monthRef', '==', normalizedMonthRef)
+  );
+
+  const snapshot = await getDocs(recordsQuery);
+
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data(),
+    monthRef: normalizeMonthReference(documentItem.data().monthRef)
+  }));
+}
+
+export async function getBillingRecordByTenantAndMonth(tenantId, monthRef) {
+  const normalizedMonthRef = normalizeMonthReference(monthRef);
+
+  if (!tenantId || !normalizedMonthRef) {
+    return null;
+  }
+
+  const recordsQuery = query(
+    collection(db, 'billingRecords'),
+    where('tenantId', '==', tenantId),
+    where('monthRef', '==', normalizedMonthRef)
+  );
+
+  const snapshot = await getDocs(recordsQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const documentItem = snapshot.docs[0];
+
+  return {
+    id: documentItem.id,
+    ...documentItem.data(),
+    monthRef: normalizeMonthReference(documentItem.data().monthRef)
+  };
 }
 
 export async function markBillingRecordAsPaid(recordId) {
