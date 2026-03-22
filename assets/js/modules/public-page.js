@@ -1,314 +1,298 @@
-import { getQueryParam } from '../utils/router.js';
 import {
-  setText,
-  showFeedback,
-  clearElement
-} from '../utils/dom-utils.js';
-import {
-  formatCurrencyBRL,
-  formatPhone,
-  buildWhatsAppLink
-} from '../utils/formatters.js';
-import {
-  listPublicServices,
   getPublicTenantBySlug,
-  createPublicBooking,
-  listBusyPublicAppointmentsByDate,
-  appointmentOverlaps
+  listPublicServicesByTenant,
+  listAvailableSlotsForDate,
+  ensurePublicCustomer,
+  createPublicAppointment,
+  getSlugFromUrl,
+  buildPublicWhatsAppMessageLink
 } from '../services/public-booking-service.js';
-import {
-  required,
-  isValidPhone
-} from '../utils/validators.js';
-import {
-  normalizeBusinessHours,
-  generateBusinessTimeSlots,
-  getEffectiveBusinessHoursForDate,
-  isWithinBusinessHours
-} from '../utils/business-hours.js';
+import { formatCurrencyBRL } from '../utils/formatters.js';
+import { showFeedback, clearElement } from '../utils/dom-utils.js';
 
-const slug = getQueryParam('slug');
-
-const servicesList = document.getElementById('public-services-list');
+const servicesListElement = document.getElementById('public-services-list');
+const feedbackElement = document.getElementById('public-booking-feedback');
 const bookingForm = document.getElementById('public-booking-form');
-const bookingFeedback = document.getElementById('booking-feedback');
-const bookingServiceSelect = document.getElementById('booking-service');
-const bookingDateInput = document.getElementById('booking-date');
-const bookingTimeInput = document.getElementById('booking-time');
-const availableTimesContainer = document.getElementById('available-times');
-const publicLogoElement = document.getElementById('public-logo');
+const slotsElement = document.getElementById('public-available-slots');
 
-let loadedServices = [];
-let loadedTenant = null;
+const state = {
+  tenant: null,
+  services: [],
+  selectedService: null,
+  selectedTime: ''
+};
 
-function getSelectedService() {
-  return loadedServices.find((service) => service.id === bookingServiceSelect.value) || null;
-}
+function setBusinessInfo(tenant) {
+  document.getElementById('public-tenant-id').value = tenant.id || '';
+  document.getElementById('public-business-name').textContent = tenant.businessName || 'Sua empresa';
+  document.getElementById('public-business-description').textContent =
+    tenant.description || 'Escolha um serviço, selecione um horário e confirme seu agendamento.';
 
-function updatePublicLogo(tenant) {
-  if (!publicLogoElement) {
-    return;
+  const logoElement = document.getElementById('public-business-logo');
+  if (tenant.logoUrl) {
+    logoElement.src = tenant.logoUrl;
+    logoElement.hidden = false;
+  } else {
+    logoElement.hidden = true;
   }
 
-  const logoUrl = String(tenant?.logoUrl || '').trim();
+  document.getElementById('public-business-whatsapp-text').textContent =
+    tenant.whatsapp || 'WhatsApp não informado';
 
-  if (!logoUrl) {
-    publicLogoElement.classList.add('hidden');
-    publicLogoElement.removeAttribute('src');
-    return;
-  }
+  document.getElementById('public-business-address-text').textContent =
+    tenant.address || 'Endereço não informado';
 
-  publicLogoElement.src = logoUrl;
-  publicLogoElement.classList.remove('hidden');
+  document.getElementById('public-business-instagram').textContent =
+    tenant.instagram || '-';
 
-  publicLogoElement.onerror = () => {
-    publicLogoElement.classList.add('hidden');
-  };
-}
+  document.getElementById('public-business-address').textContent =
+    tenant.address || '-';
 
-function renderBookingSuccessSummary({
-  customerName,
-  serviceName,
-  date,
-  time
-}) {
-  if (!loadedTenant) {
-    return;
-  }
+  document.getElementById('public-business-whatsapp').textContent =
+    tenant.whatsapp || '-';
 
-  const whatsappLink = buildWhatsAppLink(
-    loadedTenant.whatsapp || '',
-    `Olá, acabei de realizar um agendamento no HoraLivre. Meu nome é ${customerName}.`
+  const whatsappLink = document.getElementById('public-business-whatsapp-link');
+  whatsappLink.href = buildPublicWhatsAppMessageLink(
+    tenant.whatsapp || '',
+    `Olá! Vim pela página pública da ${tenant.businessName || 'empresa'}.`
   );
-
-  bookingFeedback.innerHTML = `
-    <div class="card" style="margin-top: 12px;">
-      <strong>Agendamento criado com sucesso.</strong><br><br>
-      Empresa: ${loadedTenant.businessName || '-'}<br>
-      Cliente: ${customerName || '-'}<br>
-      Serviço: ${serviceName || '-'}<br>
-      Data: ${date || '-'}<br>
-      Horário: ${time || '-'}<br><br>
-      <a class="button primary" href="${whatsappLink}" target="_blank" rel="noopener noreferrer">
-        Falar com a empresa no WhatsApp
-      </a>
-    </div>
-  `;
-
-  bookingFeedback.className = 'feedback success';
 }
 
-async function renderAvailableTimeSlots() {
-  const selectedDate = bookingDateInput.value;
-  const selectedService = getSelectedService();
+function renderServices() {
+  clearElement(servicesListElement);
 
-  clearElement(availableTimesContainer);
-  bookingTimeInput.value = '';
-
-  if (!selectedDate || !selectedService || !loadedTenant) {
+  if (!state.services.length) {
+    const empty = document.createElement('div');
+    empty.className = 'public-slot-empty';
+    empty.textContent = 'Nenhum serviço público disponível no momento.';
+    servicesListElement.appendChild(empty);
     return;
   }
 
-  const businessHours = normalizeBusinessHours(loadedTenant.businessHours || {});
-  const effectiveBusinessHours = getEffectiveBusinessHoursForDate(selectedDate, businessHours);
+  state.services.forEach((service) => {
+    const card = document.createElement('article');
+    const isSelected = state.selectedService?.id === service.id;
 
-  if (effectiveBusinessHours.isClosed) {
-    const info = document.createElement('div');
-    info.textContent = 'A empresa não atende nesta data.';
-    availableTimesContainer.appendChild(info);
+    card.className = `public-service-card ${isSelected ? 'selected' : ''}`;
+    card.innerHTML = `
+      <strong>${service.name || '-'}</strong>
+      <div class="public-service-meta">
+        <span>Duração: ${service.durationMinutes || 0} min</span>
+        <span>Valor: ${formatCurrencyBRL(service.price || 0)}</span>
+        <span>${service.description || 'Sem descrição cadastrada.'}</span>
+      </div>
+      <button class="button primary public-service-select-button" type="button" data-service-id="${service.id}">
+        ${isSelected ? 'Selecionado' : 'Selecionar'}
+      </button>
+    `;
+
+    servicesListElement.appendChild(card);
+  });
+
+  const buttons = servicesListElement.querySelectorAll('[data-service-id]');
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const serviceId = button.getAttribute('data-service-id');
+      state.selectedService = state.services.find((service) => service.id === serviceId) || null;
+      state.selectedTime = '';
+
+      fillSelectedService();
+      renderServices();
+      await refreshAvailableSlots();
+    });
+  });
+}
+
+function fillSelectedService() {
+  const service = state.selectedService;
+
+  document.getElementById('public-service-id').value = service?.id || '';
+  document.getElementById('public-service-name').value = service?.name || '';
+  document.getElementById('public-service-duration').value = service?.durationMinutes || '';
+  document.getElementById('public-service-price').value = service?.price || '';
+
+  document.getElementById('public-service-selected-text').textContent = service
+    ? `${service.name} • ${service.durationMinutes || 0} min • ${formatCurrencyBRL(service.price || 0)}`
+    : 'Nenhum serviço selecionado ainda.';
+
+  document.getElementById('public-summary-service').textContent = service?.name || '-';
+  document.getElementById('public-summary-duration').textContent = service
+    ? `${service.durationMinutes || 0} min`
+    : '-';
+  document.getElementById('public-summary-price').textContent = service
+    ? formatCurrencyBRL(service.price || 0)
+    : '-';
+}
+
+function updateSummaryDateTime() {
+  const date = document.getElementById('public-booking-date').value || '';
+  document.getElementById('public-summary-date').textContent = date || '-';
+  document.getElementById('public-summary-time').textContent = state.selectedTime || '-';
+}
+
+async function refreshAvailableSlots() {
+  clearElement(slotsElement);
+
+  const date = document.getElementById('public-booking-date').value || '';
+
+  if (!state.selectedService) {
+    const empty = document.createElement('div');
+    empty.className = 'public-slot-empty';
+    empty.textContent = 'Selecione um serviço para visualizar os horários.';
+    slotsElement.appendChild(empty);
     return;
   }
 
-  const busyAppointments = await listBusyPublicAppointmentsByDate(slug, selectedDate);
-  const slots = generateBusinessTimeSlots(selectedDate, businessHours);
+  if (!date) {
+    const empty = document.createElement('div');
+    empty.className = 'public-slot-empty';
+    empty.textContent = 'Escolha uma data para carregar os horários disponíveis.';
+    slotsElement.appendChild(empty);
+    return;
+  }
 
-  if (slots.length === 0) {
-    const info = document.createElement('div');
-    info.textContent = 'Não há horários disponíveis nesta data.';
-    availableTimesContainer.appendChild(info);
+  const slots = await listAvailableSlotsForDate(state.tenant, state.selectedService, date);
+
+  if (!slots.length) {
+    const empty = document.createElement('div');
+    empty.className = 'public-slot-empty';
+    empty.textContent = 'Não há horários livres para esta data.';
+    slotsElement.appendChild(empty);
     return;
   }
 
   slots.forEach((slot) => {
     const button = document.createElement('button');
     button.type = 'button';
+    button.className = `public-slot-button ${state.selectedTime === slot ? 'selected' : ''}`;
     button.textContent = slot;
-    button.className = 'time-button';
-
-    const slotStartIso = new Date(`${selectedDate}T${slot}:00`).toISOString();
-
-    const isInsideBusinessHours = isWithinBusinessHours(
-      slot,
-      selectedService.durationMinutes,
-      effectiveBusinessHours
-    );
-
-    const isBusy = busyAppointments.some((appointment) =>
-      appointmentOverlaps({
-        slotStartIso,
-        slotDurationMinutes: selectedService.durationMinutes,
-        appointmentStartIso: appointment.startAt,
-        appointmentEndIso: appointment.endAt
-      })
-    );
-
-    if (!isInsideBusinessHours || isBusy) {
-      button.classList.add('disabled');
-      button.disabled = true;
-    }
 
     button.addEventListener('click', () => {
-      const buttons = availableTimesContainer.querySelectorAll('.time-button');
-
-      buttons.forEach((currentButton) => currentButton.classList.remove('selected'));
-      button.classList.add('selected');
-      bookingTimeInput.value = slot;
+      state.selectedTime = slot;
+      updateSummaryDateTime();
+      refreshAvailableSlots();
     });
 
-    availableTimesContainer.appendChild(button);
+    slotsElement.appendChild(button);
   });
 }
 
-async function loadPublicTenant() {
+async function handleSubmit(event) {
+  event.preventDefault();
+
+  const tenantId = document.getElementById('public-tenant-id').value || '';
+  const customerName = document.getElementById('public-customer-name').value.trim();
+  const customerPhone = document.getElementById('public-customer-phone').value.trim();
+  const customerEmail = document.getElementById('public-customer-email').value.trim();
+  const date = document.getElementById('public-booking-date').value || '';
+  const notes = document.getElementById('public-booking-notes').value.trim();
+
+  if (!tenantId || !state.tenant) {
+    showFeedback(feedbackElement, 'Empresa não encontrada para agendamento.', 'error');
+    return;
+  }
+
+  if (!state.selectedService) {
+    showFeedback(feedbackElement, 'Selecione um serviço.', 'error');
+    return;
+  }
+
+  if (!customerName || !customerPhone) {
+    showFeedback(feedbackElement, 'Informe seu nome e WhatsApp.', 'error');
+    return;
+  }
+
+  if (!date) {
+    showFeedback(feedbackElement, 'Selecione uma data.', 'error');
+    return;
+  }
+
+  if (!state.selectedTime) {
+    showFeedback(feedbackElement, 'Selecione um horário disponível.', 'error');
+    return;
+  }
+
+  try {
+    showFeedback(feedbackElement, 'Confirmando agendamento...', 'success');
+
+    const customer = await ensurePublicCustomer({
+      tenantId,
+      customerName,
+      customerPhone,
+      customerEmail
+    });
+
+    await createPublicAppointment({
+      tenantId,
+      customerId: customer?.id || null,
+      customerName,
+      serviceId: state.selectedService.id,
+      serviceName: state.selectedService.name,
+      date,
+      time: state.selectedTime,
+      durationMinutes: state.selectedService.durationMinutes,
+      price: state.selectedService.price,
+      notes
+    });
+
+    showFeedback(
+      feedbackElement,
+      'Agendamento confirmado com sucesso! Se quiser, fale com a empresa pelo WhatsApp para confirmar os detalhes.',
+      'success'
+    );
+
+    bookingForm.reset();
+    state.selectedTime = '';
+    updateSummaryDateTime();
+    await refreshAvailableSlots();
+  } catch (error) {
+    console.error(error);
+    showFeedback(
+      feedbackElement,
+      error?.message || 'Não foi possível confirmar o agendamento.',
+      'error'
+    );
+  }
+}
+
+async function init() {
+  const slug = getSlugFromUrl();
+
+  if (!slug) {
+    showFeedback(feedbackElement, 'Slug público não informado.', 'error');
+    return;
+  }
+
   const tenant = await getPublicTenantBySlug(slug);
 
   if (!tenant) {
-    throw new Error('Página pública não encontrada.');
+    showFeedback(feedbackElement, 'Página pública não encontrada ou indisponível.', 'error');
+    return;
   }
 
-  loadedTenant = tenant;
+  state.tenant = tenant;
+  state.services = await listPublicServicesByTenant(tenant.id);
 
-  setText('public-business-name', tenant.businessName || '-');
-  setText('public-description', tenant.description || '-');
-  setText('public-whatsapp', formatPhone(tenant.whatsapp || '-'));
-  setText('public-slug', tenant.slug || '-');
-  updatePublicLogo(tenant);
-}
+  setBusinessInfo(tenant);
+  renderServices();
+  fillSelectedService();
+  updateSummaryDateTime();
 
-async function loadPublicServicesData() {
-  loadedServices = await listPublicServices(slug);
-
-  clearElement(servicesList);
-  bookingServiceSelect.innerHTML = '<option value="">Selecione um serviço</option>';
-
-  loadedServices.forEach((service) => {
-    const listItem = document.createElement('li');
-    listItem.innerHTML = `
-      <strong>${service.name}</strong><br>
-      Duração: ${service.durationMinutes || 0} min<br>
-      Valor: ${formatCurrencyBRL(service.price || 0)}
-    `;
-    servicesList.appendChild(listItem);
-
-    const option = document.createElement('option');
-    option.value = service.id;
-    option.textContent = `${service.name} - ${formatCurrencyBRL(service.price || 0)}`;
-    bookingServiceSelect.appendChild(option);
+  document.getElementById('public-booking-date')?.addEventListener('change', async () => {
+    state.selectedTime = '';
+    updateSummaryDateTime();
+    await refreshAvailableSlots();
   });
+
+  bookingForm?.addEventListener('submit', handleSubmit);
 }
 
-bookingDateInput?.addEventListener('change', async () => {
-  try {
-    await renderAvailableTimeSlots();
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      bookingFeedback,
-      error.message || 'Não foi possível carregar os horários disponíveis.',
-      'error'
-    );
-  }
+init().catch((error) => {
+  console.error('Erro ao carregar a página pública do HoraLivre:', error);
+  showFeedback(
+    feedbackElement,
+    'Não foi possível carregar a página pública.',
+    'error'
+  );
 });
-
-bookingServiceSelect?.addEventListener('change', async () => {
-  try {
-    await renderAvailableTimeSlots();
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      bookingFeedback,
-      error.message || 'Não foi possível carregar os horários disponíveis.',
-      'error'
-    );
-  }
-});
-
-bookingForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  try {
-    const customerName = document.getElementById('booking-name').value.trim();
-    const customerPhone = document.getElementById('booking-phone').value.trim();
-    const customerEmail = '';
-    const serviceId = bookingServiceSelect.value;
-    const date = bookingDateInput.value;
-    const time = bookingTimeInput.value;
-
-    if (!required(customerName) || !required(customerPhone) || !required(serviceId) || !required(date) || !required(time)) {
-      showFeedback(bookingFeedback, 'Preencha todos os campos obrigatórios.', 'error');
-      return;
-    }
-
-    if (!isValidPhone(customerPhone)) {
-      showFeedback(bookingFeedback, 'Telefone inválido.', 'error');
-      return;
-    }
-
-    const selectedService = loadedServices.find((service) => service.id === serviceId);
-
-    if (!selectedService) {
-      showFeedback(bookingFeedback, 'Serviço não encontrado.', 'error');
-      return;
-    }
-
-    await createPublicBooking({
-      slug,
-      customerName,
-      customerPhone,
-      customerEmail,
-      serviceId: selectedService.id,
-      serviceName: selectedService.name,
-      date,
-      time,
-      durationMinutes: selectedService.durationMinutes,
-      price: selectedService.price
-    });
-
-    bookingForm.reset();
-    clearElement(availableTimesContainer);
-
-    renderBookingSuccessSummary({
-      customerName,
-      serviceName: selectedService.name,
-      date,
-      time
-    });
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      bookingFeedback,
-      error.message || 'Não foi possível criar o agendamento.',
-      'error'
-    );
-  }
-});
-
-async function init() {
-  try {
-    if (!slug) {
-      throw new Error('Slug não informado.');
-    }
-
-    await loadPublicTenant();
-    await loadPublicServicesData();
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      bookingFeedback,
-      error.message || 'Não foi possível carregar a página pública.',
-      'error'
-    );
-  }
-}
-
-init();
