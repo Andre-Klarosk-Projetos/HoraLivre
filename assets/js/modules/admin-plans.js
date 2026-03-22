@@ -38,10 +38,14 @@ export async function renderAdminPlansList(elementId = 'plans-list') {
   }
 
   plans.forEach((plan) => {
-    const item = createListItem(`
+    element.appendChild(createListItem(`
       <strong>${plan.name}</strong><br>
+      Descrição: ${plan.description || '-'}<br>
+      Destaque na home: ${plan.featured ? 'Sim' : 'Não'}<br>
+      Ordem na home: ${plan.displayOrder || 0}<br>
       Cobrança: ${formatBillingMode(plan.billingMode)}<br>
-      Preço fixo: ${formatCurrencyBRL(plan.price || 0)}<br>
+      Preço mensal: ${formatCurrencyBRL(plan.price || 0)}<br>
+      Preço anual: ${formatCurrencyBRL(plan.annualPrice || 0)}<br>
       Por serviço: ${formatCurrencyBRL(plan.pricePerExecutedService || 0)}<br>
       Página pública: ${plan.publicPageEnabled ? 'Sim' : 'Não'}<br>
       Relatórios: ${plan.reportsEnabled ? 'Sim' : 'Não'}<br>
@@ -51,9 +55,7 @@ export async function renderAdminPlansList(elementId = 'plans-list') {
       <button class="button" type="button" data-plan-action="edit" data-plan-id="${plan.id}">
         Editar
       </button>
-    `);
-
-    element.appendChild(item);
+    `));
   });
 
   bindPlanActions(plans, elementId);
@@ -87,8 +89,12 @@ function bindPlanActions(plans, elementId = 'plans-list') {
 export function fillPlanForm(plan) {
   document.getElementById('plan-edit-id').value = plan.id || '';
   document.getElementById('plan-form-name').value = plan.name || '';
+  document.getElementById('plan-form-description').value = plan.description || '';
+  document.getElementById('plan-form-featured').value = String(plan.featured === true);
+  document.getElementById('plan-form-display-order').value = plan.displayOrder || 0;
   document.getElementById('plan-form-billing-mode').value = plan.billingMode || 'free';
   document.getElementById('plan-form-price').value = plan.price || 0;
+  document.getElementById('plan-form-annual-price').value = plan.annualPrice || 0;
   document.getElementById('plan-form-price-per-service').value = plan.pricePerExecutedService || 0;
   document.getElementById('plan-form-public-page-enabled').value = String(plan.publicPageEnabled !== false);
   document.getElementById('plan-form-reports-enabled').value = String(plan.reportsEnabled !== false);
@@ -110,13 +116,18 @@ export function resetPlanForm() {
   document.getElementById('plan-form-billing-mode').value = 'free';
   document.getElementById('plan-form-public-page-enabled').value = 'true';
   document.getElementById('plan-form-reports-enabled').value = 'true';
+  document.getElementById('plan-form-featured').value = 'false';
 }
 
 export async function submitSavePlan(feedbackElement) {
   const editId = document.getElementById('plan-edit-id').value.trim();
   const name = document.getElementById('plan-form-name').value.trim();
+  const description = document.getElementById('plan-form-description').value.trim();
+  const featured = document.getElementById('plan-form-featured').value === 'true';
+  const displayOrder = Number(document.getElementById('plan-form-display-order').value || 0);
   const billingMode = document.getElementById('plan-form-billing-mode').value;
   const price = Number(document.getElementById('plan-form-price').value || 0);
+  const annualPrice = Number(document.getElementById('plan-form-annual-price').value || 0);
   const pricePerExecutedService = Number(document.getElementById('plan-form-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('plan-form-public-page-enabled').value === 'true';
   const reportsEnabled = document.getElementById('plan-form-reports-enabled').value === 'true';
@@ -131,8 +142,12 @@ export async function submitSavePlan(feedbackElement) {
 
   const payload = {
     name,
+    description,
+    featured,
+    displayOrder,
     billingMode,
     price,
+    annualPrice,
     pricePerExecutedService,
     publicPageEnabled,
     reportsEnabled,
