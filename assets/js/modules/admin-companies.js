@@ -12,7 +12,8 @@ import {
   formatSubscriptionStatus,
   buildWhatsAppLink,
   formatPhone,
-  formatCurrencyBRL
+  formatCurrencyBRL,
+  formatMonthNumberToName
 } from '../utils/formatters.js';
 
 if (!requireAdmin()) {
@@ -94,6 +95,10 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
   }
 
   companies.forEach((company) => {
+    const annualBillingMonthText = company.annualBillingMonth
+      ? formatMonthNumberToName(company.annualBillingMonth)
+      : '-';
+
     element.appendChild(createListItem(`
       <strong>${company.businessName || '-'}</strong><br>
       WhatsApp: ${formatPhone(company.whatsapp || '-')}<br>
@@ -102,6 +107,7 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
       Status: ${formatSubscriptionStatus(company.subscriptionStatus)}<br>
       Preço mensal: ${formatCurrencyBRL(company.fixedMonthlyPrice || 0)}<br>
       Preço anual: ${formatCurrencyBRL(company.annualPrice || 0)}<br>
+      Mês anual: ${annualBillingMonthText}<br>
       Preço por serviço: ${formatCurrencyBRL(company.pricePerExecutedService || 0)}<br>
       Página pública: ${company.publicPageEnabled === false ? 'Não' : 'Sim'}<br>
       Trial até: ${company.trialEndsAt || '-'}<br><br>
@@ -149,6 +155,7 @@ export function fillCompanyAdminForm(company) {
   document.getElementById('company-admin-billing-mode').value = company.billingMode || 'free';
   document.getElementById('company-admin-fixed-price').value = company.fixedMonthlyPrice || 0;
   document.getElementById('company-admin-annual-price').value = company.annualPrice || 0;
+  document.getElementById('company-admin-annual-billing-month').value = company.annualBillingMonth || '';
   document.getElementById('company-admin-price-per-service').value = company.pricePerExecutedService || 0;
   document.getElementById('company-admin-public-page-enabled').value = String(company.publicPageEnabled !== false);
   document.getElementById('company-admin-trial-ends-at').value = company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '';
@@ -190,6 +197,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
   const billingMode = document.getElementById('company-admin-billing-mode').value;
   const fixedMonthlyPrice = Number(document.getElementById('company-admin-fixed-price').value || 0);
   const annualPrice = Number(document.getElementById('company-admin-annual-price').value || 0);
+  const annualBillingMonth = Number(document.getElementById('company-admin-annual-billing-month').value || 0);
   const pricePerExecutedService = Number(document.getElementById('company-admin-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('company-admin-public-page-enabled').value === 'true';
   const trialEndsAt = document.getElementById('company-admin-trial-ends-at').value || null;
@@ -204,6 +212,11 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
     return false;
   }
 
+  if (billingMode === 'annual_plan' && !annualBillingMonth) {
+    showFeedback(feedbackElement, 'Selecione o mês da cobrança anual.', 'error');
+    return false;
+  }
+
   await updateTenant(companyId, {
     businessName,
     slug,
@@ -213,6 +226,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
+    annualBillingMonth: annualBillingMonth || null,
     pricePerExecutedService,
     publicPageEnabled,
     isBlocked: subscriptionStatus === 'blocked',
@@ -223,6 +237,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
+    annualBillingMonth: annualBillingMonth || null,
     pricePerExecutedService
   });
 
