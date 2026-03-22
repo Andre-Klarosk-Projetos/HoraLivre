@@ -13,10 +13,20 @@ import {
   formatBillingMode,
   formatCurrencyBRL
 } from '../utils/formatters.js';
+import {
+  refreshBillingModeVisibility
+} from './admin-billing-mode-ui.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
 }
+
+const PLAN_BILLING_FIELDS = {
+  monthlyPriceId: 'plan-form-price',
+  annualPriceId: 'plan-form-annual-price',
+  annualBillingMonthId: 'plan-form-annual-billing-month',
+  perServicePriceId: 'plan-form-price-per-service'
+};
 
 export async function renderAdminPlansList(elementId = 'plans-list') {
   const element = document.getElementById(elementId);
@@ -46,6 +56,7 @@ export async function renderAdminPlansList(elementId = 'plans-list') {
       Cobrança: ${formatBillingMode(plan.billingMode)}<br>
       Preço mensal: ${formatCurrencyBRL(plan.price || 0)}<br>
       Preço anual: ${formatCurrencyBRL(plan.annualPrice || 0)}<br>
+      Mês anual: ${plan.annualBillingMonth || '-'}<br>
       Por serviço: ${formatCurrencyBRL(plan.pricePerExecutedService || 0)}<br>
       Página pública: ${plan.publicPageEnabled ? 'Sim' : 'Não'}<br>
       Relatórios: ${plan.reportsEnabled ? 'Sim' : 'Não'}<br>
@@ -95,12 +106,20 @@ export function fillPlanForm(plan) {
   document.getElementById('plan-form-billing-mode').value = plan.billingMode || 'free';
   document.getElementById('plan-form-price').value = plan.price || 0;
   document.getElementById('plan-form-annual-price').value = plan.annualPrice || 0;
+
+  const annualBillingMonthElement = document.getElementById('plan-form-annual-billing-month');
+  if (annualBillingMonthElement) {
+    annualBillingMonthElement.value = plan.annualBillingMonth || '';
+  }
+
   document.getElementById('plan-form-price-per-service').value = plan.pricePerExecutedService || 0;
   document.getElementById('plan-form-public-page-enabled').value = String(plan.publicPageEnabled !== false);
   document.getElementById('plan-form-reports-enabled').value = String(plan.reportsEnabled !== false);
   document.getElementById('plan-form-max-services').value = plan.maxServices || 0;
   document.getElementById('plan-form-max-customers').value = plan.maxCustomers || 0;
   document.getElementById('plan-form-max-appointments-month').value = plan.maxAppointmentsMonth || 0;
+
+  refreshBillingModeVisibility('plan-form-billing-mode', PLAN_BILLING_FIELDS);
 }
 
 export function resetPlanForm() {
@@ -117,6 +136,13 @@ export function resetPlanForm() {
   document.getElementById('plan-form-public-page-enabled').value = 'true';
   document.getElementById('plan-form-reports-enabled').value = 'true';
   document.getElementById('plan-form-featured').value = 'false';
+
+  const annualBillingMonthElement = document.getElementById('plan-form-annual-billing-month');
+  if (annualBillingMonthElement) {
+    annualBillingMonthElement.value = '';
+  }
+
+  refreshBillingModeVisibility('plan-form-billing-mode', PLAN_BILLING_FIELDS);
 }
 
 export async function submitSavePlan(feedbackElement) {
@@ -128,6 +154,7 @@ export async function submitSavePlan(feedbackElement) {
   const billingMode = document.getElementById('plan-form-billing-mode').value;
   const price = Number(document.getElementById('plan-form-price').value || 0);
   const annualPrice = Number(document.getElementById('plan-form-annual-price').value || 0);
+  const annualBillingMonth = Number(document.getElementById('plan-form-annual-billing-month')?.value || 0) || null;
   const pricePerExecutedService = Number(document.getElementById('plan-form-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('plan-form-public-page-enabled').value === 'true';
   const reportsEnabled = document.getElementById('plan-form-reports-enabled').value === 'true';
@@ -140,6 +167,11 @@ export async function submitSavePlan(feedbackElement) {
     return false;
   }
 
+  if (billingMode === 'annual_plan' && !annualBillingMonth) {
+    showFeedback(feedbackElement, 'Selecione o mês da cobrança anual do plano.', 'error');
+    return false;
+  }
+
   const payload = {
     name,
     description,
@@ -148,6 +180,7 @@ export async function submitSavePlan(feedbackElement) {
     billingMode,
     price,
     annualPrice,
+    annualBillingMonth,
     pricePerExecutedService,
     publicPageEnabled,
     reportsEnabled,
