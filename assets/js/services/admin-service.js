@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   query,
+  setDoc,
   where
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
@@ -58,16 +59,14 @@ export async function getPlatformSettings() {
 export async function savePlatformSettings(data) {
   const reference = doc(db, 'platformSettings', 'main');
 
-  await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js').then(async ({ setDoc }) => {
-    await setDoc(
-      reference,
-      {
-        ...data,
-        updatedAt: new Date().toISOString()
-      },
-      { merge: true }
-    );
-  });
+  await setDoc(
+    reference,
+    {
+      ...data,
+      updatedAt: new Date().toISOString()
+    },
+    { merge: true }
+  );
 }
 
 async function getCurrentMonthBillingRecords() {
