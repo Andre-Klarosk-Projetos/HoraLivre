@@ -8,10 +8,21 @@
 
 .client-shell {
   min-height: 100vh;
+  align-items: stretch;
 }
 
 .client-sidebar {
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.client-content {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .sidebar-top {
@@ -37,6 +48,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   font: inherit;
+  color: inherit;
 }
 
 .client-tab-nav .nav-link.active {
@@ -51,14 +63,52 @@
 
 .tab-panels {
   display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .tab-panel {
   display: none;
+  width: 100%;
+  min-width: 0;
 }
 
 .tab-panel.active {
   display: block;
+}
+
+.panel-shell {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.tab-grid {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.tab-grid.two-columns {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.tab-grid > .card,
+.panel-shell > .card,
+.panel-shell > .stats-grid {
+  min-width: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  min-width: 0;
 }
 
 .appointment-card,
@@ -82,6 +132,8 @@
 .customer-card-body {
   display: grid;
   gap: 6px;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .appointment-actions,
@@ -104,6 +156,7 @@
   color: var(--primary);
   font-size: 0.85rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .filter-bar {
@@ -120,6 +173,7 @@
 .scroll-panel {
   max-height: 420px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 6px;
 }
 
@@ -166,6 +220,7 @@
 .guided-section {
   display: grid;
   gap: 14px;
+  min-width: 0;
 }
 
 .guided-section-header {
@@ -208,6 +263,13 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  min-width: 0;
+}
+
+.inline-form input,
+.inline-form select {
+  min-width: 180px;
+  flex: 1 1 220px;
 }
 
 .tag-list {
@@ -224,6 +286,11 @@
   padding: 8px 12px;
   border-radius: 999px;
   background: rgba(243, 244, 246, 1);
+  max-width: 100%;
+}
+
+.tag-item span {
+  word-break: break-word;
 }
 
 .tag-item button {
@@ -231,6 +298,7 @@
   background: transparent;
   cursor: pointer;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .summary-card {
@@ -265,8 +333,31 @@
   border-color: rgba(37, 99, 235, 1);
 }
 
+.card,
+.stat-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.card form,
+.card .stack,
+.card .guided-section,
+.card .summary-card {
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .tab-grid.two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 960px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 
@@ -275,6 +366,9 @@
   }
 
   .client-sidebar {
+    position: relative;
+    top: auto;
+    height: auto;
     width: 100%;
     min-height: auto;
     border-right: none;
@@ -314,5 +408,11 @@
 
   .scroll-panel {
     max-height: 320px;
+  }
+
+  .filter-bar label,
+  .inline-form input,
+  .inline-form select {
+    min-width: 100%;
   }
 }
