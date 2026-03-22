@@ -21,6 +21,7 @@ export async function createCompanyClientWithAccess({
   subscriptionStatus,
   billingMode,
   fixedMonthlyPrice,
+  annualPrice,
   pricePerExecutedService,
   publicPageEnabled,
   reportsEnabled,
@@ -42,6 +43,7 @@ export async function createCompanyClientWithAccess({
     planId,
     billingMode,
     fixedMonthlyPrice,
+    annualPrice,
     pricePerExecutedService,
     subscriptionStatus,
     publicPageEnabled,
@@ -64,6 +66,7 @@ export async function createCompanyClientWithAccess({
   await saveBillingSettingsForTenant(tenantId, {
     billingMode,
     fixedMonthlyPrice,
+    annualPrice,
     pricePerExecutedService
   });
 
