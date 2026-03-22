@@ -1,7 +1,10 @@
 import {
+  collection,
   doc,
   getDoc,
-  setDoc
+  getDocs,
+  query,
+  where
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 import { db } from '../config/firebase-init.js';
@@ -9,31 +12,31 @@ import { listTenants } from './tenant-service.js';
 import { getBillingSettingsByTenant, calculateBillingForPeriod } from './billing-service.js';
 import { getPlanById } from './plan-service.js';
 import { countCompletedAppointments } from './appointment-service.js';
-import { getStartAndEndOfCurrentMonth } from '../utils/date-utils.js';
+import { getStartAndEndOfCurrentMonth, getMonthReference } from '../utils/date-utils.js';
 
-function resolveEffectiveBillingMode(tenant, billingSettings, plan) {
+function resolveEffectiveBillingMode(company, billingSettings, plan) {
   return (
     billingSettings?.billingMode ||
-    tenant?.billingMode ||
+    company?.billingMode ||
     plan?.billingMode ||
     'free'
   );
 }
 
-function resolveEffectiveFixedPrice(tenant, billingSettings, plan) {
+function resolveEffectiveFixedPrice(company, billingSettings, plan) {
   return Number(
     billingSettings?.fixedMonthlyPrice ??
     plan?.price ??
-    tenant?.fixedMonthlyPrice ??
+    company?.fixedMonthlyPrice ??
     0
   );
 }
 
-function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
+function resolveEffectiveUnitPrice(company, billingSettings, plan) {
   return Number(
     billingSettings?.pricePerExecutedService ??
     plan?.pricePerExecutedService ??
-    tenant?.pricePerExecutedService ??
+    company?.pricePerExecutedService ??
     0
   );
 }
@@ -55,18 +58,36 @@ export async function getPlatformSettings() {
 export async function savePlatformSettings(data) {
   const reference = doc(db, 'platformSettings', 'main');
 
-  await setDoc(
-    reference,
-    {
-      ...data,
-      updatedAt: new Date().toISOString()
-    },
-    { merge: true }
+  await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js').then(async ({ setDoc }) => {
+    await setDoc(
+      reference,
+      {
+        ...data,
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+  });
+}
+
+async function getCurrentMonthBillingRecords() {
+  const monthReference = getMonthReference();
+
+  const recordsQuery = query(
+    collection(db, 'billingRecords'),
+    where('monthRef', '==', monthReference)
   );
+
+  const snapshot = await getDocs(recordsQuery);
+
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
+  }));
 }
 
 export async function getAdminDashboardMetrics() {
-  const tenants = await listTenants();
+  const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
 
   let trialCount = 0;
@@ -75,40 +96,54 @@ export async function getAdminDashboardMetrics() {
   let totalRevenue = 0;
   let totalCompleted = 0;
 
-  for (const tenant of tenants) {
-    if (tenant.subscriptionStatus === 'trial') {
+  for (const company of companies) {
+    if (company.subscriptionStatus === 'trial') {
       trialCount += 1;
     }
 
-    if (tenant.subscriptionStatus === 'active') {
+    if (company.subscriptionStatus === 'active') {
       activeCount += 1;
     }
 
-    if (tenant.subscriptionStatus === 'blocked' || tenant.isBlocked === true) {
+    if (company.subscriptionStatus === 'blocked' || company.isBlocked === true) {
       blockedCount += 1;
     }
+  }
 
-    const plan = tenant.planId ? await getPlanById(tenant.planId) : null;
-    const billingSettings = await getBillingSettingsByTenant(tenant.id);
-    const completedAppointments = await countCompletedAppointments(tenant.id, startIso, endIso);
+  const currentMonthRecords = await getCurrentMonthBillingRecords();
 
-    const effectiveBillingMode = resolveEffectiveBillingMode(tenant, billingSettings, plan);
-    const effectiveFixedPrice = resolveEffectiveFixedPrice(tenant, billingSettings, plan);
-    const effectiveUnitPrice = resolveEffectiveUnitPrice(tenant, billingSettings, plan);
+  if (currentMonthRecords.length > 0) {
+    totalRevenue = currentMonthRecords.reduce((sum, record) => {
+      return sum + Number(record.totalAmount || 0);
+    }, 0);
 
-    const totalAmount = calculateBillingForPeriod({
-      billingMode: effectiveBillingMode,
-      completedAppointments,
-      fixedMonthlyPrice: effectiveFixedPrice,
-      pricePerExecutedService: effectiveUnitPrice
-    });
+    totalCompleted = currentMonthRecords.reduce((sum, record) => {
+      return sum + Number(record.completedAppointments || 0);
+    }, 0);
+  } else {
+    for (const company of companies) {
+      const plan = company.planId ? await getPlanById(company.planId) : null;
+      const billingSettings = await getBillingSettingsByTenant(company.id);
+      const completedAppointments = await countCompletedAppointments(company.id, startIso, endIso);
 
-    totalCompleted += completedAppointments;
-    totalRevenue += totalAmount;
+      const effectiveBillingMode = resolveEffectiveBillingMode(company, billingSettings, plan);
+      const effectiveFixedPrice = resolveEffectiveFixedPrice(company, billingSettings, plan);
+      const effectiveUnitPrice = resolveEffectiveUnitPrice(company, billingSettings, plan);
+
+      const totalAmount = calculateBillingForPeriod({
+        billingMode: effectiveBillingMode,
+        completedAppointments,
+        fixedMonthlyPrice: effectiveFixedPrice,
+        pricePerExecutedService: effectiveUnitPrice
+      });
+
+      totalCompleted += completedAppointments;
+      totalRevenue += totalAmount;
+    }
   }
 
   return {
-    tenants: tenants.length,
+    tenants: companies.length,
     trial: trialCount,
     active: activeCount,
     blocked: blockedCount,
