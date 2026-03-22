@@ -15,10 +15,20 @@ import {
   formatCurrencyBRL,
   formatMonthNumberToName
 } from '../utils/formatters.js';
+import {
+  refreshBillingModeVisibility
+} from './admin-billing-mode-ui.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
 }
+
+const COMPANY_BILLING_FIELDS = {
+  monthlyPriceId: 'company-admin-fixed-price',
+  annualPriceId: 'company-admin-annual-price',
+  annualBillingMonthId: 'company-admin-annual-billing-month',
+  perServicePriceId: 'company-admin-price-per-service'
+};
 
 let cachedCompanies = [];
 
@@ -168,6 +178,8 @@ export function fillCompanyAdminForm(company) {
       'Olá, estou entrando em contato sobre a sua empresa no HoraLivre.'
     );
   }
+
+  refreshBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
 }
 
 export function resetCompanyAdminForm() {
@@ -185,6 +197,9 @@ export function resetCompanyAdminForm() {
   if (whatsappButton) {
     whatsappButton.href = '#';
   }
+
+  document.getElementById('company-admin-billing-mode').value = 'free';
+  refreshBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
 }
 
 export async function submitSaveCompanyAdmin(feedbackElement) {
@@ -197,7 +212,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
   const billingMode = document.getElementById('company-admin-billing-mode').value;
   const fixedMonthlyPrice = Number(document.getElementById('company-admin-fixed-price').value || 0);
   const annualPrice = Number(document.getElementById('company-admin-annual-price').value || 0);
-  const annualBillingMonth = Number(document.getElementById('company-admin-annual-billing-month').value || 0);
+  const annualBillingMonth = Number(document.getElementById('company-admin-annual-billing-month').value || 0) || null;
   const pricePerExecutedService = Number(document.getElementById('company-admin-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('company-admin-public-page-enabled').value === 'true';
   const trialEndsAt = document.getElementById('company-admin-trial-ends-at').value || null;
@@ -226,7 +241,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
-    annualBillingMonth: annualBillingMonth || null,
+    annualBillingMonth,
     pricePerExecutedService,
     publicPageEnabled,
     isBlocked: subscriptionStatus === 'blocked',
@@ -237,7 +252,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
-    annualBillingMonth: annualBillingMonth || null,
+    annualBillingMonth,
     pricePerExecutedService
   });
 
