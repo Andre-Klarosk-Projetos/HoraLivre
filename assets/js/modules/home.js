@@ -8,6 +8,11 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 import { auth, db } from '../config/firebase-init.js';
+import { listPlans } from '../services/plan-service.js';
+import {
+  formatBillingMode,
+  formatCurrencyBRL
+} from '../utils/formatters.js';
 
 const openAdminButton = document.getElementById('open-admin-button');
 const openClientPanelButton = document.getElementById('open-client-panel-button');
@@ -23,6 +28,113 @@ let currentAccessProfile = {
   companySlug: '',
   email: ''
 };
+
+function ensurePlansSectionStructure() {
+  const pricingGrid = document.querySelector('.pricing-grid');
+
+  if (!pricingGrid || pricingGrid.dataset.dynamicReady === 'true') {
+    return;
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'plans-carousel-wrapper';
+
+  const leftButton = document.createElement('button');
+  leftButton.className = 'plans-carousel-arrow';
+  leftButton.id = 'plans-carousel-prev';
+  leftButton.type = 'button';
+  leftButton.setAttribute('aria-label', 'Mostrar planos anteriores');
+  leftButton.textContent = '‹';
+
+  const rightButton = document.createElement('button');
+  rightButton.className = 'plans-carousel-arrow';
+  rightButton.id = 'plans-carousel-next';
+  rightButton.type = 'button';
+  rightButton.setAttribute('aria-label', 'Mostrar próximos planos');
+  rightButton.textContent = '›';
+
+  pricingGrid.parentNode.insertBefore(wrapper, pricingGrid);
+  wrapper.appendChild(leftButton);
+  wrapper.appendChild(pricingGrid);
+  wrapper.appendChild(rightButton);
+
+  pricingGrid.classList.add('plans-carousel-track');
+  pricingGrid.dataset.dynamicReady = 'true';
+
+  leftButton.addEventListener('click', () => {
+    pricingGrid.scrollBy({ left: -320, behavior: 'smooth' });
+  });
+
+  rightButton.addEventListener('click', () => {
+    pricingGrid.scrollBy({ left: 320, behavior: 'smooth' });
+  });
+}
+
+function buildPlanPriceText(plan) {
+  if (plan.billingMode === 'free') {
+    return 'Gratuito';
+  }
+
+  if (plan.billingMode === 'fixed_plan') {
+    return `${formatCurrencyBRL(plan.price || 0)} / mês`;
+  }
+
+  if (plan.billingMode === 'annual_plan') {
+    return `${formatCurrencyBRL(plan.annualPrice || 0)} / ano`;
+  }
+
+  if (plan.billingMode === 'per_service') {
+    return `${formatCurrencyBRL(plan.pricePerExecutedService || 0)} por serviço concluído`;
+  }
+
+  return formatBillingMode(plan.billingMode);
+}
+
+async function renderHomePlans() {
+  const pricingGrid = document.querySelector('.pricing-grid');
+
+  if (!pricingGrid) {
+    return;
+  }
+
+  ensurePlansSectionStructure();
+
+  const plans = await listPlans();
+
+  if (!plans.length) {
+    return;
+  }
+
+  pricingGrid.innerHTML = '';
+
+  plans
+    .sort((firstPlan, secondPlan) => {
+      const firstOrder = Number(firstPlan.displayOrder || 0);
+      const secondOrder = Number(secondPlan.displayOrder || 0);
+      return firstOrder - secondOrder;
+    })
+    .forEach((plan) => {
+      const article = document.createElement('article');
+      article.className = `pricing-card dynamic-plan-card ${plan.featured ? 'featured' : ''}`;
+
+      article.innerHTML = `
+        ${plan.featured ? '<span class="mini-badge">Destaque</span>' : ''}
+        <h3>${plan.name || '-'}</h3>
+        <p class="plan-price-line">${buildPlanPriceText(plan)}</p>
+        <p class="pricing-description">${plan.description || 'Plano configurado no painel admin do HoraLivre.'}</p>
+        <ul class="feature-bullets">
+          <li>Cobrança: ${formatBillingMode(plan.billingMode)}</li>
+          <li>Página pública: ${plan.publicPageEnabled ? 'Sim' : 'Não'}</li>
+          <li>Relatórios: ${plan.reportsEnabled ? 'Sim' : 'Não'}</li>
+          <li>Máx. serviços: ${Number(plan.maxServices || 0)}</li>
+          <li>Máx. clientes: ${Number(plan.maxCustomers || 0)}</li>
+          <li>Máx. agendamentos/mês: ${Number(plan.maxAppointmentsMonth || 0)}</li>
+        </ul>
+      `;
+
+      pricingGrid.appendChild(article);
+    });
+}
 
 function showHomeFeedback(message, type = 'info') {
   if (!feedbackElement) {
@@ -211,4 +323,8 @@ onAuthStateChanged(auth, async (user) => {
   } catch (error) {
     console.error('Erro ao validar acesso na home do HoraLivre:', error);
   }
+});
+
+renderHomePlans().catch((error) => {
+  console.error('Erro ao carregar planos na home do HoraLivre:', error);
 });
