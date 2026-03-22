@@ -18,12 +18,45 @@
 
 .client-sidebar .sidebar-top {
   flex: 0 0 auto;
+  padding-bottom: 8px;
 }
 
 .client-sidebar .client-tab-nav {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding-right: 4px;
+  overflow-x: hidden;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.8) transparent;
+}
+
+.client-sidebar .client-tab-nav::-webkit-scrollbar {
+  width: 8px;
+}
+
+.client-sidebar .client-tab-nav::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.client-sidebar .client-tab-nav::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(203, 213, 225, 0.95) 0%,
+    rgba(148, 163, 184, 0.95) 100%
+  );
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.client-sidebar .client-tab-nav::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(148, 163, 184, 1) 0%,
+    rgba(100, 116, 139, 1) 100%
+  );
+  background-clip: padding-box;
 }
 
 .client-sidebar .sidebar-footer {
@@ -31,6 +64,8 @@
   display: grid;
   gap: 10px;
   margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 .client-content {
@@ -272,6 +307,7 @@
 
   .client-sidebar .client-tab-nav {
     overflow: visible;
+    padding-right: 0;
   }
 }
 
