@@ -31,6 +31,7 @@ import {
   getBillingSettingsByTenant,
   calculateBillingForPeriod
 } from '../services/billing-service.js';
+import { bindAdminTabs } from './admin-tabs.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -221,6 +222,8 @@ async function loadPlans() {
 
 async function init() {
   try {
+    bindAdminTabs();
+
     await Promise.all([
       loadMetrics(),
       loadSettings(),
