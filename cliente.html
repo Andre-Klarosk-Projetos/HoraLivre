@@ -46,7 +46,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <a class="button" href="./index.html">Voltar ao início</a>
+        <button class="button" id="open-public-page-button" type="button">Ver página pública</button>
         <button class="button danger" id="logout-button" type="button">Sair</button>
       </div>
     </aside>
@@ -57,41 +57,36 @@
           <p class="eyebrow">Painel operacional</p>
           <h2 id="tenant-business-name-header">Minha empresa</h2>
           <p class="muted">
-            Organize serviços, clientes, agenda, horários e acompanhe seu uso no HoraLivre.
+            Organize sua empresa, seus serviços, seus clientes e seus agendamentos.
           </p>
         </div>
       </header>
 
-      <div class="mobile-tab-strip" id="client-mobile-tab-strip">
-        <button class="mobile-tab-button active" type="button" data-client-tab-target="summary-tab">
-          Resumo
-        </button>
-        <button class="mobile-tab-button" type="button" data-client-tab-target="company-tab">
-          Empresa
-        </button>
-        <button class="mobile-tab-button" type="button" data-client-tab-target="services-tab">
-          Serviços
-        </button>
-        <button class="mobile-tab-button" type="button" data-client-tab-target="customers-tab">
-          Clientes
-        </button>
-        <button class="mobile-tab-button" type="button" data-client-tab-target="appointments-tab">
-          Agenda
-        </button>
-        <button class="mobile-tab-button" type="button" data-client-tab-target="reports-tab">
-          Relatórios
-        </button>
-      </div>
-
       <div class="tab-panels">
         <section id="summary-tab" class="section tab-panel active">
           <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Resumo da operação</h3>
-              <p class="muted">Visão rápida do uso do seu painel.</p>
+            <div class="card">
+              <div class="section-heading">
+                <h3>Comece por aqui</h3>
+                <p class="muted">
+                  Complete os itens abaixo para deixar sua empresa pronta para uso.
+                </p>
+              </div>
+
+              <div class="setup-progress-box">
+                <div class="setup-progress-header">
+                  <strong>Progresso da implantação</strong>
+                  <span id="setup-progress-text">0 de 5 concluídos</span>
+                </div>
+                <div class="setup-progress-bar">
+                  <div class="setup-progress-fill" id="setup-progress-fill"></div>
+                </div>
+              </div>
+
+              <ul class="setup-checklist" id="setup-checklist"></ul>
             </div>
 
-            <div class="stats-grid" id="client-summary-stats">
+            <div class="stats-grid">
               <article class="stat-card">
                 <span class="stat-label">Serviços</span>
                 <strong class="stat-value" id="summary-services-count">0</strong>
@@ -113,55 +108,28 @@
               </article>
             </div>
 
-            <div class="client-summary-grid">
-              <div class="card">
-                <div class="section-heading">
-                  <h3>Checklist de implantação</h3>
-                  <p class="muted">
-                    Complete estes itens para deixar sua operação pronta e sua página pública funcionando bem.
-                  </p>
-                </div>
-
-                <div class="setup-progress-box">
-                  <div class="setup-progress-header">
-                    <strong>Progresso</strong>
-                    <span id="setup-progress-text">0 de 5 concluídos</span>
-                  </div>
-
-                  <div class="setup-progress-bar">
-                    <div class="setup-progress-fill" id="setup-progress-fill"></div>
-                  </div>
-                </div>
-
-                <ul class="setup-checklist" id="setup-checklist"></ul>
+            <div class="card">
+              <div class="section-heading">
+                <h3>Atalhos rápidos</h3>
+                <p class="muted">Use estes botões para acelerar sua configuração e operação.</p>
               </div>
 
-              <div class="card">
-                <div class="section-heading">
-                  <h3>Atalhos rápidos</h3>
-                  <p class="muted">Acesse as áreas mais importantes do dia a dia.</p>
-                </div>
-
-                <div class="quick-actions">
-                  <button class="button primary" type="button" data-client-tab-target="services-tab">
-                    Cadastrar serviço
-                  </button>
-                  <button class="button" type="button" data-client-tab-target="customers-tab">
-                    Cadastrar cliente
-                  </button>
-                  <button class="button" type="button" data-client-tab-target="appointments-tab">
-                    Ver agenda
-                  </button>
-                  <button class="button" type="button" data-client-tab-target="company-tab">
-                    Configurar empresa
-                  </button>
-                  <button class="button" id="open-public-page-button" type="button">
-                    Abrir minha página pública
-                  </button>
-                </div>
-
-                <p id="client-summary-feedback" class="feedback"></p>
+              <div class="quick-actions">
+                <button class="button primary" type="button" data-client-tab-target="services-tab">
+                  Cadastrar serviço
+                </button>
+                <button class="button" type="button" data-client-tab-target="customers-tab">
+                  Cadastrar cliente
+                </button>
+                <button class="button" type="button" data-client-tab-target="appointments-tab">
+                  Ver agenda
+                </button>
+                <button class="button" type="button" data-client-tab-target="company-tab">
+                  Configurar empresa
+                </button>
               </div>
+
+              <p id="client-summary-feedback" class="feedback"></p>
             </div>
           </div>
         </section>
@@ -170,7 +138,9 @@
           <div class="panel-shell">
             <div class="section-heading">
               <h3>Minha empresa</h3>
-              <p class="muted">Configure os dados que aparecem na operação e na página pública.</p>
+              <p class="muted">
+                Configure os dados principais da empresa e o funcionamento do atendimento.
+              </p>
             </div>
 
             <div class="client-two-columns">
@@ -229,8 +199,10 @@
 
               <div class="card">
                 <div class="section-heading">
-                  <h3>Disponibilidade e funcionamento</h3>
-                  <p class="muted">Defina dias e horários de atendimento.</p>
+                  <h3>Horários de atendimento</h3>
+                  <p class="muted">
+                    Defina os dias e horários em que sua empresa atende.
+                  </p>
                 </div>
 
                 <form id="tenant-business-hours-form" class="stack">
@@ -242,12 +214,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início domingo</span>
                       <input id="business-hours-sunday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim domingo</span>
                       <input id="business-hours-sunday-end" type="time">
@@ -260,12 +230,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início segunda</span>
                       <input id="business-hours-monday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim segunda</span>
                       <input id="business-hours-monday-end" type="time">
@@ -278,12 +246,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início terça</span>
                       <input id="business-hours-tuesday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim terça</span>
                       <input id="business-hours-tuesday-end" type="time">
@@ -296,12 +262,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início quarta</span>
                       <input id="business-hours-wednesday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim quarta</span>
                       <input id="business-hours-wednesday-end" type="time">
@@ -314,12 +278,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início quinta</span>
                       <input id="business-hours-thursday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim quinta</span>
                       <input id="business-hours-thursday-end" type="time">
@@ -332,12 +294,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início sexta</span>
                       <input id="business-hours-friday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim sexta</span>
                       <input id="business-hours-friday-end" type="time">
@@ -350,12 +310,10 @@
                         <option value="true">Aberto</option>
                       </select>
                     </label>
-
                     <label>
                       <span>Início sábado</span>
                       <input id="business-hours-saturday-start" type="time">
                     </label>
-
                     <label>
                       <span>Fim sábado</span>
                       <input id="business-hours-saturday-end" type="time">
@@ -377,7 +335,7 @@
           <div class="panel-shell">
             <div class="section-heading">
               <h3>Serviços</h3>
-              <p class="muted">Cadastre os serviços que poderão ser usados na agenda e página pública.</p>
+              <p class="muted">Cadastre e edite os serviços da sua empresa.</p>
             </div>
 
             <div class="client-two-columns">
@@ -435,7 +393,7 @@
           <div class="panel-shell">
             <div class="section-heading">
               <h3>Clientes</h3>
-              <p class="muted">Cadastre e acompanhe seus clientes finais.</p>
+              <p class="muted">Cadastre e edite seus clientes finais.</p>
             </div>
 
             <div class="client-two-columns">
@@ -485,7 +443,7 @@
           <div class="panel-shell">
             <div class="section-heading">
               <h3>Agenda</h3>
-              <p class="muted">Crie, filtre e acompanhe os agendamentos.</p>
+              <p class="muted">Crie, filtre e gerencie seus agendamentos.</p>
             </div>
 
             <div class="client-two-columns">
@@ -582,7 +540,7 @@
           <div class="panel-shell">
             <div class="section-heading">
               <h3>Relatórios</h3>
-              <p class="muted">Acompanhe concluídos e previsão de cobrança.</p>
+              <p class="muted">Acompanhe concluídos e valores do período.</p>
             </div>
 
             <div class="client-two-columns">
