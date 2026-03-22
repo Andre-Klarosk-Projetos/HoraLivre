@@ -10,9 +10,7 @@ import {
   markBillingRecordAsPending,
   normalizeMonthReference
 } from '../services/billing-service.js';
-import {
-  countCompletedAppointments
-} from '../services/appointment-service.js';
+import { countCompletedAppointments } from '../services/appointment-service.js';
 import {
   formatCurrencyBRL,
   formatBillingMode,
@@ -49,6 +47,15 @@ function resolveEffectiveFixedPrice(company, billingSettings, plan) {
     billingSettings?.fixedMonthlyPrice ??
     plan?.price ??
     company?.fixedMonthlyPrice ??
+    0
+  );
+}
+
+function resolveEffectiveAnnualPrice(company, billingSettings, plan) {
+  return Number(
+    billingSettings?.annualPrice ??
+    plan?.annualPrice ??
+    company?.annualPrice ??
     0
   );
 }
@@ -166,28 +173,16 @@ export async function generateCurrentMonthBillingForAllTenants() {
       endIso
     );
 
-    const effectiveBillingMode = resolveEffectiveBillingMode(
-      company,
-      billingSettings,
-      plan
-    );
-
-    const effectiveFixedPrice = resolveEffectiveFixedPrice(
-      company,
-      billingSettings,
-      plan
-    );
-
-    const effectiveUnitPrice = resolveEffectiveUnitPrice(
-      company,
-      billingSettings,
-      plan
-    );
+    const effectiveBillingMode = resolveEffectiveBillingMode(company, billingSettings, plan);
+    const effectiveFixedPrice = resolveEffectiveFixedPrice(company, billingSettings, plan);
+    const effectiveAnnualPrice = resolveEffectiveAnnualPrice(company, billingSettings, plan);
+    const effectiveUnitPrice = resolveEffectiveUnitPrice(company, billingSettings, plan);
 
     const totalAmount = calculateBillingForPeriod({
       billingMode: effectiveBillingMode,
       completedAppointments,
       fixedMonthlyPrice: effectiveFixedPrice,
+      annualPrice: effectiveAnnualPrice,
       pricePerExecutedService: effectiveUnitPrice
     });
 
@@ -198,6 +193,7 @@ export async function generateCurrentMonthBillingForAllTenants() {
       completedAppointments,
       unitPrice: effectiveUnitPrice,
       fixedAmount: effectiveFixedPrice,
+      annualAmount: effectiveAnnualPrice,
       totalAmount,
       status: 'pending',
       notes: '',
@@ -229,7 +225,7 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
   updateBillingSummary(filteredRecords);
   clearElement(element);
 
-  if (filteredRecords.length === 0) {
+  if (!filteredRecords.length) {
     element.appendChild(createListItem(`
       <strong>Nenhum registro de cobrança encontrado</strong><br>
       Ajuste os filtros ou gere a cobrança mensal.
@@ -249,15 +245,16 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
       record.companyWhatsappSnapshot ||
       '';
 
-    const listItem = createListItem(`
+    element.appendChild(createListItem(`
       <strong>${companyName}</strong><br>
       Mês: ${record.monthRef || '-'}<br>
       WhatsApp: ${formatPhone(companyWhatsapp || '-')}<br>
       Cobrança: ${formatBillingMode(record.billingMode)}<br>
       Concluídos salvos: ${record.completedAppointments || 0}<br>
       Valor salvo: ${formatCurrencyBRL(record.totalAmount || 0)}<br>
+      Valor mensal: ${formatCurrencyBRL(record.fixedAmount || 0)}<br>
+      Valor anual: ${formatCurrencyBRL(record.annualAmount || 0)}<br>
       Valor unitário: ${formatCurrencyBRL(record.unitPrice || 0)}<br>
-      Valor fixo: ${formatCurrencyBRL(record.fixedAmount || 0)}<br>
       Status: ${record.status || '-'}<br><br>
       <div class="billing-actions">
         <button class="button primary" type="button" data-billing-id="${record.id}" data-billing-action="paid">
@@ -270,9 +267,7 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
           Preparar mensagem
         </button>
       </div>
-    `);
-
-    element.appendChild(listItem);
+    `));
   });
 
   bindBillingActions(elementId, filteredRecords);
