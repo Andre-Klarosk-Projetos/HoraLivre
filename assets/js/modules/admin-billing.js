@@ -7,7 +7,8 @@ import {
   createOrReplaceBillingRecord,
   listBillingRecords,
   markBillingRecordAsPaid,
-  markBillingRecordAsPending
+  markBillingRecordAsPending,
+  normalizeMonthReference
 } from '../services/billing-service.js';
 import {
   countCompletedAppointments
@@ -15,7 +16,8 @@ import {
 import {
   formatCurrencyBRL,
   formatBillingMode,
-  buildWhatsAppLink
+  buildWhatsAppLink,
+  formatPhone
 } from '../utils/formatters.js';
 import {
   getMonthReference,
@@ -33,29 +35,29 @@ if (!requireAdmin()) {
   throw new Error('Acesso negado.');
 }
 
-function resolveEffectiveBillingMode(tenant, billingSettings, plan) {
+function resolveEffectiveBillingMode(company, billingSettings, plan) {
   return (
     billingSettings?.billingMode ||
-    tenant?.billingMode ||
+    company?.billingMode ||
     plan?.billingMode ||
     'free'
   );
 }
 
-function resolveEffectiveFixedPrice(tenant, billingSettings, plan) {
+function resolveEffectiveFixedPrice(company, billingSettings, plan) {
   return Number(
     billingSettings?.fixedMonthlyPrice ??
     plan?.price ??
-    tenant?.fixedMonthlyPrice ??
+    company?.fixedMonthlyPrice ??
     0
   );
 }
 
-function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
+function resolveEffectiveUnitPrice(company, billingSettings, plan) {
   return Number(
     billingSettings?.pricePerExecutedService ??
     plan?.pricePerExecutedService ??
-    tenant?.pricePerExecutedService ??
+    company?.pricePerExecutedService ??
     0
   );
 }
@@ -68,7 +70,7 @@ function getBillingFilters() {
 }
 
 function normalizeMonthRefFromInput(value) {
-  return String(value || '').replace('-', '/');
+  return normalizeMonthReference(value);
 }
 
 function applyBillingFilters(records, filters) {
@@ -93,12 +95,25 @@ function updateBillingSummary(records) {
   setText('billing-summary-pending', formatCurrencyBRL(pending));
 }
 
-async function fillBillingMessagePanel(record) {
+async function getCompaniesMap() {
   const companies = await listTenants();
-  const settings = await getPlatformSettings();
-  const company = companies.find((item) => item.id === record.tenantId);
+  const map = new Map();
 
-  const template = settings?.billingMessageTemplate || 'Olá! Sua cobrança do mês {{MES}} no valor de {{VALOR}} está disponível.';
+  companies.forEach((company) => {
+    map.set(company.id, company);
+  });
+
+  return map;
+}
+
+async function fillBillingMessagePanel(record) {
+  const companiesMap = await getCompaniesMap();
+  const settings = await getPlatformSettings();
+  const company = companiesMap.get(record.tenantId);
+
+  const template =
+    settings?.billingMessageTemplate ||
+    'Olá, {{EMPRESA}}. Sua cobrança do mês {{MES}} no valor de {{VALOR}} está disponível. Serviços concluídos: {{CONCLUIDOS}}.';
 
   const message = template
     .replaceAll('{{MES}}', record.monthRef || '-')
@@ -106,22 +121,37 @@ async function fillBillingMessagePanel(record) {
     .replaceAll('{{EMPRESA}}', company?.businessName || '-')
     .replaceAll('{{CONCLUIDOS}}', String(record.completedAppointments || 0));
 
-  document.getElementById('billing-message-company-name').value = company?.businessName || '';
-  document.getElementById('billing-message-whatsapp').value = company?.whatsapp || '';
-  document.getElementById('billing-message-month-ref').value = record.monthRef || '';
-  document.getElementById('billing-message-text').value = message;
+  const companyNameInput = document.getElementById('billing-message-company-name');
+  const whatsappInput = document.getElementById('billing-message-whatsapp');
+  const monthRefInput = document.getElementById('billing-message-month-ref');
+  const messageTextInput = document.getElementById('billing-message-text');
+  const whatsappButton = document.getElementById('billing-message-whatsapp-button');
 
-  const button = document.getElementById('billing-message-whatsapp-button');
+  if (companyNameInput) {
+    companyNameInput.value = company?.businessName || '';
+  }
 
-  if (button) {
-    button.href = buildWhatsAppLink(company?.whatsapp || '', message);
+  if (whatsappInput) {
+    whatsappInput.value = formatPhone(company?.whatsapp || '');
+  }
+
+  if (monthRefInput) {
+    monthRefInput.value = record.monthRef || '';
+  }
+
+  if (messageTextInput) {
+    messageTextInput.value = message;
+  }
+
+  if (whatsappButton) {
+    whatsappButton.href = buildWhatsAppLink(company?.whatsapp || '', message);
   }
 }
 
 export async function generateCurrentMonthBillingForAllTenants() {
   const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
-  const monthReference = getMonthReference();
+  const monthReference = normalizeMonthReference(getMonthReference());
 
   for (const company of companies) {
     if (company.subscriptionStatus === 'blocked' || company.isBlocked === true) {
@@ -170,7 +200,11 @@ export async function generateCurrentMonthBillingForAllTenants() {
       fixedAmount: effectiveFixedPrice,
       totalAmount,
       status: 'pending',
-      notes: ''
+      notes: '',
+      companyNameSnapshot: company.businessName || '',
+      companyWhatsappSnapshot: company.whatsapp || '',
+      planIdSnapshot: company.planId || '',
+      subscriptionStatusSnapshot: company.subscriptionStatus || ''
     });
   }
 }
@@ -190,6 +224,7 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
 
   const records = await listBillingRecords();
   const filteredRecords = applyBillingFilters(records, normalizedFilters);
+  const companiesMap = await getCompaniesMap();
 
   updateBillingSummary(filteredRecords);
   clearElement(element);
@@ -203,9 +238,21 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
   }
 
   filteredRecords.forEach((record) => {
+    const company = companiesMap.get(record.tenantId);
+    const companyName =
+      company?.businessName ||
+      record.companyNameSnapshot ||
+      'Empresa não encontrada';
+
+    const companyWhatsapp =
+      company?.whatsapp ||
+      record.companyWhatsappSnapshot ||
+      '';
+
     const listItem = createListItem(`
-      <strong>${record.monthRef}</strong><br>
-      Empresa: ${record.tenantId}<br>
+      <strong>${companyName}</strong><br>
+      Mês: ${record.monthRef || '-'}<br>
+      WhatsApp: ${formatPhone(companyWhatsapp || '-')}<br>
       Cobrança: ${formatBillingMode(record.billingMode)}<br>
       Concluídos salvos: ${record.completedAppointments || 0}<br>
       Valor salvo: ${formatCurrencyBRL(record.totalAmount || 0)}<br>
