@@ -2,10 +2,11 @@ import { requireAdmin } from '../utils/guards.js';
 import { logoutUser } from '../services/auth-service.js';
 import {
   getAdminDashboardMetrics,
-  getPlatformSettings
+  getPlatformSettings,
+  savePlatformSettings
 } from '../services/admin-service.js';
 import { listTenants } from '../services/tenant-service.js';
-import { listPlans, getPlanById } from '../services/plan-service.js';
+import { getPlanById } from '../services/plan-service.js';
 import {
   formatBillingMode,
   formatCurrencyBRL,
@@ -14,7 +15,6 @@ import {
 import {
   setText,
   clearElement,
-  createListItem,
   showFeedback
 } from '../utils/dom-utils.js';
 import {
@@ -32,6 +32,11 @@ import {
   calculateBillingForPeriod
 } from '../services/billing-service.js';
 import { bindAdminTabs } from './admin-tabs.js';
+import {
+  renderAdminPlansList,
+  submitSavePlan,
+  resetPlanForm
+} from './admin-plans.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -39,10 +44,16 @@ if (!requireAdmin()) {
 
 const logoutButton = document.getElementById('logout-button');
 const tenantsTableBody = document.getElementById('tenants-table-body');
-const plansList = document.getElementById('plans-list');
 const generateMonthBillingButton = document.getElementById('generate-month-billing-button');
 const reloadBillingButton = document.getElementById('reload-billing-button');
 const billingFeedback = document.getElementById('billing-feedback');
+
+const platformSettingsForm = document.getElementById('platform-settings-form');
+const settingsFeedback = document.getElementById('settings-feedback');
+
+const planForm = document.getElementById('plan-form');
+const planFeedback = document.getElementById('plan-feedback');
+const planCancelEditButton = document.getElementById('plan-cancel-edit-button');
 
 function resolveEffectiveBillingMode(tenant, billingSettings, plan) {
   return (
@@ -113,6 +124,57 @@ reloadBillingButton?.addEventListener('click', async () => {
   }
 });
 
+planCancelEditButton?.addEventListener('click', () => {
+  resetPlanForm();
+  showFeedback(planFeedback, 'Edição de plano cancelada.', 'success');
+});
+
+planForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    const success = await submitSavePlan(planFeedback);
+
+    if (success) {
+      await renderAdminPlansList();
+      await loadTenantsTable();
+    }
+  } catch (error) {
+    console.error(error);
+    showFeedback(planFeedback, error.message || 'Não foi possível salvar o plano.', 'error');
+  }
+});
+
+platformSettingsForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    const platformName = document.getElementById('settings-platform-name').value.trim();
+    const platformLogoUrl = document.getElementById('settings-platform-logo-url').value.trim();
+    const publicDescription = document.getElementById('settings-public-description').value.trim();
+    const supportWhatsapp = document.getElementById('settings-support-whatsapp').value.trim();
+    const supportWhatsappMessage = document.getElementById('settings-support-message').value.trim();
+    const whatsappBaseUrl = document.getElementById('settings-whatsapp-base-url').value.trim();
+    const billingMessageTemplate = document.getElementById('settings-billing-message-template').value.trim();
+
+    await savePlatformSettings({
+      platformName,
+      platformLogoUrl,
+      publicDescription,
+      supportWhatsapp,
+      supportWhatsappMessage,
+      whatsappBaseUrl,
+      billingMessageTemplate
+    });
+
+    await loadSettings();
+    showFeedback(settingsFeedback, 'Configurações salvas com sucesso.', 'success');
+  } catch (error) {
+    console.error(error);
+    showFeedback(settingsFeedback, error.message || 'Não foi possível salvar as configurações.', 'error');
+  }
+});
+
 async function loadMetrics() {
   const metrics = await getAdminDashboardMetrics();
 
@@ -129,6 +191,19 @@ async function loadSettings() {
 
   setText('support-whatsapp', settings?.supportWhatsapp || '-');
   setText('support-message', settings?.supportWhatsappMessage || '-');
+  setText('platform-name-view', settings?.platformName || '-');
+  setText('platform-logo-url-view', settings?.platformLogoUrl || '-');
+  setText('platform-public-description-view', settings?.publicDescription || '-');
+  setText('platform-whatsapp-base-url-view', settings?.whatsappBaseUrl || '-');
+  setText('platform-billing-template-view', settings?.billingMessageTemplate || '-');
+
+  document.getElementById('settings-platform-name').value = settings?.platformName || '';
+  document.getElementById('settings-platform-logo-url').value = settings?.platformLogoUrl || '';
+  document.getElementById('settings-public-description').value = settings?.publicDescription || '';
+  document.getElementById('settings-support-whatsapp').value = settings?.supportWhatsapp || '';
+  document.getElementById('settings-support-message').value = settings?.supportWhatsappMessage || '';
+  document.getElementById('settings-whatsapp-base-url').value = settings?.whatsappBaseUrl || '';
+  document.getElementById('settings-billing-message-template').value = settings?.billingMessageTemplate || '';
 }
 
 async function loadTenantsTable() {
@@ -195,42 +270,17 @@ async function loadTenantsTable() {
   }
 }
 
-async function loadPlans() {
-  const plans = await listPlans();
-
-  clearElement(plansList);
-
-  if (plans.length === 0) {
-    plansList.appendChild(createListItem(`
-      <strong>Nenhum plano cadastrado</strong><br>
-      Crie os planos do HoraLivre para começar a vincular aos seus clientes.
-    `));
-    return;
-  }
-
-  plans.forEach((plan) => {
-    plansList.appendChild(createListItem(`
-      <strong>${plan.name}</strong><br>
-      Cobrança: ${formatBillingMode(plan.billingMode)}<br>
-      Preço fixo: ${formatCurrencyBRL(plan.price || 0)}<br>
-      Por serviço: ${formatCurrencyBRL(plan.pricePerExecutedService || 0)}<br>
-      Página pública: ${plan.publicPageEnabled ? 'Sim' : 'Não'}<br>
-      Relatórios: ${plan.reportsEnabled ? 'Sim' : 'Não'}
-    `));
-  });
-}
-
 async function init() {
   try {
     bindAdminTabs();
 
     await Promise.all([
       loadMetrics(),
-      loadSettings(),
-      loadPlans()
+      loadSettings()
     ]);
 
     await loadTenantsTable();
+    await renderAdminPlansList();
     await renderAdminBillingList();
   } catch (error) {
     console.error('Erro ao carregar o painel admin do HoraLivre:', error);
