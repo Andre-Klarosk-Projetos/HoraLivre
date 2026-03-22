@@ -85,481 +85,497 @@
 
       <div class="tab-panels">
         <section id="dashboard-tab" class="section tab-panel active">
-          <div class="section-heading">
-            <h3>Resumo rápido</h3>
-            <p class="muted">Veja os números mais importantes do seu período atual.</p>
-          </div>
+          <div class="panel-shell">
+            <div class="section-heading">
+              <h3>Resumo rápido</h3>
+              <p class="muted">Veja os números mais importantes do seu período atual.</p>
+            </div>
 
-          <div class="stats-grid">
-            <article class="stat-card">
-              <span class="stat-label">Agendamentos hoje</span>
-              <strong class="stat-value" id="tenant-stat-today">0</strong>
-            </article>
+            <div class="stats-grid">
+              <article class="stat-card">
+                <span class="stat-label">Agendamentos hoje</span>
+                <strong class="stat-value" id="tenant-stat-today">0</strong>
+              </article>
 
-            <article class="stat-card">
-              <span class="stat-label">Concluídos no período</span>
-              <strong class="stat-value" id="tenant-stat-completed">0</strong>
-            </article>
+              <article class="stat-card">
+                <span class="stat-label">Concluídos no período</span>
+                <strong class="stat-value" id="tenant-stat-completed">0</strong>
+              </article>
 
-            <article class="stat-card">
-              <span class="stat-label">Clientes cadastrados</span>
-              <strong class="stat-value" id="tenant-stat-customers">0</strong>
-            </article>
+              <article class="stat-card">
+                <span class="stat-label">Clientes cadastrados</span>
+                <strong class="stat-value" id="tenant-stat-customers">0</strong>
+              </article>
 
-            <article class="stat-card">
-              <span class="stat-label">Valor previsto no período</span>
-              <strong class="stat-value" id="tenant-stat-billing">R$ 0,00</strong>
-            </article>
+              <article class="stat-card">
+                <span class="stat-label">Valor previsto no período</span>
+                <strong class="stat-value" id="tenant-stat-billing">R$ 0,00</strong>
+              </article>
+            </div>
           </div>
         </section>
 
         <section id="empresa-tab" class="section tab-panel" hidden>
-          <div class="section-heading">
-            <h3>Minha empresa</h3>
-            <p class="muted">
-              Atualize os dados públicos e a disponibilidade de atendimento.
-            </p>
-          </div>
+          <div class="panel-shell">
+            <div class="section-heading">
+              <h3>Minha empresa</h3>
+              <p class="muted">
+                Atualize os dados públicos e a disponibilidade de atendimento.
+              </p>
+            </div>
 
-          <div class="card">
-            <form id="company-form" class="stack">
-              <div class="form-grid">
-                <label>
-                  <span>Nome da empresa</span>
-                  <input id="company-form-business-name" type="text" required>
-                </label>
+            <div class="tab-grid two-columns">
+              <div class="card">
+                <form id="company-form" class="stack">
+                  <div class="form-grid">
+                    <label>
+                      <span>Nome da empresa</span>
+                      <input id="company-form-business-name" type="text" required>
+                    </label>
 
-                <label>
-                  <span>Slug da página pública</span>
-                  <input id="company-form-slug" type="text" required>
-                  <small class="field-help">Exemplo: barbearia-do-joao</small>
-                </label>
+                    <label>
+                      <span>Slug da página pública</span>
+                      <input id="company-form-slug" type="text" required>
+                      <small class="field-help">Exemplo: barbearia-do-joao</small>
+                    </label>
 
-                <label>
-                  <span>WhatsApp</span>
-                  <input id="company-form-whatsapp" type="text" required>
-                </label>
+                    <label>
+                      <span>WhatsApp</span>
+                      <input id="company-form-whatsapp" type="text" required>
+                    </label>
 
-                <label>
-                  <span>Instagram</span>
-                  <input id="company-form-instagram" type="text">
-                </label>
+                    <label>
+                      <span>Instagram</span>
+                      <input id="company-form-instagram" type="text">
+                    </label>
 
-                <label class="full-width">
-                  <span>Descrição</span>
-                  <input id="company-form-description" type="text">
-                </label>
+                    <label class="full-width">
+                      <span>Descrição</span>
+                      <input id="company-form-description" type="text">
+                    </label>
 
-                <label class="full-width">
-                  <span>Logo da empresa (URL)</span>
-                  <input id="company-form-logo-url" type="text">
-                  <small class="field-help">Você pode colar um link direto da imagem.</small>
-                </label>
+                    <label class="full-width">
+                      <span>Logo da empresa (URL)</span>
+                      <input id="company-form-logo-url" type="text">
+                      <small class="field-help">Você pode colar um link direto da imagem.</small>
+                    </label>
 
-                <label class="full-width">
-                  <span>Endereço</span>
-                  <input id="company-form-address" type="text">
-                </label>
-              </div>
+                    <label class="full-width">
+                      <span>Endereço</span>
+                      <input id="company-form-address" type="text">
+                    </label>
+                  </div>
 
-              <div class="divider"></div>
+                  <button class="button primary" type="submit">Salvar dados da empresa</button>
+                  <p id="company-feedback" class="feedback"></p>
+                </form>
 
-              <div class="guided-section">
-                <div class="guided-section-header">
-                  <h4>Expediente padrão</h4>
-                  <p class="muted">Escolha os dias e horários em que sua empresa atende normalmente.</p>
-                </div>
-
-                <div>
-                  <span class="field-label">Dias de atendimento</span>
-                  <div id="working-days-chips" class="chip-group"></div>
-                </div>
-
-                <div class="form-grid">
-                  <label>
-                    <span>Abertura</span>
-                    <input id="company-form-opening-time" type="time" required>
-                  </label>
-
-                  <label>
-                    <span>Fechamento</span>
-                    <input id="company-form-closing-time" type="time" required>
-                  </label>
-
-                  <label>
-                    <span>Início do almoço</span>
-                    <input id="company-form-lunch-start-time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Fim do almoço</span>
-                    <input id="company-form-lunch-end-time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Intervalo entre horários</span>
-                    <select id="company-form-slot-interval-minutes">
-                      <option value="15">15 minutos</option>
-                      <option value="20">20 minutos</option>
-                      <option value="30">30 minutos</option>
-                      <option value="60">60 minutos</option>
-                    </select>
-                  </label>
+                <div class="top-gap info-grid">
+                  <p><strong>Nome:</strong> <span id="company-name">-</span></p>
+                  <p><strong>Slug:</strong> <span id="company-slug">-</span></p>
+                  <p><strong>WhatsApp:</strong> <span id="company-whatsapp">-</span></p>
+                  <p><strong>Descrição:</strong> <span id="company-description">-</span></p>
+                  <p><strong>Logo URL:</strong> <span id="company-logo-url">-</span></p>
+                  <p><strong>Plano:</strong> <span id="company-plan">-</span></p>
+                  <p><strong>Cobrança:</strong> <span id="company-billing-mode">-</span></p>
+                  <p><strong>Status:</strong> <span id="company-status">-</span></p>
                 </div>
               </div>
 
-              <div class="divider"></div>
+              <div class="card">
+                <div class="stack">
+                  <div class="guided-section">
+                    <div class="guided-section-header">
+                      <h4>Expediente padrão</h4>
+                      <p class="muted">Escolha os dias e horários em que sua empresa atende normalmente.</p>
+                    </div>
 
-              <div class="guided-section">
-                <div class="guided-section-header">
-                  <h4>Datas sem atendimento</h4>
-                  <p class="muted">Adicione dias em que sua empresa não vai funcionar.</p>
-                </div>
+                    <div>
+                      <span class="field-label">Dias de atendimento</span>
+                      <div id="working-days-chips" class="chip-group"></div>
+                    </div>
 
-                <div class="inline-form">
-                  <input id="holiday-date-input" type="date">
-                  <button class="button" id="add-holiday-button" type="button">Adicionar feriado</button>
-                </div>
-                <div id="holiday-list" class="tag-list"></div>
+                    <div class="form-grid">
+                      <label>
+                        <span>Abertura</span>
+                        <input id="company-form-opening-time" type="time" required>
+                      </label>
 
-                <div class="inline-form top-gap">
-                  <input id="blocked-date-input" type="date">
-                  <button class="button" id="add-blocked-date-button" type="button">Adicionar data fechada</button>
+                      <label>
+                        <span>Fechamento</span>
+                        <input id="company-form-closing-time" type="time" required>
+                      </label>
+
+                      <label>
+                        <span>Início do almoço</span>
+                        <input id="company-form-lunch-start-time" type="time">
+                      </label>
+
+                      <label>
+                        <span>Fim do almoço</span>
+                        <input id="company-form-lunch-end-time" type="time">
+                      </label>
+
+                      <label>
+                        <span>Intervalo entre horários</span>
+                        <select id="company-form-slot-interval-minutes">
+                          <option value="15">15 minutos</option>
+                          <option value="20">20 minutos</option>
+                          <option value="30">30 minutos</option>
+                          <option value="60">60 minutos</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="divider"></div>
+
+                  <div class="guided-section">
+                    <div class="guided-section-header">
+                      <h4>Datas sem atendimento</h4>
+                      <p class="muted">Adicione dias em que sua empresa não vai funcionar.</p>
+                    </div>
+
+                    <div class="inline-form">
+                      <input id="holiday-date-input" type="date">
+                      <button class="button" id="add-holiday-button" type="button">Adicionar feriado</button>
+                    </div>
+                    <div id="holiday-list" class="tag-list"></div>
+
+                    <div class="inline-form top-gap">
+                      <input id="blocked-date-input" type="date">
+                      <button class="button" id="add-blocked-date-button" type="button">Adicionar data fechada</button>
+                    </div>
+                    <div id="blocked-date-list" class="tag-list"></div>
+                  </div>
+
+                  <div class="divider"></div>
+
+                  <div class="guided-section">
+                    <div class="guided-section-header">
+                      <h4>Expediente especial por data</h4>
+                      <p class="muted">Use esta parte quando um dia tiver horário diferente do normal.</p>
+                    </div>
+
+                    <div class="form-grid">
+                      <label>
+                        <span>Data especial</span>
+                        <input id="special-date-date" type="date">
+                      </label>
+
+                      <label>
+                        <span>Dia fechado?</span>
+                        <select id="special-date-is-closed">
+                          <option value="false">Não</option>
+                          <option value="true">Sim</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Abertura</span>
+                        <input id="special-date-opening-time" type="time">
+                      </label>
+
+                      <label>
+                        <span>Fechamento</span>
+                        <input id="special-date-closing-time" type="time">
+                      </label>
+
+                      <label>
+                        <span>Início do almoço</span>
+                        <input id="special-date-lunch-start-time" type="time">
+                      </label>
+
+                      <label>
+                        <span>Fim do almoço</span>
+                        <input id="special-date-lunch-end-time" type="time">
+                      </label>
+
+                      <label>
+                        <span>Intervalo entre horários</span>
+                        <select id="special-date-slot-interval-minutes">
+                          <option value="15">15 minutos</option>
+                          <option value="20">20 minutos</option>
+                          <option value="30">30 minutos</option>
+                          <option value="60">60 minutos</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <div class="form-actions">
+                      <button class="button" id="add-special-date-button" type="button">Adicionar regra especial</button>
+                    </div>
+
+                    <div id="special-date-list" class="tag-list"></div>
+                  </div>
+
+                  <div class="divider"></div>
+
+                  <div class="summary-card">
+                    <h4>Resumo da disponibilidade</h4>
+                    <div id="company-availability-summary" class="summary-list"></div>
+                  </div>
                 </div>
-                <div id="blocked-date-list" class="tag-list"></div>
               </div>
-
-              <div class="divider"></div>
-
-              <div class="guided-section">
-                <div class="guided-section-header">
-                  <h4>Expediente especial por data</h4>
-                  <p class="muted">Use esta parte quando um dia tiver horário diferente do normal.</p>
-                </div>
-
-                <div class="form-grid">
-                  <label>
-                    <span>Data especial</span>
-                    <input id="special-date-date" type="date">
-                  </label>
-
-                  <label>
-                    <span>Dia fechado?</span>
-                    <select id="special-date-is-closed">
-                      <option value="false">Não</option>
-                      <option value="true">Sim</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Abertura</span>
-                    <input id="special-date-opening-time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Fechamento</span>
-                    <input id="special-date-closing-time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Início do almoço</span>
-                    <input id="special-date-lunch-start-time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Fim do almoço</span>
-                    <input id="special-date-lunch-end-time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Intervalo entre horários</span>
-                    <select id="special-date-slot-interval-minutes">
-                      <option value="15">15 minutos</option>
-                      <option value="20">20 minutos</option>
-                      <option value="30">30 minutos</option>
-                      <option value="60">60 minutos</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div class="form-actions">
-                  <button class="button" id="add-special-date-button" type="button">Adicionar regra especial</button>
-                </div>
-
-                <div id="special-date-list" class="tag-list"></div>
-              </div>
-
-              <div class="divider"></div>
-
-              <div class="summary-card">
-                <h4>Resumo da disponibilidade</h4>
-                <div id="company-availability-summary" class="summary-list"></div>
-              </div>
-
-              <button class="button primary" type="submit">Salvar dados da empresa</button>
-              <p id="company-feedback" class="feedback"></p>
-            </form>
-
-            <div class="top-gap info-grid">
-              <p><strong>Nome:</strong> <span id="company-name">-</span></p>
-              <p><strong>Slug:</strong> <span id="company-slug">-</span></p>
-              <p><strong>WhatsApp:</strong> <span id="company-whatsapp">-</span></p>
-              <p><strong>Descrição:</strong> <span id="company-description">-</span></p>
-              <p><strong>Logo URL:</strong> <span id="company-logo-url">-</span></p>
-              <p><strong>Plano:</strong> <span id="company-plan">-</span></p>
-              <p><strong>Cobrança:</strong> <span id="company-billing-mode">-</span></p>
-              <p><strong>Status:</strong> <span id="company-status">-</span></p>
             </div>
           </div>
         </section>
 
         <section id="servicos-tab" class="section tab-panel" hidden>
-          <div class="section-heading">
-            <h3>Serviços</h3>
-            <p class="muted">
-              Cadastre, edite e exclua serviços usados na agenda e na página pública.
-            </p>
-          </div>
+          <div class="panel-shell">
+            <div class="section-heading">
+              <h3>Serviços</h3>
+              <p class="muted">
+                Cadastre, edite e exclua serviços usados na agenda e na página pública.
+              </p>
+            </div>
 
-          <div class="card">
-            <form id="service-form" class="stack">
-              <input id="service-edit-id" type="hidden">
+            <div class="card">
+              <form id="service-form" class="stack">
+                <input id="service-edit-id" type="hidden">
 
-              <label>
-                <span>Nome do serviço</span>
-                <input name="name" type="text" required>
-              </label>
+                <label>
+                  <span>Nome do serviço</span>
+                  <input name="name" type="text" required>
+                </label>
 
-              <label>
-                <span>Descrição</span>
-                <input name="description" type="text">
-              </label>
+                <label>
+                  <span>Descrição</span>
+                  <input name="description" type="text">
+                </label>
 
-              <label>
-                <span>Duração em minutos</span>
-                <input name="durationMinutes" type="number" min="1" required>
-              </label>
+                <label>
+                  <span>Duração em minutos</span>
+                  <input name="durationMinutes" type="number" min="1" required>
+                </label>
 
-              <label>
-                <span>Preço</span>
-                <input name="price" type="number" min="0" step="0.01" required>
-              </label>
+                <label>
+                  <span>Preço</span>
+                  <input name="price" type="number" min="0" step="0.01" required>
+                </label>
 
-              <label>
-                <span>Ativo</span>
-                <select name="isActive">
-                  <option value="true">Sim</option>
-                  <option value="false">Não</option>
-                </select>
-              </label>
+                <label>
+                  <span>Ativo</span>
+                  <select name="isActive">
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                  </select>
+                </label>
 
-              <div class="form-actions">
-                <button class="button primary" type="submit">Salvar serviço</button>
-                <button class="button" id="service-cancel-edit-button" type="button">Cancelar edição</button>
+                <div class="form-actions">
+                  <button class="button primary" type="submit">Salvar serviço</button>
+                  <button class="button" id="service-cancel-edit-button" type="button">Cancelar edição</button>
+                </div>
+
+                <p id="service-feedback" class="feedback"></p>
+              </form>
+
+              <div class="top-gap scroll-panel">
+                <ul class="simple-list" id="services-list"></ul>
               </div>
-
-              <p id="service-feedback" class="feedback"></p>
-            </form>
-
-            <div class="top-gap scroll-panel">
-              <ul class="simple-list" id="services-list"></ul>
             </div>
           </div>
         </section>
 
         <section id="clientes-tab" class="section tab-panel" hidden>
-          <div class="section-heading">
-            <h3>Clientes finais</h3>
-            <p class="muted">
-              Cadastre, edite e acompanhe os clientes finais do seu negócio.
-            </p>
-          </div>
+          <div class="panel-shell">
+            <div class="section-heading">
+              <h3>Clientes finais</h3>
+              <p class="muted">
+                Cadastre, edite e acompanhe os clientes finais do seu negócio.
+              </p>
+            </div>
 
-          <div class="card">
-            <form id="customer-form" class="stack">
-              <input id="customer-edit-id" type="hidden">
+            <div class="card">
+              <form id="customer-form" class="stack">
+                <input id="customer-edit-id" type="hidden">
 
-              <label>
-                <span>Nome</span>
-                <input name="name" type="text" required>
-              </label>
+                <label>
+                  <span>Nome</span>
+                  <input name="name" type="text" required>
+                </label>
 
-              <label>
-                <span>Telefone</span>
-                <input name="phone" type="text" required>
-              </label>
+                <label>
+                  <span>Telefone</span>
+                  <input name="phone" type="text" required>
+                </label>
 
-              <label>
-                <span>E-mail</span>
-                <input name="email" type="email">
-              </label>
+                <label>
+                  <span>E-mail</span>
+                  <input name="email" type="email">
+                </label>
 
-              <label>
-                <span>Observações</span>
-                <input name="notes" type="text">
-              </label>
+                <label>
+                  <span>Observações</span>
+                  <input name="notes" type="text">
+                </label>
 
-              <div class="form-actions">
-                <button class="button primary" type="submit">Salvar cliente</button>
-                <button class="button" id="customer-cancel-edit-button" type="button">Cancelar edição</button>
+                <div class="form-actions">
+                  <button class="button primary" type="submit">Salvar cliente</button>
+                  <button class="button" id="customer-cancel-edit-button" type="button">Cancelar edição</button>
+                </div>
+
+                <p id="customer-feedback" class="feedback"></p>
+              </form>
+
+              <div class="top-gap scroll-panel">
+                <ul class="simple-list" id="customers-list"></ul>
               </div>
-
-              <p id="customer-feedback" class="feedback"></p>
-            </form>
-
-            <div class="top-gap scroll-panel">
-              <ul class="simple-list" id="customers-list"></ul>
             </div>
           </div>
         </section>
 
         <section id="agenda-tab" class="section tab-panel" hidden>
-          <div class="section-heading">
-            <h3>Agenda</h3>
-            <p class="muted">
-              Cadastre e edite agendamentos. A cobrança por uso considera apenas
-              agendamentos com status concluído.
-            </p>
-          </div>
-
-          <div class="card">
-            <form id="appointment-form" class="stack">
-              <input id="appointment-edit-id" type="hidden">
-
-              <label>
-                <span>Cliente</span>
-                <select id="appointment-customer-select">
-                  <option value="">Selecione um cliente</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Serviço</span>
-                <select id="appointment-service-select">
-                  <option value="">Selecione um serviço</option>
-                </select>
-              </label>
-
-              <input name="customerId" type="hidden">
-              <input name="customerName" type="hidden">
-              <input name="serviceId" type="hidden">
-              <input name="serviceName" type="hidden">
-
-              <label>
-                <span>Data</span>
-                <input name="date" type="date" required>
-              </label>
-
-              <label>
-                <span>Horário</span>
-                <input name="time" type="time" required>
-              </label>
-
-              <label>
-                <span>Duração em minutos</span>
-                <input name="durationMinutes" type="number" min="1" required>
-              </label>
-
-              <label>
-                <span>Preço</span>
-                <input name="price" type="number" min="0" step="0.01" required>
-              </label>
-
-              <label>
-                <span>Status</span>
-                <select name="status">
-                  <option value="scheduled">Agendado</option>
-                  <option value="confirmed">Confirmado</option>
-                  <option value="completed">Concluído</option>
-                  <option value="canceled">Cancelado</option>
-                  <option value="no_show">Faltou</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Observações</span>
-                <input name="notes" type="text">
-              </label>
-
-              <button class="button primary" type="submit">Salvar agendamento</button>
-              <button class="button" id="appointment-cancel-edit-button" type="button">Cancelar edição</button>
-              <p id="appointment-feedback" class="feedback"></p>
-            </form>
-
-            <div class="top-gap">
-              <div class="filter-bar">
-                <label>
-                  <span>Início</span>
-                  <input id="appointments-filter-start" type="date">
-                </label>
-
-                <label>
-                  <span>Fim</span>
-                  <input id="appointments-filter-end" type="date">
-                </label>
-
-                <button class="button" id="appointments-filter-button" type="button">Filtrar agenda</button>
-                <button class="button" id="appointments-filter-reset-button" type="button">Limpar</button>
-              </div>
+          <div class="panel-shell">
+            <div class="section-heading">
+              <h3>Agenda</h3>
+              <p class="muted">
+                Cadastre e edite agendamentos. A cobrança por uso considera apenas
+                agendamentos com status concluído.
+              </p>
             </div>
 
-            <div class="top-gap scroll-panel">
-              <ul class="simple-list" id="appointments-list"></ul>
+            <div class="card">
+              <form id="appointment-form" class="stack">
+                <input id="appointment-edit-id" type="hidden">
+
+                <label>
+                  <span>Cliente</span>
+                  <select id="appointment-customer-select">
+                    <option value="">Selecione um cliente</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Serviço</span>
+                  <select id="appointment-service-select">
+                    <option value="">Selecione um serviço</option>
+                  </select>
+                </label>
+
+                <input name="customerId" type="hidden">
+                <input name="customerName" type="hidden">
+                <input name="serviceId" type="hidden">
+                <input name="serviceName" type="hidden">
+
+                <label>
+                  <span>Data</span>
+                  <input name="date" type="date" required>
+                </label>
+
+                <label>
+                  <span>Horário</span>
+                  <input name="time" type="time" required>
+                </label>
+
+                <label>
+                  <span>Duração em minutos</span>
+                  <input name="durationMinutes" type="number" min="1" required>
+                </label>
+
+                <label>
+                  <span>Preço</span>
+                  <input name="price" type="number" min="0" step="0.01" required>
+                </label>
+
+                <label>
+                  <span>Status</span>
+                  <select name="status">
+                    <option value="scheduled">Agendado</option>
+                    <option value="confirmed">Confirmado</option>
+                    <option value="completed">Concluído</option>
+                    <option value="canceled">Cancelado</option>
+                    <option value="no_show">Faltou</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Observações</span>
+                  <input name="notes" type="text">
+                </label>
+
+                <button class="button primary" type="submit">Salvar agendamento</button>
+                <button class="button" id="appointment-cancel-edit-button" type="button">Cancelar edição</button>
+                <p id="appointment-feedback" class="feedback"></p>
+              </form>
+
+              <div class="top-gap">
+                <div class="filter-bar">
+                  <label>
+                    <span>Início</span>
+                    <input id="appointments-filter-start" type="date">
+                  </label>
+
+                  <label>
+                    <span>Fim</span>
+                    <input id="appointments-filter-end" type="date">
+                  </label>
+
+                  <button class="button" id="appointments-filter-button" type="button">Filtrar agenda</button>
+                  <button class="button" id="appointments-filter-reset-button" type="button">Limpar</button>
+                </div>
+              </div>
+
+              <div class="top-gap scroll-panel">
+                <ul class="simple-list" id="appointments-list"></ul>
+              </div>
             </div>
           </div>
         </section>
 
         <section id="relatorios-tab" class="section tab-panel" hidden>
-          <div class="section-heading">
-            <h3>Relatórios e cobrança</h3>
-            <p class="muted">
-              Relatório do período, incluindo concluídos e valor previsto a pagar, conforme o plano.
-            </p>
-          </div>
-
-          <div class="card">
-            <div class="filter-bar">
-              <label>
-                <span>Início</span>
-                <input id="report-filter-start" type="date">
-              </label>
-
-              <label>
-                <span>Fim</span>
-                <input id="report-filter-end" type="date">
-              </label>
-
-              <button class="button" id="report-filter-button" type="button">Filtrar relatório</button>
-              <button class="button" id="report-filter-reset-button" type="button">Limpar</button>
-            </div>
-
-            <div class="top-gap">
-              <p><strong>Concluídos no período:</strong> <span id="report-completed">0</span></p>
-              <p><strong>Valor devido no período:</strong> <span id="report-total">R$ 0,00</span></p>
-              <p><strong>Situação da cobrança:</strong> <span id="report-status">Cálculo em tempo real</span></p>
-              <p class="muted" id="report-status-help">
-                Este valor mostra o total calculado do período selecionado. Quando houver fechamento mensal,
-                a cobrança oficial será gerada pelo admin.
+          <div class="panel-shell">
+            <div class="section-heading">
+              <h3>Relatórios e cobrança</h3>
+              <p class="muted">
+                Relatório do período, incluindo concluídos e valor previsto a pagar, conforme o plano.
               </p>
             </div>
 
-            <div class="top-gap">
-              <h4>Agendamentos do período</h4>
-              <div class="scroll-panel">
-                <ul class="simple-list" id="report-appointments-list"></ul>
-              </div>
-            </div>
+            <div class="card">
+              <div class="filter-bar">
+                <label>
+                  <span>Início</span>
+                  <input id="report-filter-start" type="date">
+                </label>
 
-            <div class="top-gap">
-              <a
-                class="button primary"
-                id="support-button"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Falar com suporte no WhatsApp
-              </a>
+                <label>
+                  <span>Fim</span>
+                  <input id="report-filter-end" type="date">
+                </label>
+
+                <button class="button" id="report-filter-button" type="button">Filtrar relatório</button>
+                <button class="button" id="report-filter-reset-button" type="button">Limpar</button>
+              </div>
+
+              <div class="top-gap">
+                <p><strong>Concluídos no período:</strong> <span id="report-completed">0</span></p>
+                <p><strong>Valor devido no período:</strong> <span id="report-total">R$ 0,00</span></p>
+                <p><strong>Situação da cobrança:</strong> <span id="report-status">Cálculo em tempo real</span></p>
+                <p class="muted" id="report-status-help">
+                  Este valor mostra o total calculado do período selecionado. Quando houver fechamento mensal,
+                  a cobrança oficial será gerada pelo admin.
+                </p>
+              </div>
+
+              <div class="top-gap">
+                <h4>Agendamentos do período</h4>
+                <div class="scroll-panel">
+                  <ul class="simple-list" id="report-appointments-list"></ul>
+                </div>
+              </div>
+
+              <div class="top-gap">
+                <a
+                  class="button primary"
+                  id="support-button"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Falar com suporte no WhatsApp
+                </a>
+              </div>
             </div>
           </div>
         </section>
