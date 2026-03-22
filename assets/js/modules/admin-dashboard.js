@@ -5,7 +5,7 @@ import {
   getPlatformSettings,
   savePlatformSettings
 } from '../services/admin-service.js';
-import { getPlanById, listPlans } from '../services/plan-service.js';
+import { getPlanById } from '../services/plan-service.js';
 import {
   formatBillingMode,
   formatCurrencyBRL,
@@ -185,13 +185,13 @@ platformSettingsForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   try {
-    const platformName = document.getElementById('settings-platform-name').value.trim();
-    const platformLogoUrl = document.getElementById('settings-platform-logo-url').value.trim();
-    const publicDescription = document.getElementById('settings-public-description').value.trim();
-    const supportWhatsapp = document.getElementById('settings-support-whatsapp').value.trim();
-    const supportWhatsappMessage = document.getElementById('settings-support-message').value.trim();
-    const whatsappBaseUrl = document.getElementById('settings-whatsapp-base-url').value.trim();
-    const billingMessageTemplate = document.getElementById('settings-billing-message-template').value.trim();
+    const platformName = document.getElementById('settings-platform-name')?.value?.trim() || '';
+    const platformLogoUrl = document.getElementById('settings-platform-logo-url')?.value?.trim() || '';
+    const publicDescription = document.getElementById('settings-public-description')?.value?.trim() || '';
+    const supportWhatsapp = document.getElementById('settings-support-whatsapp')?.value?.trim() || '';
+    const supportWhatsappMessage = document.getElementById('settings-support-message')?.value?.trim() || '';
+    const whatsappBaseUrl = document.getElementById('settings-whatsapp-base-url')?.value?.trim() || '';
+    const billingMessageTemplate = document.getElementById('settings-billing-message-template')?.value?.trim() || '';
 
     await savePlatformSettings({
       platformName,
@@ -252,16 +252,48 @@ async function loadSettings() {
   setText('platform-whatsapp-base-url-view', settings?.whatsappBaseUrl || '-');
   setText('platform-billing-template-view', settings?.billingMessageTemplate || '-');
 
-  document.getElementById('settings-platform-name').value = settings?.platformName || '';
-  document.getElementById('settings-platform-logo-url').value = settings?.platformLogoUrl || '';
-  document.getElementById('settings-public-description').value = settings?.publicDescription || '';
-  document.getElementById('settings-support-whatsapp').value = settings?.supportWhatsapp || '';
-  document.getElementById('settings-support-message').value = settings?.supportWhatsappMessage || '';
-  document.getElementById('settings-whatsapp-base-url').value = settings?.whatsappBaseUrl || '';
-  document.getElementById('settings-billing-message-template').value = settings?.billingMessageTemplate || '';
+  const platformNameInput = document.getElementById('settings-platform-name');
+  const platformLogoUrlInput = document.getElementById('settings-platform-logo-url');
+  const publicDescriptionInput = document.getElementById('settings-public-description');
+  const supportWhatsappInput = document.getElementById('settings-support-whatsapp');
+  const supportMessageInput = document.getElementById('settings-support-message');
+  const whatsappBaseUrlInput = document.getElementById('settings-whatsapp-base-url');
+  const billingMessageTemplateInput = document.getElementById('settings-billing-message-template');
+
+  if (platformNameInput) {
+    platformNameInput.value = settings?.platformName || '';
+  }
+
+  if (platformLogoUrlInput) {
+    platformLogoUrlInput.value = settings?.platformLogoUrl || '';
+  }
+
+  if (publicDescriptionInput) {
+    publicDescriptionInput.value = settings?.publicDescription || '';
+  }
+
+  if (supportWhatsappInput) {
+    supportWhatsappInput.value = settings?.supportWhatsapp || '';
+  }
+
+  if (supportMessageInput) {
+    supportMessageInput.value = settings?.supportWhatsappMessage || '';
+  }
+
+  if (whatsappBaseUrlInput) {
+    whatsappBaseUrlInput.value = settings?.whatsappBaseUrl || '';
+  }
+
+  if (billingMessageTemplateInput) {
+    billingMessageTemplateInput.value = settings?.billingMessageTemplate || '';
+  }
 }
 
 async function loadCompaniesTable() {
+  if (!tenantsTableBody) {
+    return;
+  }
+
   const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
 
