@@ -3,38 +3,94 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login - HoraLivre</title>
+  <title>Entrar - HoraLivre</title>
+
+  <meta
+    name="description"
+    content="Acesse o HoraLivre para entrar como admin ou empresa cliente."
+  >
 
   <link rel="stylesheet" href="./assets/css/global.css">
   <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/login.css">
 </head>
 <body>
-  <main class="center-page">
-    <section class="card auth-card">
-      <span class="badge">HoraLivre</span>
-      <h1>Entrar</h1>
-      <p class="muted">
-        Acesse sua conta para entrar como administrador da plataforma ou cliente da empresa.
-      </p>
+  <main class="login-page">
+    <section class="login-shell">
+      <div class="login-brand-panel">
+        <div class="login-brand-top">
+          <a class="login-brand-link" href="./index.html">
+            <span class="badge">HoraLivre</span>
+            <span class="login-brand-name">Sistema de agendamento</span>
+          </a>
 
-      <form id="login-form" class="stack">
-        <label>
-          <span>E-mail</span>
-          <input id="email" type="email" placeholder="voce@empresa.com" required>
-        </label>
+          <span class="eyebrow">Acesso ao sistema</span>
+          <h1>Entre no HoraLivre</h1>
+          <p class="muted">
+            Acesse sua área para gerenciar empresas clientes, serviços, agenda, clientes finais e cobrança.
+          </p>
+        </div>
 
-        <label>
-          <span>Senha</span>
-          <input id="password" type="password" placeholder="••••••••" required>
-        </label>
+        <div class="login-info-grid">
+          <article class="login-info-card">
+            <strong>Admin master</strong>
+            <span>Controle empresas clientes, planos, suporte e cobrança.</span>
+          </article>
 
-        <button class="button primary" type="submit">Entrar</button>
-      </form>
+          <article class="login-info-card">
+            <strong>Empresa cliente</strong>
+            <span>Organize serviços, agenda, clientes finais e relatórios.</span>
+          </article>
 
-      <p id="auth-message" class="feedback"></p>
+          <article class="login-info-card">
+            <strong>Página pública</strong>
+            <span>Cada empresa pode receber agendamentos pelo próprio link.</span>
+          </article>
+        </div>
+
+        <div class="login-brand-footer">
+          <a class="button" href="./index.html">Voltar para a home</a>
+        </div>
+      </div>
+
+      <div class="login-form-panel">
+        <div class="login-form-card">
+          <div class="login-form-header">
+            <h2>Entrar</h2>
+            <p class="muted">
+              Use seu e-mail e senha para acessar sua área.
+            </p>
+          </div>
+
+          <form id="login-form" class="stack">
+            <label>
+              <span>E-mail</span>
+              <input id="email" name="email" type="email" autocomplete="email" required placeholder="voce@empresa.com">
+            </label>
+
+            <label>
+              <span>Senha</span>
+              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha">
+            </label>
+
+            <button class="button primary login-submit-button" type="submit">
+              Entrar no sistema
+            </button>
+
+            <p id="login-feedback" class="feedback"></p>
+          </form>
+
+          <div class="login-help-box">
+            <strong>Dica</strong>
+            <p>
+              O admin entra na área central da plataforma. A empresa cliente entra no painel operacional do próprio negócio.
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
-  <script type="module" src="./assets/js/modules/auth-ui.js"></script>
+  <script type="module" src="./assets/js/modules/login.js"></script>
 </body>
 </html>
