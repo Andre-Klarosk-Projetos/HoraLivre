@@ -288,7 +288,7 @@
           <p>
             Área central para gestão da plataforma, planos, cobrança e empresas clientes.
           </p>
-          <a class="button" href="./admin.html">Abrir admin</a>
+          <button class="button" id="open-admin-button" type="button">Abrir admin</button>
         </article>
 
         <article class="access-card">
@@ -296,7 +296,7 @@
           <p>
             Área usada pela empresa cliente para serviços, clientes, agenda e relatórios.
           </p>
-          <a class="button" href="./cliente.html">Abrir painel da empresa</a>
+          <button class="button" id="open-client-panel-button" type="button">Abrir painel da empresa</button>
         </article>
 
         <article class="access-card">
@@ -307,6 +307,8 @@
           <a class="button" href="./agendar.html">Abrir página pública</a>
         </article>
       </div>
+
+      <div id="home-access-feedback" class="home-feedback hidden"></div>
     </section>
 
     <section class="final-cta-section">
@@ -326,5 +328,7 @@
       </div>
     </section>
   </main>
+
+  <script type="module" src="./assets/js/modules/home.js"></script>
 </body>
 </html>
