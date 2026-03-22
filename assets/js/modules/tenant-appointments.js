@@ -31,7 +31,7 @@ import { syncCustomerStats } from '../services/customer-stats-service.js';
 import { getTenantById } from '../services/tenant-service.js';
 import {
   normalizeBusinessHours,
-  getEffectiveBusinessHoursForDate,
+  isWorkingDay,
   isWithinBusinessHours
 } from '../utils/business-hours.js';
 
@@ -41,16 +41,39 @@ if (!requireTenantUser()) {
 
 const tenantId = getTenantId();
 
+function getStatusClassName(status) {
+  if (status === 'scheduled') {
+    return 'scheduled';
+  }
+
+  if (status === 'confirmed') {
+    return 'confirmed';
+  }
+
+  if (status === 'completed') {
+    return 'completed';
+  }
+
+  if (status === 'canceled') {
+    return 'canceled';
+  }
+
+  if (status === 'no_show') {
+    return 'no-show';
+  }
+
+  return 'default';
+}
+
 async function validateAppointmentAgainstBusinessHours(date, time, durationMinutes) {
   const tenant = await getTenantById(tenantId);
   const businessHours = normalizeBusinessHours(tenant?.businessHours || {});
-  const effectiveBusinessHours = getEffectiveBusinessHoursForDate(date, businessHours);
 
-  if (effectiveBusinessHours.isClosed) {
-    throw new Error('A data escolhida está indisponível para atendimento.');
+  if (!isWorkingDay(date, businessHours)) {
+    throw new Error('A data escolhida está fora dos dias de atendimento da empresa.');
   }
 
-  if (!isWithinBusinessHours(time, durationMinutes, effectiveBusinessHours)) {
+  if (!isWithinBusinessHours(time, durationMinutes, businessHours)) {
     throw new Error('O horário escolhido está fora do expediente configurado da empresa.');
   }
 }
@@ -74,9 +97,12 @@ export async function renderTenantAppointmentsList(elementId = 'appointments-lis
 
   if (appointments.length === 0) {
     const emptyItem = document.createElement('li');
+    emptyItem.className = 'entity-card appointment-card-item empty-state-item';
     emptyItem.innerHTML = `
-      <strong>Nenhum agendamento encontrado</strong><br>
-      Não há agendamentos para o filtro atual.
+      <div class="entity-card-body">
+        <strong>Nenhum agendamento encontrado</strong>
+        <p>Não há agendamentos para o filtro atual.</p>
+      </div>
     `;
     appointmentsListElement.appendChild(emptyItem);
     return;
@@ -84,41 +110,52 @@ export async function renderTenantAppointmentsList(elementId = 'appointments-lis
 
   appointments.forEach((appointment) => {
     const listItem = document.createElement('li');
+    const statusClassName = getStatusClassName(appointment.status);
+
+    listItem.className = `entity-card appointment-card-item appointment-status-${statusClassName}`;
 
     listItem.innerHTML = `
-      <div class="appointment-card">
-        <div class="appointment-card-header">
+      <div class="entity-card-header">
+        <div class="entity-title-group">
           <strong>${appointment.customerName || '-'}</strong>
-          <span class="status-badge">${formatAppointmentStatus(appointment.status)}</span>
+          <span class="status-badge ${statusClassName}">
+            ${formatAppointmentStatus(appointment.status)}
+          </span>
+        </div>
+      </div>
+
+      <div class="entity-card-body">
+        <div class="entity-grid-details">
+          <div><span class="detail-label">Serviço</span><span>${appointment.serviceName || '-'}</span></div>
+          <div><span class="detail-label">Valor</span><span>${formatCurrencyBRL(appointment.price || 0)}</span></div>
+          <div><span class="detail-label">Início</span><span>${formatDateTimeForDisplay(appointment.startAt)}</span></div>
+          <div><span class="detail-label">Fim</span><span>${formatDateTimeForDisplay(appointment.endAt)}</span></div>
+          <div><span class="detail-label">Origem</span><span>${appointment.source || '-'}</span></div>
+          <div><span class="detail-label">Identificador</span><span>${appointment.id}</span></div>
         </div>
 
-        <div class="appointment-card-body">
-          <div>Serviço: ${appointment.serviceName || '-'}</div>
-          <div>Início: ${formatDateTimeForDisplay(appointment.startAt)}</div>
-          <div>Fim: ${formatDateTimeForDisplay(appointment.endAt)}</div>
-          <div>Valor: ${formatCurrencyBRL(appointment.price || 0)}</div>
-          <div>Origem: ${appointment.source || '-'}</div>
-          <div>Observações: ${appointment.notes || '-'}</div>
-          <div>Identificador: ${appointment.id}</div>
+        <div class="entity-notes-block">
+          <span class="detail-label">Observações</span>
+          <p>${appointment.notes || '-'}</p>
         </div>
+      </div>
 
-        <div class="appointment-actions">
-          <button class="button" type="button" data-appointment-id="${appointment.id}" data-status="confirmed">
-            Confirmar
-          </button>
-          <button class="button primary" type="button" data-appointment-id="${appointment.id}" data-status="completed">
-            Concluir
-          </button>
-          <button class="button" type="button" data-appointment-id="${appointment.id}" data-status="canceled">
-            Cancelar
-          </button>
-          <button class="button danger" type="button" data-appointment-id="${appointment.id}" data-status="no_show">
-            Faltou
-          </button>
-          <button class="button" type="button" data-appointment-action="edit" data-appointment-id="${appointment.id}">
-            Editar
-          </button>
-        </div>
+      <div class="entity-card-actions">
+        <button class="button" type="button" data-appointment-id="${appointment.id}" data-status="confirmed">
+          Confirmar
+        </button>
+        <button class="button primary" type="button" data-appointment-id="${appointment.id}" data-status="completed">
+          Concluir
+        </button>
+        <button class="button" type="button" data-appointment-id="${appointment.id}" data-status="canceled">
+          Cancelar
+        </button>
+        <button class="button danger" type="button" data-appointment-id="${appointment.id}" data-status="no_show">
+          Faltou
+        </button>
+        <button class="button" type="button" data-appointment-action="edit" data-appointment-id="${appointment.id}">
+          Editar
+        </button>
       </div>
     `;
 
