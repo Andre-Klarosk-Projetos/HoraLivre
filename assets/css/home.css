@@ -269,28 +269,69 @@
   color: #6b7280;
 }
 
-.pricing-grid {
+.plans-carousel-wrapper {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  gap: 12px;
+  align-items: center;
 }
 
-.pricing-card {
+.plans-carousel-arrow {
+  min-height: 52px;
+  border-radius: 999px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.pricing-grid.plans-carousel-track {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 8px;
+}
+
+.pricing-grid.plans-carousel-track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.pricing-grid.plans-carousel-track::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.35);
+  border-radius: 999px;
+}
+
+.pricing-card,
+.dynamic-plan-card {
   display: grid;
   gap: 12px;
   padding: 24px;
   border-radius: 24px;
   background: #ffffff;
   border: 1px solid rgba(229, 231, 235, 1);
+  min-width: 300px;
+  max-width: 360px;
+  flex: 0 0 320px;
 }
 
-.pricing-card.featured {
+.pricing-card.featured,
+.dynamic-plan-card.featured {
   border-color: rgba(147, 197, 253, 1);
   box-shadow: 0 20px 40px rgba(37, 99, 235, 0.08);
 }
 
-.pricing-card h3 {
+.pricing-card h3,
+.dynamic-plan-card h3 {
   margin: 0;
+}
+
+.plan-price-line {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
 }
 
 .pricing-description {
@@ -392,7 +433,6 @@
 @media (max-width: 1100px) {
   .hero-grid,
   .feature-grid,
-  .pricing-grid,
   .access-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -424,11 +464,18 @@
 
   .hero-grid,
   .feature-grid,
-  .pricing-grid,
   .access-grid,
   .steps-grid,
   .trust-grid {
     grid-template-columns: 1fr;
+  }
+
+  .plans-carousel-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .plans-carousel-arrow {
+    display: none;
   }
 
   .final-cta-card {
@@ -466,5 +513,11 @@
   .step-card,
   .trust-card {
     border-radius: 18px;
+  }
+
+  .pricing-card,
+  .dynamic-plan-card {
+    min-width: 280px;
+    flex-basis: 280px;
   }
 }
