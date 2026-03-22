@@ -11,6 +11,7 @@ import { auth, db } from '../config/firebase-init.js';
 
 const openAdminButton = document.getElementById('open-admin-button');
 const openClientPanelButton = document.getElementById('open-client-panel-button');
+const openPublicPageButton = document.getElementById('open-public-page-button');
 const feedbackElement = document.getElementById('home-access-feedback');
 
 let currentAccessProfile = {
@@ -19,6 +20,7 @@ let currentAccessProfile = {
   isCompanyUser: false,
   companyName: '',
   companyId: '',
+  companySlug: '',
   email: ''
 };
 
@@ -48,6 +50,7 @@ async function resolveCurrentProfile(user) {
       isCompanyUser: false,
       companyName: '',
       companyId: '',
+      companySlug: '',
       email: ''
     };
     return;
@@ -63,6 +66,7 @@ async function resolveCurrentProfile(user) {
 
   let companyName = '';
   let companyId = '';
+  let companySlug = '';
 
   if (companyUserSnapshot.exists()) {
     const companyUserData = companyUserSnapshot.data();
@@ -75,6 +79,7 @@ async function resolveCurrentProfile(user) {
       if (companySnapshot.exists()) {
         const companyData = companySnapshot.data();
         companyName = companyData.businessName || '';
+        companySlug = companyData.slug || '';
       }
     }
   }
@@ -85,6 +90,7 @@ async function resolveCurrentProfile(user) {
     isCompanyUser: companyUserSnapshot.exists(),
     companyName,
     companyId,
+    companySlug,
     email: user.email || ''
   };
 }
@@ -149,12 +155,54 @@ function handleCompanyPanelAccess() {
   );
 }
 
+function handlePublicPageAccess() {
+  hideHomeFeedback();
+
+  if (!currentAccessProfile.isAuthenticated) {
+    redirectToLogin();
+    return;
+  }
+
+  if (currentAccessProfile.isCompanyUser) {
+    const companyName = currentAccessProfile.companyName || 'sua empresa';
+    const companySlug = String(currentAccessProfile.companySlug || '').trim();
+
+    if (!companySlug) {
+      showHomeFeedback(
+        `A conta ligada está vinculada à empresa "${companyName}", mas essa empresa ainda não possui um slug público configurado. Defina o slug no painel da empresa para abrir a página pública.`,
+        'error'
+      );
+      return;
+    }
+
+    window.location.href = `./agendar.html?slug=${encodeURIComponent(companySlug)}`;
+    return;
+  }
+
+  if (currentAccessProfile.isPlatformAdmin) {
+    showHomeFeedback(
+      'A conta ligada é um administrador da plataforma. A página pública pertence a uma empresa cliente específica. Abra a empresa pelo admin ou use o slug correto.',
+      'info'
+    );
+    return;
+  }
+
+  showHomeFeedback(
+    'Sua conta está autenticada, mas não possui vínculo com uma empresa cliente para abrir uma página pública.',
+    'error'
+  );
+}
+
 openAdminButton?.addEventListener('click', () => {
   handleAdminAccess();
 });
 
 openClientPanelButton?.addEventListener('click', () => {
   handleCompanyPanelAccess();
+});
+
+openPublicPageButton?.addEventListener('click', () => {
+  handlePublicPageAccess();
 });
 
 onAuthStateChanged(auth, async (user) => {
