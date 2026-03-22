@@ -12,11 +12,17 @@ import {
 
 import { db } from '../config/firebase-init.js';
 
+export function isAnnualBillingMonth(currentMonthNumber, annualBillingMonth) {
+  return Number(currentMonthNumber || 0) === Number(annualBillingMonth || 0);
+}
+
 export function calculateBillingForPeriod({
   billingMode,
   completedAppointments,
   fixedMonthlyPrice,
   annualPrice,
+  annualBillingMonth,
+  currentMonthNumber,
   pricePerExecutedService
 }) {
   if (billingMode === 'fixed_plan') {
@@ -24,6 +30,10 @@ export function calculateBillingForPeriod({
   }
 
   if (billingMode === 'annual_plan') {
+    if (!isAnnualBillingMonth(currentMonthNumber, annualBillingMonth)) {
+      return 0;
+    }
+
     return Number(annualPrice || 0);
   }
 
@@ -78,6 +88,7 @@ export async function saveBillingSettingsForTenant(tenantId, data) {
     billingMode: data.billingMode || 'free',
     fixedMonthlyPrice: Number(data.fixedMonthlyPrice || 0),
     annualPrice: Number(data.annualPrice || 0),
+    annualBillingMonth: Number(data.annualBillingMonth || 0) || null,
     pricePerExecutedService: Number(data.pricePerExecutedService || 0),
     updatedAt: new Date().toISOString()
   }, { merge: true });
@@ -94,6 +105,7 @@ export async function createOrReplaceBillingRecord(recordId, data) {
     unitPrice: Number(data.unitPrice || 0),
     fixedAmount: Number(data.fixedAmount || 0),
     annualAmount: Number(data.annualAmount || 0),
+    annualBillingMonth: Number(data.annualBillingMonth || 0) || null,
     status: data.status || 'pending',
     updatedAt: new Date().toISOString()
   }, { merge: true });
