@@ -1,20 +1,14 @@
 import { requireTenantUser } from '../utils/guards.js';
 import { getTenantId } from '../state/session-store.js';
-import { getTenantById } from '../services/tenant-service.js';
-import { getPlanById } from '../services/plan-service.js';
 import {
   listAppointmentsByTenantAndPeriod
 } from '../services/appointment-service.js';
 import {
-  getBillingSettingsByTenant,
-  calculateBillingForPeriod,
-  getBillingRecordByTenantAndMonth,
-  normalizeMonthReference
+  getCurrentMonthBillingRecordForTenant
 } from '../services/billing-service.js';
 import {
   formatCurrencyBRL,
-  formatAppointmentStatus,
-  formatMonthNumberToName
+  formatAppointmentStatus
 } from '../utils/formatters.js';
 import {
   clearElement
@@ -22,11 +16,8 @@ import {
 import {
   buildStartOfDayIsoFromDateInput,
   buildEndOfDayIsoFromDateInput,
-  formatDateTimeForDisplay,
-  getMonthReference,
   getStartAndEndOfCurrentMonth,
-  normalizeMonthReference as normalizeMonthReferenceFromDateUtils,
-  getMonthNumberFromReference
+  formatDateTimeForDisplay
 } from '../utils/date-utils.js';
 
 if (!requireTenantUser()) {
@@ -35,237 +26,114 @@ if (!requireTenantUser()) {
 
 const tenantId = getTenantId();
 
-function resolveEffectiveBillingMode(tenant, billingSettings, plan) {
-  return (
-    billingSettings?.billingMode ||
-    tenant?.billingMode ||
-    plan?.billingMode ||
-    'free'
-  );
-}
-
-function resolveEffectiveFixedPrice(tenant, billingSettings, plan) {
-  return Number(
-    billingSettings?.fixedMonthlyPrice ??
-    plan?.price ??
-    tenant?.fixedMonthlyPrice ??
-    0
-  );
-}
-
-function resolveEffectiveAnnualPrice(tenant, billingSettings, plan) {
-  return Number(
-    billingSettings?.annualPrice ??
-    plan?.annualPrice ??
-    tenant?.annualPrice ??
-    0
-  );
-}
-
-function resolveEffectiveAnnualBillingMonth(tenant, billingSettings) {
-  return Number(
-    billingSettings?.annualBillingMonth ??
-    tenant?.annualBillingMonth ??
-    0
-  ) || null;
-}
-
-function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
-  return Number(
-    billingSettings?.pricePerExecutedService ??
-    plan?.pricePerExecutedService ??
-    tenant?.pricePerExecutedService ??
-    0
-  );
-}
-
-function countCompletedAppointments(appointments = []) {
-  return appointments.filter((appointment) => appointment.status === 'completed').length;
-}
-
-function buildMonthReferenceFromRange(startIso, endIso) {
-  if (!startIso || !endIso) {
-    return normalizeMonthReference(getMonthReference());
+function buildBillingStatusText(record) {
+  if (!record) {
+    return {
+      title: 'Nenhuma cobrança oficial encontrada para o mês atual.',
+      help: 'O resumo abaixo mostra apenas o período filtrado.'
+    };
   }
 
-  const startDate = new Date(startIso);
-  const endDate = new Date(endIso);
-
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return normalizeMonthReference(getMonthReference());
-  }
-
-  const sameMonth =
-    startDate.getFullYear() === endDate.getFullYear() &&
-    startDate.getMonth() === endDate.getMonth();
-
-  if (!sameMonth) {
-    return '';
-  }
-
-  return normalizeMonthReferenceFromDateUtils(
-    `${startDate.getFullYear()}/${String(startDate.getMonth() + 1).padStart(2, '0')}`
-  );
-}
-
-function setTextContent(id, value) {
-  const element = document.getElementById(id);
-
-  if (element) {
-    element.textContent = value;
-  }
-}
-
-function renderReportAppointmentsList(appointments, elementId = 'report-appointments-list') {
-  const element = document.getElementById(elementId);
-
-  if (!element) {
-    return;
-  }
-
-  clearElement(element);
-
-  if (!appointments.length) {
-    const item = document.createElement('li');
-    item.innerHTML = `
-      <strong>Nenhum agendamento encontrado</strong><br>
-      Não há agendamentos no período selecionado.
-    `;
-    element.appendChild(item);
-    return;
-  }
-
-  appointments.forEach((appointment) => {
-    const item = document.createElement('li');
-
-    item.innerHTML = `
-      <strong>${appointment.customerName || '-'}</strong><br>
-      Serviço: ${appointment.serviceName || '-'}<br>
-      Início: ${formatDateTimeForDisplay(appointment.startAt)}<br>
-      Fim: ${formatDateTimeForDisplay(appointment.endAt)}<br>
-      Status: ${formatAppointmentStatus(appointment.status)}<br>
-      Valor: ${formatCurrencyBRL(appointment.price || 0)}
-    `;
-
-    element.appendChild(item);
-  });
-}
-
-function buildBillingStatusText(record, calculatedAmount, annualBillingMonth, currentMonthNumber, billingMode) {
-  if (record) {
-    if (record.status === 'paid') {
-      return `Cobrança oficial gerada e marcada como paga. Valor: ${formatCurrencyBRL(record.totalAmount || 0)}.`;
-    }
-
-    return `Cobrança oficial gerada e pendente. Valor: ${formatCurrencyBRL(record.totalAmount || 0)}.`;
-  }
-
-  if (billingMode === 'annual_plan' && annualBillingMonth && Number(currentMonthNumber || 0) !== Number(annualBillingMonth || 0)) {
-    return `Plano anual fora do mês de cobrança. A próxima cobrança anual está prevista para ${formatMonthNumberToName(annualBillingMonth)}.`;
-  }
-
-  if (Number(calculatedAmount || 0) > 0) {
-    return 'Cálculo em tempo real do período selecionado. A cobrança oficial aparece quando o admin gerar o fechamento.';
-  }
-
-  return 'Sem cobrança no período selecionado.';
+  return {
+    title: `Cobrança oficial gerada e ${record.status === 'pending' ? 'pendente' : record.status}. Valor: ${formatCurrencyBRL(record.amount || 0)}.`,
+    help: `Referência da cobrança: ${record.reference || '-'} | Status: ${record.status || '-'}`
+  };
 }
 
 export async function loadTenantReportsIntoPage(options = {}) {
-  const reportAppointmentsListElementId =
-    options.reportAppointmentsListElementId || 'report-appointments-list';
+  const startIso = options.startIso || getStartAndEndOfCurrentMonth().startIso;
+  const endIso = options.endIso || getStartAndEndOfCurrentMonth().endIso;
 
-  const reportStartInput = document.getElementById('report-filter-start');
-  const reportEndInput = document.getElementById('report-filter-end');
-
-  let startIso = '';
-  let endIso = '';
-
-  if (reportStartInput?.value && reportEndInput?.value) {
-    startIso = buildStartOfDayIsoFromDateInput(reportStartInput.value);
-    endIso = buildEndOfDayIsoFromDateInput(reportEndInput.value);
-  } else {
-    const currentMonth = getStartAndEndOfCurrentMonth();
-    startIso = currentMonth.startIso;
-    endIso = currentMonth.endIso;
-
-    if (reportStartInput && !reportStartInput.value) {
-      reportStartInput.value = currentMonth.startIso.slice(0, 10);
-    }
-
-    if (reportEndInput && !reportEndInput.value) {
-      reportEndInput.value = currentMonth.endIso.slice(0, 10);
-    }
-  }
-
-  const [tenant, billingSettings, appointments] = await Promise.all([
-    getTenantById(tenantId),
-    getBillingSettingsByTenant(tenantId),
-    listAppointmentsByTenantAndPeriod(tenantId, startIso, endIso)
+  const [appointments, billingRecord] = await Promise.all([
+    listAppointmentsByTenantAndPeriod(tenantId, startIso, endIso),
+    getCurrentMonthBillingRecordForTenant(tenantId)
   ]);
 
-  const plan = tenant?.planId ? await getPlanById(tenant.planId) : null;
+  const completedAppointments = appointments.filter((appointment) => appointment.status === 'completed');
+  const completedCount = completedAppointments.length;
+  const totalValue = completedAppointments.reduce((sum, appointment) => {
+    return sum + Number(appointment.price || 0);
+  }, 0);
 
-  const completedAppointments = countCompletedAppointments(appointments);
-  const monthReference = buildMonthReferenceFromRange(startIso, endIso);
-  const currentMonthNumber = monthReference ? getMonthNumberFromReference(monthReference) : 0;
+  const reportCompletedElement = document.getElementById('report-completed');
+  const reportTotalElement = document.getElementById('report-total');
+  const reportStatusElement = document.getElementById('report-status');
+  const reportStatusHelpElement = document.getElementById('report-status-help');
+  const reportAppointmentsListElement = document.getElementById('report-appointments-list');
 
-  const effectiveBillingMode = resolveEffectiveBillingMode(tenant, billingSettings, plan);
-  const effectiveFixedPrice = resolveEffectiveFixedPrice(tenant, billingSettings, plan);
-  const effectiveAnnualPrice = resolveEffectiveAnnualPrice(tenant, billingSettings, plan);
-  const effectiveAnnualBillingMonth = resolveEffectiveAnnualBillingMonth(tenant, billingSettings);
-  const effectiveUnitPrice = resolveEffectiveUnitPrice(tenant, billingSettings, plan);
-
-  const calculatedAmount = calculateBillingForPeriod({
-    billingMode: effectiveBillingMode,
-    completedAppointments,
-    fixedMonthlyPrice: effectiveFixedPrice,
-    annualPrice: effectiveAnnualPrice,
-    annualBillingMonth: effectiveAnnualBillingMonth,
-    currentMonthNumber,
-    pricePerExecutedService: effectiveUnitPrice
-  });
-
-  const billingRecord = monthReference
-    ? await getBillingRecordByTenantAndMonth(tenantId, monthReference)
-    : null;
-
-  const displayedAmount = billingRecord
-    ? Number(billingRecord.totalAmount || 0)
-    : Number(calculatedAmount || 0);
-
-  setTextContent('report-completed', String(completedAppointments));
-  setTextContent('report-total', formatCurrencyBRL(displayedAmount));
-  setTextContent(
-    'report-status',
-    buildBillingStatusText(
-      billingRecord,
-      calculatedAmount,
-      effectiveAnnualBillingMonth,
-      currentMonthNumber,
-      effectiveBillingMode
-    )
-  );
-
-  const reportStatusHelp = document.getElementById('report-status-help');
-
-  if (reportStatusHelp) {
-    if (billingRecord) {
-      reportStatusHelp.textContent =
-        `Referência da cobrança: ${billingRecord.monthRef || '-'} | Status: ${billingRecord.status || '-'}.`;
-    } else if (effectiveBillingMode === 'annual_plan' && effectiveAnnualBillingMonth && Number(currentMonthNumber || 0) !== Number(effectiveAnnualBillingMonth || 0)) {
-      reportStatusHelp.textContent =
-        `Plano anual configurado para cobrança em ${formatMonthNumberToName(effectiveAnnualBillingMonth)}. No período atual não há cobrança prevista.`;
-    } else if (monthReference) {
-      reportStatusHelp.textContent =
-        `Referência calculada: ${monthReference}. Ainda não existe cobrança oficial salva para este mês.`;
-    } else {
-      reportStatusHelp.textContent =
-        'O período selecionado cobre mais de um mês. O valor mostrado é apenas cálculo em tempo real.';
-    }
+  if (reportCompletedElement) {
+    reportCompletedElement.textContent = String(completedCount);
   }
 
-  renderReportAppointmentsList(appointments, reportAppointmentsListElementId);
+  if (reportTotalElement) {
+    reportTotalElement.textContent = formatCurrencyBRL(totalValue);
+  }
+
+  const billingStatusText = buildBillingStatusText(billingRecord);
+
+  if (reportStatusElement) {
+    reportStatusElement.textContent = billingStatusText.title;
+  }
+
+  if (reportStatusHelpElement) {
+    reportStatusHelpElement.textContent = billingStatusText.help;
+  }
+
+  if (!reportAppointmentsListElement) {
+    return;
+  }
+
+  clearElement(reportAppointmentsListElement);
+
+  if (!completedAppointments.length) {
+    const emptyItem = document.createElement('li');
+    emptyItem.className = 'entity-card empty-state-item';
+    emptyItem.innerHTML = `
+      <div class="entity-card-body">
+        <strong>Nenhum atendimento concluído encontrado</strong>
+        <p>Não há atendimentos concluídos para o período filtrado.</p>
+      </div>
+    `;
+    reportAppointmentsListElement.appendChild(emptyItem);
+    return;
+  }
+
+  completedAppointments.forEach((appointment) => {
+    const listItem = document.createElement('li');
+    listItem.className = 'entity-card';
+
+    listItem.innerHTML = `
+      <div class="entity-card-header">
+        <div class="entity-title-group">
+          <strong>${appointment.customerName || '-'}</strong>
+          <span class="status-badge completed">${formatAppointmentStatus(appointment.status)}</span>
+        </div>
+      </div>
+
+      <div class="entity-card-body">
+        <div class="entity-grid-details">
+          <div>
+            <span class="detail-label">Serviço</span>
+            <span>${appointment.serviceName || '-'}</span>
+          </div>
+          <div>
+            <span class="detail-label">Valor</span>
+            <span>${formatCurrencyBRL(appointment.price || 0)}</span>
+          </div>
+          <div>
+            <span class="detail-label">Início</span>
+            <span>${formatDateTimeForDisplay(appointment.startAt)}</span>
+          </div>
+          <div>
+            <span class="detail-label">Fim</span>
+            <span>${formatDateTimeForDisplay(appointment.endAt)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    reportAppointmentsListElement.appendChild(listItem);
+  });
 }
 
 export function bindReportFilters() {
@@ -275,8 +143,12 @@ export function bindReportFilters() {
   const endInput = document.getElementById('report-filter-end');
 
   filterButton?.addEventListener('click', async () => {
+    const startIso = buildStartOfDayIsoFromDateInput(startInput?.value || '');
+    const endIso = buildEndOfDayIsoFromDateInput(endInput?.value || '');
+
     await loadTenantReportsIntoPage({
-      reportAppointmentsListElementId: 'report-appointments-list'
+      startIso,
+      endIso
     });
   });
 
@@ -289,8 +161,6 @@ export function bindReportFilters() {
       endInput.value = '';
     }
 
-    await loadTenantReportsIntoPage({
-      reportAppointmentsListElementId: 'report-appointments-list'
-    });
+    await loadTenantReportsIntoPage();
   });
 }
