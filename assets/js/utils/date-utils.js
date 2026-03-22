@@ -1,71 +1,14 @@
-export function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10);
+function padTwoDigits(value) {
+  return String(value).padStart(2, '0');
 }
 
-export function getMonthReference(date = new Date()) {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-}
-
-export function getStartAndEndOfCurrentMonth() {
+export function getTodayDateInputValue() {
   const now = new Date();
+  const year = now.getFullYear();
+  const month = padTwoDigits(now.getMonth() + 1);
+  const day = padTwoDigits(now.getDate());
 
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-
-  return {
-    startIso: start.toISOString(),
-    endIso: end.toISOString()
-  };
-}
-
-export function getStartAndEndOfDay(dateInput = new Date()) {
-  const date = new Date(dateInput);
-
-  const start = new Date(Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    0,
-    0,
-    0,
-    0
-  ));
-
-  const end = new Date(Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    23,
-    59,
-    59,
-    999
-  ));
-
-  return {
-    startIso: start.toISOString(),
-    endIso: end.toISOString()
-  };
-}
-
-export function getStartAndEndOfWeek(dateInput = new Date()) {
-  const date = new Date(dateInput);
-  const day = date.getUTCDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(date);
-  monday.setUTCDate(date.getUTCDate() + diffToMonday);
-  monday.setUTCHours(0, 0, 0, 0);
-
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
-  sunday.setUTCHours(23, 59, 59, 999);
-
-  return {
-    startIso: monday.toISOString(),
-    endIso: sunday.toISOString()
-  };
+  return `${year}-${month}-${day}`;
 }
 
 export function formatDateTimeForDisplay(isoString) {
@@ -75,32 +18,239 @@ export function formatDateTimeForDisplay(isoString) {
 
   const date = new Date(isoString);
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short'
-  }).format(date);
-}
-
-export function isSameDay(isoString, dateString) {
-  if (!isoString || !dateString) {
-    return false;
+  if (Number.isNaN(date.getTime())) {
+    return '-';
   }
 
-  return new Date(isoString).toISOString().slice(0, 10) === dateString;
+  const day = padTwoDigits(date.getDate());
+  const month = padTwoDigits(date.getMonth() + 1);
+  const year = date.getFullYear();
+  const hours = padTwoDigits(date.getHours());
+  const minutes = padTwoDigits(date.getMinutes());
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+export function formatDateForDisplay(dateString) {
+  if (!dateString) {
+    return '-';
+  }
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  const day = padTwoDigits(date.getDate());
+  const month = padTwoDigits(date.getMonth() + 1);
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
 }
 
 export function buildStartOfDayIsoFromDateInput(dateString) {
   if (!dateString) {
-    return null;
+    return '';
   }
 
-  return new Date(`${dateString}T00:00:00`).toISOString();
+  const date = new Date(`${dateString}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toISOString();
 }
 
 export function buildEndOfDayIsoFromDateInput(dateString) {
   if (!dateString) {
-    return null;
+    return '';
   }
 
-  return new Date(`${dateString}T23:59:59`).toISOString();
+  const date = new Date(`${dateString}T23:59:59`);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toISOString();
+}
+
+export function getStartAndEndOfCurrentMonth() {
+  const now = new Date();
+
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  return {
+    startIso: startDate.toISOString(),
+    endIso: endDate.toISOString()
+  };
+}
+
+export function getStartAndEndOfMonth(monthReference) {
+  const normalized = normalizeMonthReference(monthReference);
+
+  if (!normalized) {
+    return {
+      startIso: '',
+      endIso: ''
+    };
+  }
+
+  const [yearText, monthText] = normalized.split('/');
+  const year = Number(yearText);
+  const monthIndex = Number(monthText) - 1;
+
+  const startDate = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+  const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+
+  return {
+    startIso: startDate.toISOString(),
+    endIso: endDate.toISOString()
+  };
+}
+
+export function normalizeMonthReference(value) {
+  const raw = String(value || '').trim();
+
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\d{4}\/\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  if (/^\d{4}-\d{2}$/.test(raw)) {
+    return raw.replace('-', '/');
+  }
+
+  if (/^\d{4}\/\d{1}$/.test(raw)) {
+    const [year, month] = raw.split('/');
+    return `${year}/${padTwoDigits(month)}`;
+  }
+
+  if (/^\d{4}-\d{1}$/.test(raw)) {
+    const [year, month] = raw.split('-');
+    return `${year}/${padTwoDigits(month)}`;
+  }
+
+  return raw;
+}
+
+export function getMonthReference(date = new Date()) {
+  const currentDate = date instanceof Date ? date : new Date(date);
+
+  if (Number.isNaN(currentDate.getTime())) {
+    return '';
+  }
+
+  const year = currentDate.getFullYear();
+  const month = padTwoDigits(currentDate.getMonth() + 1);
+
+  return `${year}/${month}`;
+}
+
+export function convertMonthReferenceToInputValue(monthReference) {
+  const normalized = normalizeMonthReference(monthReference);
+
+  if (!normalized) {
+    return '';
+  }
+
+  return normalized.replace('/', '-');
+}
+
+export function getPreviousMonthReference(monthReference) {
+  const normalized = normalizeMonthReference(monthReference || getMonthReference());
+
+  if (!normalized) {
+    return '';
+  }
+
+  const [yearText, monthText] = normalized.split('/');
+  const year = Number(yearText);
+  const monthIndex = Number(monthText) - 1;
+
+  const previousMonthDate = new Date(year, monthIndex - 1, 1);
+
+  return getMonthReference(previousMonthDate);
+}
+
+export function getNextMonthReference(monthReference) {
+  const normalized = normalizeMonthReference(monthReference || getMonthReference());
+
+  if (!normalized) {
+    return '';
+  }
+
+  const [yearText, monthText] = normalized.split('/');
+  const year = Number(yearText);
+  const monthIndex = Number(monthText) - 1;
+
+  const nextMonthDate = new Date(year, monthIndex + 1, 1);
+
+  return getMonthReference(nextMonthDate);
+}
+
+export function isDateWithinRange(isoString, startIso, endIso) {
+  if (!isoString) {
+    return false;
+  }
+
+  const current = new Date(isoString).getTime();
+
+  if (Number.isNaN(current)) {
+    return false;
+  }
+
+  const start = startIso ? new Date(startIso).getTime() : null;
+  const end = endIso ? new Date(endIso).getTime() : null;
+
+  if (start !== null && !Number.isNaN(start) && current < start) {
+    return false;
+  }
+
+  if (end !== null && !Number.isNaN(end) && current > end) {
+    return false;
+  }
+
+  return true;
+}
+
+export function getDateInputValueFromIso(isoString) {
+  if (!isoString) {
+    return '';
+  }
+
+  const date = new Date(isoString);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = padTwoDigits(date.getMonth() + 1);
+  const day = padTwoDigits(date.getDate());
+
+  return `${year}-${month}-${day}`;
+}
+
+export function getTimeInputValueFromIso(isoString) {
+  if (!isoString) {
+    return '';
+  }
+
+  const date = new Date(isoString);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const hours = padTwoDigits(date.getHours());
+  const minutes = padTwoDigits(date.getMinutes());
+
+  return `${hours}:${minutes}`;
 }
