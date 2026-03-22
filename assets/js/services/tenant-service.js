@@ -1,4 +1,5 @@
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
@@ -13,18 +14,26 @@ import {
 import { db } from '../config/firebase-init.js';
 
 export async function listTenants() {
-  const tenantsQuery = query(collection(db, 'tenants'), orderBy('businessName'));
+  const tenantsQuery = query(
+    collection(db, 'tenants'),
+    orderBy('businessName')
+  );
+
   const snapshot = await getDocs(tenantsQuery);
 
-  return snapshot.docs.map((docItem) => ({
-    id: docItem.id,
-    ...docItem.data()
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
   }));
 }
 
 export async function getTenantById(tenantId) {
-  const ref = doc(db, 'tenants', tenantId);
-  const snapshot = await getDoc(ref);
+  if (!tenantId) {
+    return null;
+  }
+
+  const reference = doc(db, 'tenants', tenantId);
+  const snapshot = await getDoc(reference);
 
   if (!snapshot.exists()) {
     return null;
@@ -49,38 +58,42 @@ export async function getTenantBySlug(slug) {
     return null;
   }
 
-  const docItem = snapshot.docs[0];
+  const documentItem = snapshot.docs[0];
 
   return {
-    id: docItem.id,
-    ...docItem.data()
+    id: documentItem.id,
+    ...documentItem.data()
   };
 }
 
+export async function createTenant(data) {
+  return addDoc(collection(db, 'tenants'), {
+    businessName: data.businessName || '',
+    slug: data.slug || '',
+    whatsapp: data.whatsapp || '',
+    description: data.description || '',
+    logoUrl: data.logoUrl || '',
+    instagram: data.instagram || '',
+    address: data.address || '',
+    planId: data.planId || '',
+    billingMode: data.billingMode || 'free',
+    fixedMonthlyPrice: Number(data.fixedMonthlyPrice || 0),
+    pricePerExecutedService: Number(data.pricePerExecutedService || 0),
+    subscriptionStatus: data.subscriptionStatus || 'trial',
+    publicPageEnabled: data.publicPageEnabled !== false,
+    reportsEnabled: data.reportsEnabled !== false,
+    trialEndsAt: data.trialEndsAt || null,
+    isBlocked: data.isBlocked === true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+}
+
 export async function updateTenant(tenantId, data) {
-  const ref = doc(db, 'tenants', tenantId);
+  const reference = doc(db, 'tenants', tenantId);
 
-  await updateDoc(ref, {
+  await updateDoc(reference, {
     ...data,
-    updatedAt: new Date().toISOString()
-  });
-}
-
-export async function setTenantBlocked(tenantId, isBlocked) {
-  const ref = doc(db, 'tenants', tenantId);
-
-  await updateDoc(ref, {
-    isBlocked: Boolean(isBlocked),
-    subscriptionStatus: isBlocked ? 'blocked' : 'active',
-    updatedAt: new Date().toISOString()
-  });
-}
-
-export async function setTenantSubscriptionStatus(tenantId, subscriptionStatus) {
-  const ref = doc(db, 'tenants', tenantId);
-
-  await updateDoc(ref, {
-    subscriptionStatus,
     updatedAt: new Date().toISOString()
   });
 }
