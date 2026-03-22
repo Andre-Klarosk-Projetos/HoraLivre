@@ -10,7 +10,12 @@ import {
 
 import { db } from '../config/firebase-init.js';
 import { listTenants } from './tenant-service.js';
-import { getBillingSettingsByTenant, calculateBillingForPeriod } from './billing-service.js';
+import {
+  getBillingSettingsByTenant,
+  calculateBillingForPeriod,
+  listBillingRecordsByMonth,
+  normalizeMonthReference
+} from './billing-service.js';
 import { getPlanById } from './plan-service.js';
 import { countCompletedAppointments } from './appointment-service.js';
 import { getStartAndEndOfCurrentMonth, getMonthReference } from '../utils/date-utils.js';
@@ -69,22 +74,6 @@ export async function savePlatformSettings(data) {
   );
 }
 
-async function getCurrentMonthBillingRecords() {
-  const monthReference = getMonthReference();
-
-  const recordsQuery = query(
-    collection(db, 'billingRecords'),
-    where('monthRef', '==', monthReference)
-  );
-
-  const snapshot = await getDocs(recordsQuery);
-
-  return snapshot.docs.map((documentItem) => ({
-    id: documentItem.id,
-    ...documentItem.data()
-  }));
-}
-
 export async function getAdminDashboardMetrics() {
   const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
@@ -109,7 +98,8 @@ export async function getAdminDashboardMetrics() {
     }
   }
 
-  const currentMonthRecords = await getCurrentMonthBillingRecords();
+  const monthReference = normalizeMonthReference(getMonthReference());
+  const currentMonthRecords = await listBillingRecordsByMonth(monthReference);
 
   if (currentMonthRecords.length > 0) {
     totalRevenue = currentMonthRecords.reduce((sum, record) => {
