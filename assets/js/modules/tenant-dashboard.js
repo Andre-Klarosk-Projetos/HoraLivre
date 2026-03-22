@@ -20,7 +20,6 @@ import { bindClientTabs, activateClientTab } from './tenant-tabs.js';
 import { renderTenantSetupChecklist } from './tenant-setup-checklist.js';
 import {
   clearElement,
-  createListItem,
   setText,
   showFeedback
 } from '../utils/dom-utils.js';
@@ -88,17 +87,17 @@ function getBusinessHoursPayloadFromForm() {
 }
 
 function fillBusinessHoursForm(businessHours = {}) {
-  const dayMap = {
-    sunday: 'sunday',
-    monday: 'monday',
-    tuesday: 'tuesday',
-    wednesday: 'wednesday',
-    thursday: 'thursday',
-    friday: 'friday',
-    saturday: 'saturday'
-  };
+  const dayKeys = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday'
+  ];
 
-  Object.keys(dayMap).forEach((dayKey) => {
+  dayKeys.forEach((dayKey) => {
     const item = businessHours?.[dayKey] || {};
     document.getElementById(`business-hours-${dayKey}-enabled`).value = String(item.enabled === true);
     document.getElementById(`business-hours-${dayKey}-start`).value = item.start || '';
@@ -130,24 +129,58 @@ async function renderServicesList() {
   clearElement(element);
 
   if (!services.length) {
-    element.appendChild(createListItem(`
-      <strong>Nenhum serviço cadastrado</strong><br>
-      Cadastre seu primeiro serviço para começar a receber agendamentos.
-    `));
+    const emptyItem = document.createElement('li');
+    emptyItem.className = 'entity-card empty-state-item';
+    emptyItem.innerHTML = `
+      <div class="entity-card-body">
+        <strong>Nenhum serviço cadastrado</strong>
+        <p>Cadastre seu primeiro serviço para começar a receber agendamentos.</p>
+      </div>
+    `;
+    element.appendChild(emptyItem);
     return;
   }
 
   services.forEach((service) => {
-    element.appendChild(createListItem(`
-      <strong>${service.name || '-'}</strong><br>
-      Duração: ${service.durationMinutes || 0} min<br>
-      Preço: ${formatCurrencyBRL(service.price || 0)}<br>
-      Descrição: ${service.description || '-'}<br>
-      Ativo: ${service.active === false ? 'Não' : 'Sim'}<br><br>
-      <button class="button" type="button" data-service-action="edit" data-service-id="${service.id}">
-        Editar
-      </button>
-    `));
+    const listItem = document.createElement('li');
+    listItem.className = 'entity-card';
+
+    listItem.innerHTML = `
+      <div class="entity-card-header">
+        <div class="entity-title-group">
+          <strong>${service.name || '-'}</strong>
+          <span class="status-badge ${service.active === false ? 'canceled' : 'completed'}">
+            ${service.active === false ? 'Inativo' : 'Ativo'}
+          </span>
+        </div>
+      </div>
+
+      <div class="entity-card-body">
+        <div class="entity-grid-details">
+          <div>
+            <span class="detail-label">Duração</span>
+            <span>${service.durationMinutes || 0} min</span>
+          </div>
+          <div>
+            <span class="detail-label">Preço</span>
+            <span>${formatCurrencyBRL(service.price || 0)}</span>
+          </div>
+        </div>
+
+        <div class="entity-notes-block">
+          <span class="detail-label">Descrição</span>
+          <p>${service.description || '-'}</p>
+        </div>
+      </div>
+
+      <div class="entity-card-actions">
+        <button class="button" type="button" data-service-action="edit" data-service-id="${service.id}">
+          Editar
+        </button>
+      </div>
+    `;
+
+    element.appendChild(listItem);
   });
 
   bindServiceActions(services);
@@ -193,20 +226,59 @@ async function renderCustomersList() {
   clearElement(element);
 
   if (!customers.length) {
-    element.appendChild(createListItem(`
-      <strong>Nenhum cliente cadastrado</strong><br>
-      Cadastre seu primeiro cliente para organizar sua base.
-    `));
+    const emptyItem = document.createElement('li');
+    emptyItem.className = 'entity-card empty-state-item';
+    emptyItem.innerHTML = `
+      <div class="entity-card-body">
+        <strong>Nenhum cliente cadastrado</strong>
+        <p>Cadastre seu primeiro cliente para organizar sua base.</p>
+      </div>
+    `;
+    element.appendChild(emptyItem);
     return;
   }
 
   customers.forEach((customer) => {
-    element.appendChild(createListItem(`
-      <strong>${customer.name || '-'}</strong><br>
-      WhatsApp: ${customer.phone || '-'}<br>
-      E-mail: ${customer.email || '-'}<br>
-      Observações: ${customer.notes || '-'}<br><br>
-      <div class="quick-actions">
+    const listItem = document.createElement('li');
+    listItem.className = 'entity-card';
+
+    listItem.innerHTML = `
+      <div class="entity-card-header">
+        <div class="entity-title-group">
+          <strong>${customer.name || '-'}</strong>
+          <span class="status-badge default">
+            ${Number(customer.completedAppointments || 0)} concluído(s)
+          </span>
+        </div>
+      </div>
+
+      <div class="entity-card-body">
+        <div class="entity-grid-details">
+          <div>
+            <span class="detail-label">WhatsApp</span>
+            <span>${customer.phone || '-'}</span>
+          </div>
+          <div>
+            <span class="detail-label">E-mail</span>
+            <span>${customer.email || '-'}</span>
+          </div>
+          <div>
+            <span class="detail-label">Agendamentos</span>
+            <span>${Number(customer.totalAppointments || 0)}</span>
+          </div>
+          <div>
+            <span class="detail-label">Último atendimento</span>
+            <span>${customer.lastAppointmentAt ? new Date(customer.lastAppointmentAt).toLocaleString('pt-BR') : '-'}</span>
+          </div>
+        </div>
+
+        <div class="entity-notes-block">
+          <span class="detail-label">Observações</span>
+          <p>${customer.notes || '-'}</p>
+        </div>
+      </div>
+
+      <div class="entity-card-actions">
         <button class="button" type="button" data-customer-action="edit" data-customer-id="${customer.id}">
           Editar
         </button>
@@ -214,7 +286,9 @@ async function renderCustomersList() {
           WhatsApp
         </a>
       </div>
-    `));
+    `;
+
+    element.appendChild(listItem);
   });
 
   bindCustomerActions(customers);
@@ -261,10 +335,9 @@ async function loadSummary() {
   setText('summary-customers-count', String(customers.length));
 
   const appointmentsList = document.getElementById('appointments-list');
-  const reportAppointmentsList = document.getElementById('report-appointments-list');
-
-  const appointmentsCount = appointmentsList ? appointmentsList.children.length : 0;
-  const reportCount = reportAppointmentsList ? reportAppointmentsList.children.length : 0;
+  const appointmentsCount = appointmentsList
+    ? appointmentsList.querySelectorAll('.appointment-card-item').length
+    : 0;
 
   setText('summary-appointments-count', String(Math.max(appointmentsCount, 0)));
   setText('summary-completed-count', document.getElementById('report-completed')?.textContent || '0');
