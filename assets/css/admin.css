@@ -1,3 +1,81 @@
+.admin-shell {
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-content {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.sidebar-top {
+  display: grid;
+  gap: 12px;
+}
+
+.sidebar-mobile-toggle {
+  display: none;
+}
+
+.admin-tab-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-tab-nav .nav-link {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font: inherit;
+  color: inherit;
+}
+
+.admin-tab-nav .nav-link.active {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.mobile-tab-strip {
+  display: none;
+}
+
+.tab-panels {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.tab-panel {
+  display: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.panel-shell {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
 .content h2,
 .content h3 {
   margin-top: 0;
@@ -12,6 +90,7 @@
 .admin-scroll-panel {
   max-height: 460px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 6px;
 }
 
@@ -33,4 +112,75 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-tab-button {
+  border: 1px solid rgba(229, 231, 235, 1);
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mobile-tab-button.active {
+  background: rgba(37, 99, 235, 1);
+  color: #ffffff;
+  border-color: rgba(37, 99, 235, 1);
+}
+
+@media (max-width: 960px) {
+  .admin-shell {
+    display: block;
+  }
+
+  .admin-sidebar {
+    position: relative;
+    top: auto;
+    height: auto;
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(229, 231, 235, 1);
+  }
+
+  .sidebar-mobile-toggle {
+    display: inline-flex;
+    width: fit-content;
+  }
+
+  .admin-tab-nav {
+    display: none;
+    margin-top: 12px;
+  }
+
+  .admin-tab-nav.open {
+    display: grid;
+  }
+
+  .mobile-tab-strip {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-tab-strip::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .mobile-tab-strip::-webkit-scrollbar-thumb {
+    background: rgba(107, 114, 128, 0.4);
+    border-radius: 999px;
+  }
+
+  .admin-scroll-panel {
+    max-height: 320px;
+  }
 }
