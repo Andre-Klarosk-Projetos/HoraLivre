@@ -28,24 +28,84 @@
           <span id="public-business-whatsapp-text">WhatsApp não informado</span>
           <span id="public-business-address-text">Endereço não informado</span>
         </div>
-        <a id="public-business-whatsapp-link" class="button" href="#" target="_blank" rel="noopener noreferrer">
+        <a id="public-business-whatsapp-link" class="button primary" href="#" target="_blank" rel="noopener noreferrer">
           Falar no WhatsApp
         </a>
       </div>
     </section>
 
-    <section class="public-layout">
-      <div class="public-main-column">
-        <section class="card public-section">
+    <section class="public-tabs-shell card">
+      <nav class="public-tabs-nav" id="public-tabs-nav">
+        <button class="public-tab-button active" type="button" data-public-tab-target="public-services-tab">
+          Serviços disponíveis
+        </button>
+        <button class="public-tab-button" type="button" data-public-tab-target="public-summary-tab">
+          Resumo do agendamento
+        </button>
+        <button class="public-tab-button" type="button" data-public-tab-target="public-booking-tab">
+          Agendar agora
+        </button>
+        <button class="public-tab-button" type="button" data-public-tab-target="public-company-tab">
+          Dados da empresa
+        </button>
+      </nav>
+    </section>
+
+    <section class="public-tab-panels">
+      <section id="public-services-tab" class="public-tab-panel active">
+        <div class="card public-section public-section-services">
           <div class="section-heading">
             <h2>Serviços disponíveis</h2>
             <p class="muted">Escolha o serviço desejado para visualizar os horários livres.</p>
           </div>
 
           <div id="public-services-list" class="public-services-grid"></div>
-        </section>
+        </div>
+      </section>
 
-        <section class="card public-section">
+      <section id="public-summary-tab" class="public-tab-panel" hidden>
+        <div class="card public-section public-section-summary">
+          <div class="section-heading">
+            <h2>Resumo do agendamento</h2>
+            <p class="muted">Confira o que foi selecionado antes de confirmar.</p>
+          </div>
+
+          <div class="public-summary-grid">
+            <div class="public-summary-item">
+              <span>Serviço</span>
+              <strong id="public-summary-service">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Duração</span>
+              <strong id="public-summary-duration">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Valor</span>
+              <strong id="public-summary-price">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Data</span>
+              <strong id="public-summary-date">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Hora</span>
+              <strong id="public-summary-time">-</strong>
+            </div>
+          </div>
+
+          <div class="public-summary-highlight">
+            <strong>Próximo passo</strong>
+            <p>Depois de escolher serviço, data e horário, vá até a aba “Agendar agora” para confirmar.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="public-booking-tab" class="public-tab-panel" hidden>
+        <div class="card public-section public-section-booking">
           <div class="section-heading">
             <h2>Agendar agora</h2>
             <p class="muted">Preencha seus dados e confirme o melhor horário.</p>
@@ -107,47 +167,13 @@
 
             <p id="public-booking-feedback" class="feedback"></p>
           </form>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <aside class="public-side-column">
-        <section class="card public-section">
+      <section id="public-company-tab" class="public-tab-panel" hidden>
+        <div class="card public-section public-section-company">
           <div class="section-heading">
-            <h2>Resumo do agendamento</h2>
-            <p class="muted">Confira os dados antes de confirmar.</p>
-          </div>
-
-          <div class="public-summary-grid">
-            <div class="public-summary-item">
-              <span>Serviço</span>
-              <strong id="public-summary-service">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Duração</span>
-              <strong id="public-summary-duration">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Valor</span>
-              <strong id="public-summary-price">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Data</span>
-              <strong id="public-summary-date">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Hora</span>
-              <strong id="public-summary-time">-</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="card public-section">
-          <div class="section-heading">
-            <h2>Informações da empresa</h2>
+            <h2>Dados da empresa</h2>
             <p class="muted">Veja as principais informações antes do atendimento.</p>
           </div>
 
@@ -167,8 +193,15 @@
               <strong id="public-business-whatsapp">-</strong>
             </div>
           </div>
-        </section>
-      </aside>
+
+          <div class="public-company-box">
+            <strong>Sobre a empresa</strong>
+            <p id="public-company-about-text">
+              Confira os dados da empresa e fale diretamente pelo WhatsApp se precisar confirmar algum detalhe.
+            </p>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
 
