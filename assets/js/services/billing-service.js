@@ -261,6 +261,10 @@ export async function createBillingRecordForTenant(tenantId, monthReference, dat
   };
 }
 
+export async function createOrReplaceBillingRecord(tenantId, monthReference, data = {}) {
+  return createBillingRecordForTenant(tenantId, monthReference, data);
+}
+
 export async function updateBillingRecord(recordId, data = {}) {
   if (!recordId) {
     throw new Error('Cobrança inválida para atualização.');
