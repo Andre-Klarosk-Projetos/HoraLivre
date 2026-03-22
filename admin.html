@@ -125,6 +125,24 @@
                 <button class="button" id="quick-generate-billing" type="button">Gerar cobrança do mês</button>
               </div>
             </div>
+
+            <div class="card">
+              <div class="table-wrapper admin-scroll-panel">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Empresa</th>
+                      <th>Plano</th>
+                      <th>Cobrança</th>
+                      <th>Status</th>
+                      <th>Concluídos no mês</th>
+                      <th>Valor do mês</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tenants-table-body"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -139,50 +157,103 @@
 
             <div class="admin-two-columns">
               <div class="card">
-                <div class="stack">
-                  <div class="filter-row">
-                    <label>
-                      <span>Buscar empresa</span>
-                      <input id="company-search-input" type="text" placeholder="Digite o nome da empresa">
-                    </label>
+                <form id="new-company-form" class="stack">
+                  <h4>Nova empresa cliente</h4>
 
-                    <label>
-                      <span>Filtrar por plano</span>
-                      <select id="company-plan-filter">
-                        <option value="">Todos</option>
-                      </select>
-                    </label>
+                  <label>
+                    <span>Nome da empresa</span>
+                    <input id="new-company-business-name" type="text" required>
+                  </label>
 
-                    <label>
-                      <span>Filtrar por status</span>
-                      <select id="company-status-filter">
-                        <option value="">Todos</option>
-                        <option value="trial">Trial</option>
-                        <option value="active">Ativo</option>
-                        <option value="blocked">Bloqueado</option>
-                      </select>
-                    </label>
+                  <label>
+                    <span>Nome do responsável</span>
+                    <input id="new-company-owner-name" type="text" required>
+                  </label>
 
-                    <label>
-                      <span>Filtrar cobrança</span>
-                      <select id="company-billing-filter">
-                        <option value="">Todos</option>
-                        <option value="free">Gratuito</option>
-                        <option value="fixed_plan">Plano fixo</option>
-                        <option value="per_service">Por serviço</option>
-                      </select>
-                    </label>
-                  </div>
+                  <label>
+                    <span>E-mail de acesso</span>
+                    <input id="new-company-email" type="email" required>
+                  </label>
 
-                  <div class="admin-scroll-panel">
-                    <ul class="simple-list" id="companies-list"></ul>
-                  </div>
-                </div>
+                  <label>
+                    <span>Senha inicial</span>
+                    <input id="new-company-password" type="password" required>
+                  </label>
+
+                  <label>
+                    <span>WhatsApp</span>
+                    <input id="new-company-whatsapp" type="text" required>
+                  </label>
+
+                  <label>
+                    <span>Slug público</span>
+                    <input id="new-company-slug" type="text" required>
+                  </label>
+
+                  <label>
+                    <span>Plano</span>
+                    <select id="new-company-plan-id"></select>
+                  </label>
+
+                  <label>
+                    <span>Status</span>
+                    <select id="new-company-status">
+                      <option value="trial">Trial</option>
+                      <option value="active">Ativo</option>
+                      <option value="blocked">Bloqueado</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Modo de cobrança</span>
+                    <select id="new-company-billing-mode">
+                      <option value="free">Gratuito</option>
+                      <option value="fixed_plan">Plano fixo</option>
+                      <option value="per_service">Por serviço</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Preço fixo mensal</span>
+                    <input id="new-company-fixed-price" type="number" min="0" step="0.01">
+                  </label>
+
+                  <label>
+                    <span>Preço por serviço concluído</span>
+                    <input id="new-company-price-per-service" type="number" min="0" step="0.01">
+                  </label>
+
+                  <label>
+                    <span>Página pública habilitada?</span>
+                    <select id="new-company-public-page-enabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Relatórios habilitados?</span>
+                    <select id="new-company-reports-enabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Data final do trial</span>
+                    <input id="new-company-trial-ends-at" type="date">
+                  </label>
+
+                  <button class="button primary" type="submit">Criar empresa cliente</button>
+                  <p id="new-company-feedback" class="feedback"></p>
+                </form>
               </div>
 
               <div class="card">
                 <form id="company-admin-form" class="stack">
                   <input id="company-admin-edit-id" type="hidden">
+
+                  <h4>Editar empresa cliente</h4>
 
                   <label>
                     <span>Nome da empresa</span>
@@ -255,6 +326,48 @@
 
                   <p id="company-admin-feedback" class="feedback"></p>
                 </form>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="stack">
+                <div class="filter-row">
+                  <label>
+                    <span>Buscar empresa</span>
+                    <input id="company-search-input" type="text" placeholder="Digite o nome da empresa">
+                  </label>
+
+                  <label>
+                    <span>Filtrar por plano</span>
+                    <select id="company-plan-filter">
+                      <option value="">Todos</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Filtrar por status</span>
+                    <select id="company-status-filter">
+                      <option value="">Todos</option>
+                      <option value="trial">Trial</option>
+                      <option value="active">Ativo</option>
+                      <option value="blocked">Bloqueado</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Filtrar cobrança</span>
+                    <select id="company-billing-filter">
+                      <option value="">Todos</option>
+                      <option value="free">Gratuito</option>
+                      <option value="fixed_plan">Plano fixo</option>
+                      <option value="per_service">Por serviço</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="admin-scroll-panel">
+                  <ul class="simple-list" id="companies-list"></ul>
+                </div>
               </div>
             </div>
           </div>
