@@ -79,6 +79,7 @@ export async function createTenant(data) {
     billingMode: data.billingMode || 'free',
     fixedMonthlyPrice: Number(data.fixedMonthlyPrice || 0),
     annualPrice: Number(data.annualPrice || 0),
+    annualBillingMonth: Number(data.annualBillingMonth || 0) || null,
     pricePerExecutedService: Number(data.pricePerExecutedService || 0),
     subscriptionStatus: data.subscriptionStatus || 'trial',
     publicPageEnabled: data.publicPageEnabled !== false,
