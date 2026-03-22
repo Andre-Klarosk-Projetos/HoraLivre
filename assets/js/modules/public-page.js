@@ -22,11 +22,49 @@ const state = {
   selectedTime: ''
 };
 
+function activatePublicTab(tabId) {
+  const buttons = document.querySelectorAll('[data-public-tab-target]');
+  const panels = document.querySelectorAll('.public-tab-panel');
+
+  buttons.forEach((button) => {
+    const isActive = button.getAttribute('data-public-tab-target') === tabId;
+    button.classList.toggle('active', isActive);
+  });
+
+  panels.forEach((panel) => {
+    const isActive = panel.id === tabId;
+    panel.hidden = !isActive;
+    panel.classList.toggle('active', isActive);
+  });
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}
+
+function bindPublicTabs() {
+  const buttons = document.querySelectorAll('[data-public-tab-target]');
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const tabId = button.getAttribute('data-public-tab-target');
+
+      if (tabId) {
+        activatePublicTab(tabId);
+      }
+    });
+  });
+}
+
 function setBusinessInfo(tenant) {
   document.getElementById('public-tenant-id').value = tenant.id || '';
   document.getElementById('public-business-name').textContent = tenant.businessName || 'Sua empresa';
   document.getElementById('public-business-description').textContent =
     tenant.description || 'Escolha um serviço, selecione um horário e confirme seu agendamento.';
+
+  document.getElementById('public-company-about-text').textContent =
+    tenant.description || 'Confira os dados da empresa e fale diretamente pelo WhatsApp se precisar confirmar algum detalhe.';
 
   const logoElement = document.getElementById('public-business-logo');
   if (tenant.logoUrl) {
@@ -100,6 +138,7 @@ function renderServices() {
       fillSelectedService();
       renderServices();
       await refreshAvailableSlots();
+      activatePublicTab('public-summary-tab');
     });
   });
 }
@@ -195,21 +234,25 @@ async function handleSubmit(event) {
 
   if (!state.selectedService) {
     showFeedback(feedbackElement, 'Selecione um serviço.', 'error');
+    activatePublicTab('public-services-tab');
     return;
   }
 
   if (!customerName || !customerPhone) {
     showFeedback(feedbackElement, 'Informe seu nome e WhatsApp.', 'error');
+    activatePublicTab('public-booking-tab');
     return;
   }
 
   if (!date) {
     showFeedback(feedbackElement, 'Selecione uma data.', 'error');
+    activatePublicTab('public-booking-tab');
     return;
   }
 
   if (!state.selectedTime) {
     showFeedback(feedbackElement, 'Selecione um horário disponível.', 'error');
+    activatePublicTab('public-booking-tab');
     return;
   }
 
@@ -246,6 +289,7 @@ async function handleSubmit(event) {
     state.selectedTime = '';
     updateSummaryDateTime();
     await refreshAvailableSlots();
+    activatePublicTab('public-summary-tab');
   } catch (error) {
     console.error(error);
     showFeedback(
@@ -274,6 +318,7 @@ async function init() {
   state.tenant = tenant;
   state.services = await listPublicServicesByTenant(tenant.id);
 
+  bindPublicTabs();
   setBusinessInfo(tenant);
   renderServices();
   fillSelectedService();
