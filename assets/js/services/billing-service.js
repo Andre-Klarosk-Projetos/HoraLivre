@@ -16,10 +16,15 @@ export function calculateBillingForPeriod({
   billingMode,
   completedAppointments,
   fixedMonthlyPrice,
+  annualPrice,
   pricePerExecutedService
 }) {
   if (billingMode === 'fixed_plan') {
     return Number(fixedMonthlyPrice || 0);
+  }
+
+  if (billingMode === 'annual_plan') {
+    return Number(annualPrice || 0);
   }
 
   if (billingMode === 'per_service') {
@@ -72,6 +77,7 @@ export async function saveBillingSettingsForTenant(tenantId, data) {
     tenantId,
     billingMode: data.billingMode || 'free',
     fixedMonthlyPrice: Number(data.fixedMonthlyPrice || 0),
+    annualPrice: Number(data.annualPrice || 0),
     pricePerExecutedService: Number(data.pricePerExecutedService || 0),
     updatedAt: new Date().toISOString()
   }, { merge: true });
@@ -87,6 +93,7 @@ export async function createOrReplaceBillingRecord(recordId, data) {
     completedAppointments: Number(data.completedAppointments || 0),
     unitPrice: Number(data.unitPrice || 0),
     fixedAmount: Number(data.fixedAmount || 0),
+    annualAmount: Number(data.annualAmount || 0),
     status: data.status || 'pending',
     updatedAt: new Date().toISOString()
   }, { merge: true });
