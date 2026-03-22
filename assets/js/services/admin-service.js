@@ -1,11 +1,7 @@
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  query,
-  setDoc,
-  where
+  setDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 import { db } from '../config/firebase-init.js';
@@ -34,6 +30,15 @@ function resolveEffectiveFixedPrice(company, billingSettings, plan) {
     billingSettings?.fixedMonthlyPrice ??
     plan?.price ??
     company?.fixedMonthlyPrice ??
+    0
+  );
+}
+
+function resolveEffectiveAnnualPrice(company, billingSettings, plan) {
+  return Number(
+    billingSettings?.annualPrice ??
+    plan?.annualPrice ??
+    company?.annualPrice ??
     0
   );
 }
@@ -117,12 +122,14 @@ export async function getAdminDashboardMetrics() {
 
       const effectiveBillingMode = resolveEffectiveBillingMode(company, billingSettings, plan);
       const effectiveFixedPrice = resolveEffectiveFixedPrice(company, billingSettings, plan);
+      const effectiveAnnualPrice = resolveEffectiveAnnualPrice(company, billingSettings, plan);
       const effectiveUnitPrice = resolveEffectiveUnitPrice(company, billingSettings, plan);
 
       const totalAmount = calculateBillingForPeriod({
         billingMode: effectiveBillingMode,
         completedAppointments,
         fixedMonthlyPrice: effectiveFixedPrice,
+        annualPrice: effectiveAnnualPrice,
         pricePerExecutedService: effectiveUnitPrice
       });
 
