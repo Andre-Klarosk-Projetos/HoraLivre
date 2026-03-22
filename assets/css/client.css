@@ -1,7 +1,15 @@
-.client-summary-grid {
+.client-shell {
+  min-height: 100vh;
+}
+
+.client-sidebar {
+  min-width: 280px;
+}
+
+.client-content {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 18px;
+  gap: 20px;
+  min-width: 0;
 }
 
 .client-two-columns {
@@ -18,9 +26,10 @@
 
 .setup-progress-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  align-items: center;
+  flex-wrap: wrap;
 }
 
 .setup-progress-bar {
@@ -32,8 +41,8 @@
 }
 
 .setup-progress-fill {
-  height: 100%;
   width: 0;
+  height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(37, 99, 235, 1) 0%, rgba(59, 130, 246, 1) 100%);
   transition: width 0.25s ease;
@@ -65,7 +74,7 @@
 
 .setup-checklist-item.pending {
   border-color: rgba(191, 219, 254, 1);
-  background: rgba(239, 246, 255, 0.6);
+  background: rgba(239, 246, 255, 0.7);
 }
 
 .setup-checklist-status {
@@ -102,6 +111,7 @@
 .setup-checklist-content p {
   margin: 0;
   color: #6b7280;
+  line-height: 1.5;
 }
 
 .setup-checklist-badge {
@@ -122,6 +132,11 @@
 .setup-checklist-item.pending .setup-checklist-badge {
   background: rgba(219, 234, 254, 1);
   color: #1d4ed8;
+}
+
+.setup-checklist-actions {
+  display: flex;
+  align-items: center;
 }
 
 .report-status-box {
@@ -145,14 +160,77 @@
   gap: 12px;
 }
 
-@media (max-width: 980px) {
-  .client-summary-grid,
-  .client-two-columns,
+.client-tab-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.client-tab-nav .nav-link {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.tab-panels {
+  display: grid;
+}
+
+.tab-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.tab-panel[hidden] {
+  display: none !important;
+}
+
+#summary-tab .panel-shell,
+#company-tab .panel-shell,
+#services-tab .panel-shell,
+#customers-tab .panel-shell,
+#appointments-tab .panel-shell,
+#reports-tab .panel-shell {
+  display: grid;
+  gap: 18px;
+}
+
+#summary-tab .quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#summary-tab .quick-actions .button {
+  min-width: 180px;
+}
+
+.simple-list li {
+  word-break: break-word;
+}
+
+@media (max-width: 1100px) {
+  .client-two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .business-hours-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .setup-checklist-item {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-checklist-actions {
+    justify-content: flex-start;
+  }
+
   .business-hours-grid {
     grid-template-columns: 1fr;
   }
 
-  .setup-checklist-item {
-    grid-template-columns: 1fr;
+  #summary-tab .quick-actions .button {
+    min-width: 100%;
   }
 }
