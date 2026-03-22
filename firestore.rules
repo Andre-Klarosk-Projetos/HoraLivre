@@ -1,0 +1,144 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
+    }
+
+    function currentTenantUserDocument() {
+      return get(
+        /databases/$(database)/documents/tenantUsers/$(request.auth.uid)
+      );
+    }
+
+    function isTenantUser() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/tenantUsers/$(request.auth.uid));
+    }
+
+    function currentTenantId() {
+      return currentTenantUserDocument().data.tenantId;
+    }
+
+    function belongsToCurrentTenant(resourceTenantId) {
+      return isTenantUser() && resourceTenantId == currentTenantId();
+    }
+
+    function isPublicTenant() {
+      return resource.data.publicPageEnabled == true &&
+        resource.data.isBlocked == false;
+    }
+
+    match /platformAdmins/{adminId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /platformSettings/{documentId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /plans/{planId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /tenants/{tenantId} {
+      allow read: if isAdmin() || belongsToCurrentTenant(resource.data.id != null ? resource.data.id : tenantId);
+      allow create: if isAdmin();
+      allow update: if isAdmin() || belongsToCurrentTenant(tenantId);
+      allow delete: if isAdmin();
+    }
+
+    match /tenantUsers/{tenantUserId} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == resource.data.uid);
+      allow create: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid);
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == resource.data.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /billingSettings/{billingSettingsId} {
+      allow read: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /billingRecords/{billingRecordId} {
+      allow read: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId()) ||
+        (resource.data.isActive == true &&
+         exists(/databases/$(database)/documents/tenants/$(resource.data.tenantId)) &&
+         get(/databases/$(database)/documents/tenants/$(resource.data.tenantId)).data.publicPageEnabled == true &&
+         get(/databases/$(database)/documents/tenants/$(resource.data.tenantId)).data.isBlocked == false);
+
+      allow create: if isAdmin() ||
+        (isTenantUser() && request.resource.data.tenantId == currentTenantId());
+
+      allow update: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId() &&
+         request.resource.data.tenantId == currentTenantId());
+
+      allow delete: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+    }
+
+    match /customers/{customerId} {
+      allow read: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+
+      allow create: if isAdmin() ||
+        (isTenantUser() && request.resource.data.tenantId == currentTenantId()) ||
+        (
+          request.auth == null &&
+          exists(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)) &&
+          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.publicPageEnabled == true &&
+          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.isBlocked == false
+        );
+
+      allow update: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId() &&
+         request.resource.data.tenantId == currentTenantId());
+
+      allow delete: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+
+      allow create: if isAdmin() ||
+        (isTenantUser() && request.resource.data.tenantId == currentTenantId()) ||
+        (
+          request.auth == null &&
+          exists(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)) &&
+          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.publicPageEnabled == true &&
+          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.isBlocked == false &&
+          request.resource.data.source == 'public_page'
+        );
+
+      allow update: if isAdmin() ||
+        (isTenantUser() &&
+         resource.data.tenantId == currentTenantId() &&
+         request.resource.data.tenantId == currentTenantId());
+
+      allow delete: if isAdmin() ||
+        (isTenantUser() && resource.data.tenantId == currentTenantId());
+    }
+  }
+}

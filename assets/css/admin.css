@@ -1,0 +1,36 @@
+.content h2,
+.content h3 {
+  margin-top: 0;
+}
+
+#billing-list li,
+#plans-list li {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-scroll-panel {
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.admin-scroll-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-scroll-panel::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.5);
+  border-radius: 999px;
+}
+
+.admin-scroll-panel::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.7);
+  border-radius: 999px;
+}
+
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

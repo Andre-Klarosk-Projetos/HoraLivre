@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vincular Cliente ao Tenant - HoraLivre</title>
+
+  <link rel="stylesheet" href="./assets/css/global.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+</head>
+<body>
+  <main class="center-page">
+    <section class="card auth-card">
+      <span class="badge">HoraLivre</span>
+      <h1>Vincular usuário cliente</h1>
+      <p class="muted">
+        Esta tela vincula um usuário autenticado do Firebase a um tenant da plataforma.
+      </p>
+
+      <div class="stack">
+        <p><strong>UID autenticado:</strong> <span id="current-uid">-</span></p>
+        <p><strong>E-mail autenticado:</strong> <span id="current-email">-</span></p>
+      </div>
+
+      <form id="tenant-user-form" class="stack top-gap">
+        <label>
+          <span>Tenant ID</span>
+          <input id="tenant-id" type="text" value="tenant_001" required>
+        </label>
+
+        <label>
+          <span>Nome</span>
+          <input id="tenant-user-name" type="text" required>
+        </label>
+
+        <label>
+          <span>E-mail</span>
+          <input id="tenant-user-email" type="email" required>
+        </label>
+
+        <label>
+          <span>Papel</span>
+          <select id="tenant-user-role">
+            <option value="owner">owner</option>
+            <option value="manager">manager</option>
+            <option value="staff">staff</option>
+          </select>
+        </label>
+
+        <button class="button primary" type="submit">
+          Vincular usuário ao tenant
+        </button>
+      </form>
+
+      <p id="tenant-user-feedback" class="feedback"></p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+    import { auth } from './assets/js/config/firebase-init.js';
+    import {
+      createOrUpdateTenantUser,
+      getTenantUserByUid
+    } from './assets/js/services/tenant-user-service.js';
+    import { required, isValidEmail } from './assets/js/utils/validators.js';
+    import { showFeedback, setText } from './assets/js/utils/dom-utils.js';
+
+    const currentUidElementId = 'current-uid';
+    const currentEmailElementId = 'current-email';
+    const form = document.getElementById('tenant-user-form');
+    const feedbackElement = document.getElementById('tenant-user-feedback');
+
+    let authenticatedUser = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        showFeedback(feedbackElement, 'Faça login antes de vincular um usuário cliente.', 'error');
+        return;
+      }
+
+      authenticatedUser = user;
+
+      setText(currentUidElementId, user.uid);
+      setText(currentEmailElementId, user.email || '-');
+
+      const existingTenantUser = await getTenantUserByUid(user.uid);
+
+      if (existingTenantUser) {
+        showFeedback(
+          feedbackElement,
+          `Este usuário já está vinculado ao tenant ${existingTenantUser.tenantId}.`,
+          'success'
+        );
+
+        document.getElementById('tenant-id').value = existingTenantUser.tenantId || '';
+        document.getElementById('tenant-user-name').value = existingTenantUser.name || '';
+        document.getElementById('tenant-user-email').value = existingTenantUser.email || '';
+        document.getElementById('tenant-user-role').value = existingTenantUser.role || 'owner';
+      } else {
+        document.getElementById('tenant-user-email').value = user.email || '';
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      try {
+        if (!authenticatedUser) {
+          showFeedback(feedbackElement, 'Nenhum usuário autenticado.', 'error');
+          return;
+        }
+
+        const tenantId = document.getElementById('tenant-id').value.trim();
+        const name = document.getElementById('tenant-user-name').value.trim();
+        const email = document.getElementById('tenant-user-email').value.trim().toLowerCase();
+        const role = document.getElementById('tenant-user-role').value;
+
+        if (!required(tenantId)) {
+          showFeedback(feedbackElement, 'Tenant ID é obrigatório.', 'error');
+          return;
+        }
+
+        if (!required(name)) {
+          showFeedback(feedbackElement, 'Nome é obrigatório.', 'error');
+          return;
+        }
+
+        if (!required(email) || !isValidEmail(email)) {
+          showFeedback(feedbackElement, 'E-mail inválido.', 'error');
+          return;
+        }
+
+        await createOrUpdateTenantUser({
+          tenantId,
+          uid: authenticatedUser.uid,
+          name,
+          email,
+          role
+        });
+
+        showFeedback(feedbackElement, 'Usuário cliente vinculado com sucesso.', 'success');
+      } catch (error) {
+        console.error(error);
+        showFeedback(
+          feedbackElement,
+          error.message || 'Não foi possível vincular o usuário ao tenant.',
+          'error'
+        );
+      }
+    });
+  </script>
+</body>
+</html>

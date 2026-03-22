@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Página Pública - HoraLivre</title>
+
+  <link rel="stylesheet" href="./assets/css/global.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/public.css">
+</head>
+<body>
+  <main class="public-page">
+    <section class="card public-hero">
+      <span class="badge">HoraLivre</span>
+      <h1 id="public-business-name">Empresa</h1>
+      <p id="public-description" class="muted">Descrição da empresa</p>
+      <p><strong>WhatsApp:</strong> <span id="public-whatsapp">-</span></p>
+      <p><strong>Slug:</strong> <span id="public-slug">-</span></p>
+    </section>
+
+    <section class="grid two-col">
+      <article class="card">
+        <h2>Serviços disponíveis</h2>
+        <div class="public-scroll-panel">
+          <ul class="simple-list" id="public-services-list"></ul>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Agendar</h2>
+
+        <form id="public-booking-form" class="stack">
+          <label>
+            <span>Nome</span>
+            <input id="booking-name" type="text" required placeholder="Nome do cliente final">
+          </label>
+
+          <label>
+            <span>Telefone</span>
+            <input id="booking-phone" type="text" required placeholder="(00) 00000-0000">
+          </label>
+
+          <label>
+            <span>Serviço</span>
+            <select id="booking-service" required></select>
+          </label>
+
+          <label>
+            <span>Data</span>
+            <input id="booking-date" type="date" required>
+          </label>
+
+          <div>
+            <strong>Horários disponíveis</strong>
+            <div id="available-times" class="times-grid top-gap"></div>
+          </div>
+
+          <input id="booking-time" type="hidden" required>
+
+          <button class="button primary" type="submit">Confirmar agendamento</button>
+        </form>
+
+        <div id="booking-feedback" class="feedback"></div>
+      </article>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/js/modules/public-page.js"></script>
+</body>
+</html>

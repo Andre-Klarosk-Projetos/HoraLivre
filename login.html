@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - HoraLivre</title>
+
+  <link rel="stylesheet" href="./assets/css/global.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+</head>
+<body>
+  <main class="center-page">
+    <section class="card auth-card">
+      <span class="badge">HoraLivre</span>
+      <h1>Entrar</h1>
+      <p class="muted">
+        Acesse sua conta para entrar como administrador da plataforma ou cliente da empresa.
+      </p>
+
+      <form id="login-form" class="stack">
+        <label>
+          <span>E-mail</span>
+          <input id="email" type="email" placeholder="voce@empresa.com" required>
+        </label>
+
+        <label>
+          <span>Senha</span>
+          <input id="password" type="password" placeholder="••••••••" required>
+        </label>
+
+        <button class="button primary" type="submit">Entrar</button>
+      </form>
+
+      <p id="auth-message" class="feedback"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/js/modules/auth-ui.js"></script>
+</body>
+</html>

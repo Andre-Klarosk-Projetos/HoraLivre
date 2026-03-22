@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bootstrap do Tenant - HoraLivre</title>
+
+  <link rel="stylesheet" href="./assets/css/global.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+</head>
+<body>
+  <main class="center-page">
+    <section class="card auth-card">
+      <span class="badge">HoraLivre</span>
+      <h1>Bootstrap operacional do tenant</h1>
+      <p class="muted">
+        Este utilitário cria os serviços, clientes finais, agendamentos e cobrança inicial do tenant padrão.
+      </p>
+
+      <div class="stack">
+        <button class="button primary" id="run-tenant-bootstrap-button" type="button">
+          Criar base operacional do tenant
+        </button>
+
+        <pre id="tenant-bootstrap-output" class="card" style="white-space: pre-wrap;"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { bootstrapTenantOperationalData } from './assets/js/services/tenant-bootstrap-service.js';
+
+    const button = document.getElementById('run-tenant-bootstrap-button');
+    const output = document.getElementById('tenant-bootstrap-output');
+
+    button.addEventListener('click', async () => {
+      output.textContent = 'Executando bootstrap operacional do tenant...';
+
+      try {
+        const results = await bootstrapTenantOperationalData();
+
+        const lines = results.map((item) => {
+          return `${item.id} -> ${item.created ? 'criado' : 'já existia'}`;
+        });
+
+        output.textContent = [
+          'Bootstrap operacional concluído com sucesso.',
+          '',
+          ...lines
+        ].join('\n');
+      } catch (error) {
+        console.error(error);
+        output.textContent = `Erro ao executar bootstrap operacional: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

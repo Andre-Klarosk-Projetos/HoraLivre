@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Master - HoraLivre</title>
+
+  <link rel="stylesheet" href="./assets/css/global.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/admin.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <span class="badge">HoraLivre</span>
+        <h1 class="sidebar-title">Admin Master</h1>
+        <p class="sidebar-subtitle">Gestão da plataforma</p>
+      </div>
+
+      <nav class="nav-list">
+        <a class="nav-link active" href="#dashboard">Dashboard</a>
+        <a class="nav-link" href="#tenants">Clientes</a>
+        <a class="nav-link" href="#plans">Planos</a>
+        <a class="nav-link" href="#billing">Cobrança</a>
+        <a class="nav-link" href="#settings">Configurações</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a class="button" href="./index.html">Voltar ao início</a>
+        <button class="button danger" id="logout-button" type="button">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Painel central</p>
+          <h2>Controle do HoraLivre</h2>
+          <p class="muted">
+            Área central do SaaS multiempresa com tenants, planos, trial manual,
+            cobrança fixa ou por serviço concluído e suporte via WhatsApp.
+          </p>
+        </div>
+      </header>
+
+      <section id="dashboard" class="section">
+        <div class="section-heading">
+          <h3>Resumo da plataforma</h3>
+        </div>
+
+        <div class="stats-grid" id="admin-stats">
+          <article class="stat-card">
+            <span class="stat-label">Clientes</span>
+            <strong class="stat-value" id="stat-tenants">0</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Em trial</span>
+            <strong class="stat-value" id="stat-trial">0</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Ativos</span>
+            <strong class="stat-value" id="stat-active">0</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Bloqueados</span>
+            <strong class="stat-value" id="stat-blocked">0</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Concluídos no mês</span>
+            <strong class="stat-value" id="stat-completed">0</strong>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Previsto a receber</span>
+            <strong class="stat-value" id="stat-revenue">R$ 0,00</strong>
+          </article>
+        </div>
+      </section>
+
+      <section id="tenants" class="section">
+        <div class="section-heading">
+          <h3>Clientes da plataforma</h3>
+          <p class="muted">
+            Controle dos seus clientes assinantes, com plano, status, concluídos e valor devido do mês.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="table-wrapper admin-scroll-panel">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Plano</th>
+                  <th>Cobrança</th>
+                  <th>Status</th>
+                  <th>Concluídos no mês</th>
+                  <th>Valor do mês</th>
+                </tr>
+              </thead>
+              <tbody id="tenants-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="plans" class="section">
+        <div class="section-heading">
+          <h3>Planos</h3>
+          <p class="muted">
+            Gestão manual dos planos da plataforma.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="admin-scroll-panel">
+            <ul class="simple-list" id="plans-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="billing" class="section">
+        <div class="section-heading">
+          <h3>Cobrança mensal</h3>
+          <p class="muted">
+            Gere a cobrança oficial do mês atual e acompanhe os registros mensais por tenant.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="billing-actions">
+            <button class="button primary" id="generate-month-billing-button" type="button">
+              Gerar cobrança do mês atual
+            </button>
+            <button class="button" id="reload-billing-button" type="button">
+              Recarregar cobrança
+            </button>
+          </div>
+
+          <p id="billing-feedback" class="feedback"></p>
+
+          <div class="top-gap admin-scroll-panel">
+            <ul class="simple-list" id="billing-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="settings" class="section">
+        <div class="section-heading">
+          <h3>Suporte e configurações</h3>
+        </div>
+
+        <div class="card">
+          <p><strong>WhatsApp de suporte:</strong> <span id="support-whatsapp">-</span></p>
+          <p><strong>Mensagem padrão:</strong> <span id="support-message">-</span></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./assets/js/modules/admin-dashboard.js"></script>
+</body>
+</html>

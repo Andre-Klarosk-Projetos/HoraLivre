@@ -1,0 +1,44 @@
+.public-hero h1 {
+  margin-bottom: 8px;
+}
+
+.public-page .card h2 {
+  margin-top: 0;
+}
+
+.public-scroll-panel {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.times-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.time-button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.time-button.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.time-button.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .times-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
