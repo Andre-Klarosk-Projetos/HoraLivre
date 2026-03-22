@@ -103,6 +103,27 @@ export async function deleteTenantCustomer(customerId) {
   await deleteDoc(doc(db, 'customers', customerId));
 }
 
+export async function updateCustomerStats(customerId, stats = {}) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para atualizar estatísticas.');
+  }
+
+  const reference = doc(db, 'customers', customerId);
+
+  await updateDoc(reference, {
+    ...(stats.totalAppointments !== undefined
+      ? { totalAppointments: Number(stats.totalAppointments || 0) }
+      : {}),
+    ...(stats.completedAppointments !== undefined
+      ? { completedAppointments: Number(stats.completedAppointments || 0) }
+      : {}),
+    ...(stats.lastAppointmentAt !== undefined
+      ? { lastAppointmentAt: stats.lastAppointmentAt || null }
+      : {}),
+    updatedAt: new Date().toISOString()
+  });
+}
+
 export async function saveTenantCustomer(customerId, data) {
   if (customerId) {
     await updateTenantCustomer(customerId, data);
@@ -112,10 +133,7 @@ export async function saveTenantCustomer(customerId, data) {
   return createTenantCustomer(data);
 }
 
-/*
-  Aliases de compatibilidade
-  Mantidos para não quebrar arquivos antigos do projeto.
-*/
+/* aliases de compatibilidade */
 
 export async function listCustomersByTenant(tenantId) {
   return listTenantCustomers(tenantId);
