@@ -3,74 +3,172 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Página Pública - HoraLivre</title>
+  <title>Agendar horário - HoraLivre</title>
 
   <link rel="stylesheet" href="./assets/css/global.css">
   <link rel="stylesheet" href="./assets/css/components.css">
   <link rel="stylesheet" href="./assets/css/public.css">
 </head>
-<body>
-  <main class="public-page">
-    <section class="card public-hero">
-      <div class="public-brand">
-        <img id="public-logo" class="public-logo hidden" alt="Logo da empresa">
-        <div class="public-brand-text">
-          <span class="badge">HoraLivre</span>
-          <h1 id="public-business-name">Empresa</h1>
-          <p id="public-description" class="muted">Descrição da empresa</p>
+<body class="public-page-body">
+  <main class="public-page-shell">
+    <section class="public-hero card">
+      <div class="public-hero-brand">
+        <img id="public-business-logo" class="public-business-logo" alt="Logo da empresa" hidden>
+        <div>
+          <p class="public-eyebrow">Agendamento online</p>
+          <h1 id="public-business-name">Sua empresa</h1>
+          <p id="public-business-description" class="muted">
+            Escolha um serviço, selecione um horário e confirme seu agendamento.
+          </p>
         </div>
       </div>
 
-      <div class="public-company-meta">
-        <p><strong>WhatsApp:</strong> <span id="public-whatsapp">-</span></p>
-        <p><strong>Slug:</strong> <span id="public-slug">-</span></p>
+      <div class="public-hero-actions">
+        <div class="public-business-meta">
+          <span id="public-business-whatsapp-text">WhatsApp não informado</span>
+          <span id="public-business-address-text">Endereço não informado</span>
+        </div>
+        <a id="public-business-whatsapp-link" class="button" href="#" target="_blank" rel="noopener noreferrer">
+          Falar no WhatsApp
+        </a>
       </div>
     </section>
 
-    <section class="grid two-col">
-      <article class="card">
-        <h2>Serviços disponíveis</h2>
-        <div class="public-scroll-panel">
-          <ul class="simple-list" id="public-services-list"></ul>
-        </div>
-      </article>
-
-      <article class="card">
-        <h2>Agendar</h2>
-
-        <form id="public-booking-form" class="stack">
-          <label>
-            <span>Nome</span>
-            <input id="booking-name" type="text" required placeholder="Nome do cliente final">
-          </label>
-
-          <label>
-            <span>Telefone</span>
-            <input id="booking-phone" type="text" required placeholder="(00) 00000-0000">
-          </label>
-
-          <label>
-            <span>Serviço</span>
-            <select id="booking-service" required></select>
-          </label>
-
-          <label>
-            <span>Data</span>
-            <input id="booking-date" type="date" required>
-          </label>
-
-          <div>
-            <strong>Horários disponíveis</strong>
-            <div id="available-times" class="times-grid top-gap"></div>
+    <section class="public-layout">
+      <div class="public-main-column">
+        <section class="card public-section">
+          <div class="section-heading">
+            <h2>Serviços disponíveis</h2>
+            <p class="muted">Escolha o serviço desejado para visualizar os horários livres.</p>
           </div>
 
-          <input id="booking-time" type="hidden" required>
+          <div id="public-services-list" class="public-services-grid"></div>
+        </section>
 
-          <button class="button primary" type="submit">Confirmar agendamento</button>
-        </form>
+        <section class="card public-section">
+          <div class="section-heading">
+            <h2>Agendar agora</h2>
+            <p class="muted">Preencha seus dados e confirme o melhor horário.</p>
+          </div>
 
-        <div id="booking-feedback" class="feedback"></div>
-      </article>
+          <form id="public-booking-form" class="stack">
+            <input id="public-tenant-id" type="hidden">
+            <input id="public-service-id" type="hidden">
+            <input id="public-service-name" type="hidden">
+            <input id="public-service-duration" type="hidden">
+            <input id="public-service-price" type="hidden">
+
+            <div class="public-form-grid">
+              <label>
+                <span>Seu nome</span>
+                <input id="public-customer-name" type="text" placeholder="Digite seu nome completo">
+              </label>
+
+              <label>
+                <span>WhatsApp</span>
+                <input id="public-customer-phone" type="text" placeholder="(00) 00000-0000">
+              </label>
+
+              <label>
+                <span>E-mail</span>
+                <input id="public-customer-email" type="email" placeholder="seu@email.com">
+              </label>
+
+              <label>
+                <span>Data</span>
+                <input id="public-booking-date" type="date">
+              </label>
+            </div>
+
+            <div class="public-service-selected-box" id="public-service-selected-box">
+              <strong>Serviço selecionado</strong>
+              <p id="public-service-selected-text">Nenhum serviço selecionado ainda.</p>
+            </div>
+
+            <div class="public-time-picker-box">
+              <div class="section-heading compact">
+                <h3>Horários disponíveis</h3>
+                <p class="muted">Os horários abaixo respeitam a agenda e o expediente configurado.</p>
+              </div>
+
+              <div id="public-available-slots" class="public-slots-grid"></div>
+            </div>
+
+            <label>
+              <span>Observações</span>
+              <textarea id="public-booking-notes" rows="4" placeholder="Digite alguma observação, se necessário."></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button id="public-booking-submit" class="button primary" type="submit">
+                Confirmar agendamento
+              </button>
+            </div>
+
+            <p id="public-booking-feedback" class="feedback"></p>
+          </form>
+        </section>
+      </div>
+
+      <aside class="public-side-column">
+        <section class="card public-section">
+          <div class="section-heading">
+            <h2>Resumo do agendamento</h2>
+            <p class="muted">Confira os dados antes de confirmar.</p>
+          </div>
+
+          <div class="public-summary-grid">
+            <div class="public-summary-item">
+              <span>Serviço</span>
+              <strong id="public-summary-service">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Duração</span>
+              <strong id="public-summary-duration">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Valor</span>
+              <strong id="public-summary-price">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Data</span>
+              <strong id="public-summary-date">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Hora</span>
+              <strong id="public-summary-time">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="card public-section">
+          <div class="section-heading">
+            <h2>Informações da empresa</h2>
+            <p class="muted">Veja as principais informações antes do atendimento.</p>
+          </div>
+
+          <div class="public-business-info-list">
+            <div class="public-business-info-item">
+              <span>Instagram</span>
+              <strong id="public-business-instagram">-</strong>
+            </div>
+
+            <div class="public-business-info-item">
+              <span>Endereço</span>
+              <strong id="public-business-address">-</strong>
+            </div>
+
+            <div class="public-business-info-item">
+              <span>WhatsApp</span>
+              <strong id="public-business-whatsapp">-</strong>
+            </div>
+          </div>
+        </section>
+      </aside>
     </section>
   </main>
 
