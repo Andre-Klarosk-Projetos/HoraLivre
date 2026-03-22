@@ -16,12 +16,8 @@ import {
   clearElement,
   showFeedback
 } from '../utils/dom-utils.js';
-import {
-  countCompletedAppointments
-} from '../services/appointment-service.js';
-import {
-  getStartAndEndOfCurrentMonth
-} from '../utils/date-utils.js';
+import { countCompletedAppointments } from '../services/appointment-service.js';
+import { getStartAndEndOfCurrentMonth } from '../utils/date-utils.js';
 import {
   generateCurrentMonthBillingForAllTenants,
   renderAdminBillingList,
@@ -44,6 +40,10 @@ import {
   resetCompanyAdminForm,
   bindCompanyFilters
 } from './admin-companies.js';
+import {
+  populateNewCompanyPlans,
+  submitNewCompany
+} from './admin-new-company.js';
 import { listTenants } from '../services/tenant-service.js';
 
 if (!requireAdmin()) {
@@ -52,6 +52,7 @@ if (!requireAdmin()) {
 
 const logoutButton = document.getElementById('logout-button');
 const tenantsTableBody = document.getElementById('tenants-table-body');
+
 const generateMonthBillingButton = document.getElementById('generate-month-billing-button');
 const reloadBillingButton = document.getElementById('reload-billing-button');
 const billingFeedback = document.getElementById('billing-feedback');
@@ -66,6 +67,9 @@ const planCancelEditButton = document.getElementById('plan-cancel-edit-button');
 const companyAdminForm = document.getElementById('company-admin-form');
 const companyAdminFeedback = document.getElementById('company-admin-feedback');
 const companyAdminCancelEditButton = document.getElementById('company-admin-cancel-edit-button');
+
+const newCompanyForm = document.getElementById('new-company-form');
+const newCompanyFeedback = document.getElementById('new-company-feedback');
 
 function resolveEffectiveBillingMode(company, billingSettings, plan) {
   return (
@@ -155,8 +159,10 @@ planForm?.addEventListener('submit', async (event) => {
     if (success) {
       await renderAdminPlansList();
       await populateCompanyPlanFilters();
+      await populateNewCompanyPlans();
       await renderAdminCompaniesList();
       await loadCompaniesTable();
+      await loadMetrics();
     }
   } catch (error) {
     console.error(error);
@@ -174,10 +180,35 @@ companyAdminForm?.addEventListener('submit', async (event) => {
       await renderAdminCompaniesList();
       await loadCompaniesTable();
       await loadMetrics();
+      await renderAdminBillingList();
     }
   } catch (error) {
     console.error(error);
     showFeedback(companyAdminFeedback, error.message || 'Não foi possível salvar a empresa.', 'error');
+  }
+});
+
+newCompanyForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    const success = await submitNewCompany(newCompanyFeedback);
+
+    if (success) {
+      newCompanyForm.reset();
+      await populateNewCompanyPlans();
+      await populateCompanyPlanFilters();
+      await renderAdminCompaniesList();
+      await loadCompaniesTable();
+      await loadMetrics();
+    }
+  } catch (error) {
+    console.error(error);
+    showFeedback(
+      newCompanyFeedback,
+      error.message || 'Não foi possível criar a empresa cliente.',
+      'error'
+    );
   }
 });
 
@@ -224,7 +255,7 @@ function bindQuickActions() {
     activateAdminTab('billing-tab');
   });
 
-  document.getElementById('quick-generate-billing')?.addEventListener('click', async () => {
+  document.getElementById('quick-generate-billing')?.addEventListener('click', () => {
     generateMonthBillingButton?.click();
     activateAdminTab('billing-tab');
   });
@@ -362,6 +393,7 @@ async function init() {
     bindAdminTabs();
     bindQuickActions();
     bindBillingFilters();
+
     bindCompanyFilters(() => {
       renderAdminCompaniesList();
     });
@@ -369,7 +401,8 @@ async function init() {
     await Promise.all([
       loadMetrics(),
       loadSettings(),
-      populateCompanyPlanFilters()
+      populateCompanyPlanFilters(),
+      populateNewCompanyPlans()
     ]);
 
     await loadCompaniesTable();
