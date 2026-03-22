@@ -5,8 +5,7 @@ import {
   getPlatformSettings,
   savePlatformSettings
 } from '../services/admin-service.js';
-import { listTenants } from '../services/tenant-service.js';
-import { getPlanById } from '../services/plan-service.js';
+import { getPlanById, listPlans } from '../services/plan-service.js';
 import {
   formatBillingMode,
   formatCurrencyBRL,
@@ -25,18 +24,27 @@ import {
 } from '../utils/date-utils.js';
 import {
   generateCurrentMonthBillingForAllTenants,
-  renderAdminBillingList
+  renderAdminBillingList,
+  bindBillingFilters
 } from './admin-billing.js';
 import {
   getBillingSettingsByTenant,
   calculateBillingForPeriod
 } from '../services/billing-service.js';
-import { bindAdminTabs } from './admin-tabs.js';
+import { bindAdminTabs, activateAdminTab } from './admin-tabs.js';
 import {
   renderAdminPlansList,
   submitSavePlan,
   resetPlanForm
 } from './admin-plans.js';
+import {
+  populateCompanyPlanFilters,
+  renderAdminCompaniesList,
+  submitSaveCompanyAdmin,
+  resetCompanyAdminForm,
+  bindCompanyFilters
+} from './admin-companies.js';
+import { listTenants } from '../services/tenant-service.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -55,29 +63,33 @@ const planForm = document.getElementById('plan-form');
 const planFeedback = document.getElementById('plan-feedback');
 const planCancelEditButton = document.getElementById('plan-cancel-edit-button');
 
-function resolveEffectiveBillingMode(tenant, billingSettings, plan) {
+const companyAdminForm = document.getElementById('company-admin-form');
+const companyAdminFeedback = document.getElementById('company-admin-feedback');
+const companyAdminCancelEditButton = document.getElementById('company-admin-cancel-edit-button');
+
+function resolveEffectiveBillingMode(company, billingSettings, plan) {
   return (
     billingSettings?.billingMode ||
-    tenant?.billingMode ||
+    company?.billingMode ||
     plan?.billingMode ||
     'free'
   );
 }
 
-function resolveEffectiveFixedPrice(tenant, billingSettings, plan) {
+function resolveEffectiveFixedPrice(company, billingSettings, plan) {
   return Number(
     billingSettings?.fixedMonthlyPrice ??
     plan?.price ??
-    tenant?.fixedMonthlyPrice ??
+    company?.fixedMonthlyPrice ??
     0
   );
 }
 
-function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
+function resolveEffectiveUnitPrice(company, billingSettings, plan) {
   return Number(
     billingSettings?.pricePerExecutedService ??
     plan?.pricePerExecutedService ??
-    tenant?.pricePerExecutedService ??
+    company?.pricePerExecutedService ??
     0
   );
 }
@@ -93,7 +105,7 @@ generateMonthBillingButton?.addEventListener('click', async () => {
 
     await generateCurrentMonthBillingForAllTenants();
     await loadMetrics();
-    await loadTenantsTable();
+    await loadCompaniesTable();
     await renderAdminBillingList();
 
     showFeedback(billingFeedback, 'Cobrança do mês atual gerada com sucesso.', 'success');
@@ -110,7 +122,7 @@ generateMonthBillingButton?.addEventListener('click', async () => {
 reloadBillingButton?.addEventListener('click', async () => {
   try {
     await loadMetrics();
-    await loadTenantsTable();
+    await loadCompaniesTable();
     await renderAdminBillingList();
 
     showFeedback(billingFeedback, 'Cobrança recarregada com sucesso.', 'success');
@@ -129,6 +141,11 @@ planCancelEditButton?.addEventListener('click', () => {
   showFeedback(planFeedback, 'Edição de plano cancelada.', 'success');
 });
 
+companyAdminCancelEditButton?.addEventListener('click', () => {
+  resetCompanyAdminForm();
+  showFeedback(companyAdminFeedback, 'Edição da empresa cancelada.', 'success');
+});
+
 planForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -137,11 +154,30 @@ planForm?.addEventListener('submit', async (event) => {
 
     if (success) {
       await renderAdminPlansList();
-      await loadTenantsTable();
+      await populateCompanyPlanFilters();
+      await renderAdminCompaniesList();
+      await loadCompaniesTable();
     }
   } catch (error) {
     console.error(error);
     showFeedback(planFeedback, error.message || 'Não foi possível salvar o plano.', 'error');
+  }
+});
+
+companyAdminForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  try {
+    const success = await submitSaveCompanyAdmin(companyAdminFeedback);
+
+    if (success) {
+      await renderAdminCompaniesList();
+      await loadCompaniesTable();
+      await loadMetrics();
+    }
+  } catch (error) {
+    console.error(error);
+    showFeedback(companyAdminFeedback, error.message || 'Não foi possível salvar a empresa.', 'error');
   }
 });
 
@@ -175,6 +211,25 @@ platformSettingsForm?.addEventListener('submit', async (event) => {
   }
 });
 
+function bindQuickActions() {
+  document.getElementById('quick-open-companies')?.addEventListener('click', () => {
+    activateAdminTab('companies-tab');
+  });
+
+  document.getElementById('quick-open-plans')?.addEventListener('click', () => {
+    activateAdminTab('plans-tab');
+  });
+
+  document.getElementById('quick-open-billing')?.addEventListener('click', () => {
+    activateAdminTab('billing-tab');
+  });
+
+  document.getElementById('quick-generate-billing')?.addEventListener('click', async () => {
+    generateMonthBillingButton?.click();
+    activateAdminTab('billing-tab');
+  });
+}
+
 async function loadMetrics() {
   const metrics = await getAdminDashboardMetrics();
 
@@ -206,44 +261,44 @@ async function loadSettings() {
   document.getElementById('settings-billing-message-template').value = settings?.billingMessageTemplate || '';
 }
 
-async function loadTenantsTable() {
-  const tenants = await listTenants();
+async function loadCompaniesTable() {
+  const companies = await listTenants();
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
 
   clearElement(tenantsTableBody);
 
-  if (tenants.length === 0) {
+  if (companies.length === 0) {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td colspan="6">Nenhum cliente da plataforma cadastrado ainda.</td>
+      <td colspan="6">Nenhuma empresa cliente cadastrada ainda.</td>
     `;
     tenantsTableBody.appendChild(row);
     return;
   }
 
-  for (const tenant of tenants) {
-    const plan = tenant.planId ? await getPlanById(tenant.planId) : null;
-    const billingSettings = await getBillingSettingsByTenant(tenant.id);
+  for (const company of companies) {
+    const plan = company.planId ? await getPlanById(company.planId) : null;
+    const billingSettings = await getBillingSettingsByTenant(company.id);
     const completedAppointments = await countCompletedAppointments(
-      tenant.id,
+      company.id,
       startIso,
       endIso
     );
 
     const effectiveBillingMode = resolveEffectiveBillingMode(
-      tenant,
+      company,
       billingSettings,
       plan
     );
 
     const effectiveFixedPrice = resolveEffectiveFixedPrice(
-      tenant,
+      company,
       billingSettings,
       plan
     );
 
     const effectiveUnitPrice = resolveEffectiveUnitPrice(
-      tenant,
+      company,
       billingSettings,
       plan
     );
@@ -258,10 +313,10 @@ async function loadTenantsTable() {
     const row = document.createElement('tr');
 
     row.innerHTML = `
-      <td>${tenant.businessName || '-'}</td>
-      <td>${plan?.name || tenant.planId || '-'}</td>
+      <td>${company.businessName || '-'}</td>
+      <td>${plan?.name || company.planId || '-'}</td>
       <td>${formatBillingMode(effectiveBillingMode)}</td>
-      <td>${formatSubscriptionStatus(tenant.subscriptionStatus)}</td>
+      <td>${formatSubscriptionStatus(company.subscriptionStatus)}</td>
       <td>${completedAppointments}</td>
       <td>${formatCurrencyBRL(totalAmount)}</td>
     `;
@@ -273,13 +328,20 @@ async function loadTenantsTable() {
 async function init() {
   try {
     bindAdminTabs();
+    bindQuickActions();
+    bindBillingFilters();
+    bindCompanyFilters(() => {
+      renderAdminCompaniesList();
+    });
 
     await Promise.all([
       loadMetrics(),
-      loadSettings()
+      loadSettings(),
+      populateCompanyPlanFilters()
     ]);
 
-    await loadTenantsTable();
+    await loadCompaniesTable();
+    await renderAdminCompaniesList();
     await renderAdminPlansList();
     await renderAdminBillingList();
   } catch (error) {
