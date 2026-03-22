@@ -34,6 +34,15 @@
   border: none;
   background: transparent;
   cursor: pointer;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font: inherit;
+}
+
+.client-tab-nav .nav-link.active {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .mobile-tab-strip {
@@ -41,7 +50,7 @@
 }
 
 .tab-panels {
-  display: grid;
+  display: block;
 }
 
 .tab-panel {
