@@ -52,543 +52,553 @@
     </aside>
 
     <main class="content client-content">
-      <header class="page-header">
+      <header class="page-header client-page-header">
         <div>
           <p class="eyebrow">Painel operacional</p>
           <h2 id="tenant-business-name-header">Minha empresa</h2>
           <p class="muted">
-            Organize sua empresa, seus serviços, seus clientes e seus agendamentos.
+            Organize serviços, clientes, agenda, horários e acompanhe sua operação.
           </p>
         </div>
       </header>
 
-      <div class="tab-panels">
-        <section id="summary-tab" class="section tab-panel active">
-          <div class="panel-shell">
-            <div class="card">
+      <div class="client-content-body">
+        <div class="tab-panels">
+          <section id="summary-tab" class="section tab-panel active">
+            <div class="panel-shell">
               <div class="section-heading">
-                <h3>Comece por aqui</h3>
+                <h3>Resumo</h3>
                 <p class="muted">
-                  Complete os itens abaixo para deixar sua empresa pronta para uso.
+                  Veja rapidamente o que falta configurar e os principais números da sua empresa.
                 </p>
-              </div>
-
-              <div class="setup-progress-box">
-                <div class="setup-progress-header">
-                  <strong>Progresso da implantação</strong>
-                  <span id="setup-progress-text">0 de 5 concluídos</span>
-                </div>
-                <div class="setup-progress-bar">
-                  <div class="setup-progress-fill" id="setup-progress-fill"></div>
-                </div>
-              </div>
-
-              <ul class="setup-checklist" id="setup-checklist"></ul>
-            </div>
-
-            <div class="stats-grid">
-              <article class="stat-card">
-                <span class="stat-label">Serviços</span>
-                <strong class="stat-value" id="summary-services-count">0</strong>
-              </article>
-
-              <article class="stat-card">
-                <span class="stat-label">Clientes</span>
-                <strong class="stat-value" id="summary-customers-count">0</strong>
-              </article>
-
-              <article class="stat-card">
-                <span class="stat-label">Agendamentos no período</span>
-                <strong class="stat-value" id="summary-appointments-count">0</strong>
-              </article>
-
-              <article class="stat-card">
-                <span class="stat-label">Concluídos no período</span>
-                <strong class="stat-value" id="summary-completed-count">0</strong>
-              </article>
-            </div>
-
-            <div class="card">
-              <div class="section-heading">
-                <h3>Atalhos rápidos</h3>
-                <p class="muted">Use estes botões para acelerar sua configuração e operação.</p>
-              </div>
-
-              <div class="quick-actions">
-                <button class="button primary" type="button" data-client-tab-target="services-tab">
-                  Cadastrar serviço
-                </button>
-                <button class="button" type="button" data-client-tab-target="customers-tab">
-                  Cadastrar cliente
-                </button>
-                <button class="button" type="button" data-client-tab-target="appointments-tab">
-                  Ver agenda
-                </button>
-                <button class="button" type="button" data-client-tab-target="company-tab">
-                  Configurar empresa
-                </button>
-              </div>
-
-              <p id="client-summary-feedback" class="feedback"></p>
-            </div>
-          </div>
-        </section>
-
-        <section id="company-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Minha empresa</h3>
-              <p class="muted">
-                Configure os dados principais da empresa e o funcionamento do atendimento.
-              </p>
-            </div>
-
-            <div class="client-two-columns">
-              <div class="card">
-                <form id="tenant-company-form" class="stack">
-                  <label>
-                    <span>Nome da empresa</span>
-                    <input id="tenant-business-name" type="text">
-                  </label>
-
-                  <label>
-                    <span>Slug público</span>
-                    <input id="tenant-slug" type="text">
-                  </label>
-
-                  <label>
-                    <span>WhatsApp</span>
-                    <input id="tenant-whatsapp" type="text">
-                  </label>
-
-                  <label>
-                    <span>Descrição</span>
-                    <textarea id="tenant-description" rows="4"></textarea>
-                  </label>
-
-                  <label>
-                    <span>Logo (URL)</span>
-                    <input id="tenant-logo-url" type="text">
-                  </label>
-
-                  <label>
-                    <span>Instagram</span>
-                    <input id="tenant-instagram" type="text">
-                  </label>
-
-                  <label>
-                    <span>Endereço</span>
-                    <input id="tenant-address" type="text">
-                  </label>
-
-                  <label>
-                    <span>Página pública habilitada?</span>
-                    <select id="tenant-public-page-enabled">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar dados da empresa</button>
-                  </div>
-
-                  <p id="tenant-company-feedback" class="feedback"></p>
-                </form>
               </div>
 
               <div class="card">
                 <div class="section-heading">
-                  <h3>Horários de atendimento</h3>
+                  <h3>Checklist de implantação</h3>
                   <p class="muted">
-                    Defina os dias e horários em que sua empresa atende.
+                    Complete os itens abaixo para deixar sua empresa pronta para uso.
                   </p>
                 </div>
 
-                <form id="tenant-business-hours-form" class="stack">
-                  <div class="business-hours-grid">
-                    <label>
-                      <span>Domingo</span>
-                      <select id="business-hours-sunday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início domingo</span>
-                      <input id="business-hours-sunday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim domingo</span>
-                      <input id="business-hours-sunday-end" type="time">
-                    </label>
-
-                    <label>
-                      <span>Segunda</span>
-                      <select id="business-hours-monday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início segunda</span>
-                      <input id="business-hours-monday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim segunda</span>
-                      <input id="business-hours-monday-end" type="time">
-                    </label>
-
-                    <label>
-                      <span>Terça</span>
-                      <select id="business-hours-tuesday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início terça</span>
-                      <input id="business-hours-tuesday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim terça</span>
-                      <input id="business-hours-tuesday-end" type="time">
-                    </label>
-
-                    <label>
-                      <span>Quarta</span>
-                      <select id="business-hours-wednesday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início quarta</span>
-                      <input id="business-hours-wednesday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim quarta</span>
-                      <input id="business-hours-wednesday-end" type="time">
-                    </label>
-
-                    <label>
-                      <span>Quinta</span>
-                      <select id="business-hours-thursday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início quinta</span>
-                      <input id="business-hours-thursday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim quinta</span>
-                      <input id="business-hours-thursday-end" type="time">
-                    </label>
-
-                    <label>
-                      <span>Sexta</span>
-                      <select id="business-hours-friday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início sexta</span>
-                      <input id="business-hours-friday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim sexta</span>
-                      <input id="business-hours-friday-end" type="time">
-                    </label>
-
-                    <label>
-                      <span>Sábado</span>
-                      <select id="business-hours-saturday-enabled">
-                        <option value="false">Fechado</option>
-                        <option value="true">Aberto</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Início sábado</span>
-                      <input id="business-hours-saturday-start" type="time">
-                    </label>
-                    <label>
-                      <span>Fim sábado</span>
-                      <input id="business-hours-saturday-end" type="time">
-                    </label>
+                <div class="setup-progress-box">
+                  <div class="setup-progress-header">
+                    <strong>Progresso da implantação</strong>
+                    <span id="setup-progress-text">0 de 5 concluídos</span>
                   </div>
 
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar horários</button>
-                  </div>
-
-                  <p id="tenant-business-hours-feedback" class="feedback"></p>
-                </form>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="services-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Serviços</h3>
-              <p class="muted">Cadastre e edite os serviços da sua empresa.</p>
-            </div>
-
-            <div class="client-two-columns">
-              <div class="card">
-                <form id="service-form" class="stack">
-                  <input id="service-edit-id" type="hidden">
-
-                  <label>
-                    <span>Nome do serviço</span>
-                    <input id="service-name" type="text">
-                  </label>
-
-                  <label>
-                    <span>Duração em minutos</span>
-                    <input id="service-duration" type="number" min="1" step="1">
-                  </label>
-
-                  <label>
-                    <span>Preço</span>
-                    <input id="service-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Descrição</span>
-                    <textarea id="service-description" rows="4"></textarea>
-                  </label>
-
-                  <label>
-                    <span>Ativo?</span>
-                    <select id="service-active">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar serviço</button>
-                    <button class="button" id="service-cancel-edit-button" type="button">Cancelar edição</button>
-                  </div>
-
-                  <p id="service-feedback" class="feedback"></p>
-                </form>
-              </div>
-
-              <div class="card">
-                <div class="admin-scroll-panel">
-                  <ul class="simple-list" id="services-list"></ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="customers-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Clientes</h3>
-              <p class="muted">Cadastre e edite seus clientes finais.</p>
-            </div>
-
-            <div class="client-two-columns">
-              <div class="card">
-                <form id="customer-form" class="stack">
-                  <input id="customer-edit-id" type="hidden">
-
-                  <label>
-                    <span>Nome</span>
-                    <input id="customer-name" type="text">
-                  </label>
-
-                  <label>
-                    <span>WhatsApp</span>
-                    <input id="customer-phone" type="text">
-                  </label>
-
-                  <label>
-                    <span>E-mail</span>
-                    <input id="customer-email" type="email">
-                  </label>
-
-                  <label>
-                    <span>Observações</span>
-                    <textarea id="customer-notes" rows="4"></textarea>
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar cliente</button>
-                    <button class="button" id="customer-cancel-edit-button" type="button">Cancelar edição</button>
-                  </div>
-
-                  <p id="customer-feedback" class="feedback"></p>
-                </form>
-              </div>
-
-              <div class="card">
-                <div class="admin-scroll-panel">
-                  <ul class="simple-list" id="customers-list"></ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="appointments-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Agenda</h3>
-              <p class="muted">Crie, filtre e gerencie seus agendamentos.</p>
-            </div>
-
-            <div class="client-two-columns">
-              <div class="card">
-                <form id="appointment-form" class="stack">
-                  <input id="appointment-edit-id" type="hidden">
-                  <input name="customerId" type="hidden">
-                  <input name="customerName" type="hidden">
-                  <input name="serviceId" type="hidden">
-                  <input name="serviceName" type="hidden">
-
-                  <label>
-                    <span>Cliente</span>
-                    <select id="appointment-customer-select"></select>
-                  </label>
-
-                  <label>
-                    <span>Serviço</span>
-                    <select id="appointment-service-select"></select>
-                  </label>
-
-                  <label>
-                    <span>Data</span>
-                    <input name="date" type="date">
-                  </label>
-
-                  <label>
-                    <span>Hora</span>
-                    <input name="time" type="time">
-                  </label>
-
-                  <label>
-                    <span>Duração (minutos)</span>
-                    <input name="durationMinutes" type="number" min="1" step="1">
-                  </label>
-
-                  <label>
-                    <span>Preço</span>
-                    <input name="price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Status</span>
-                    <select name="status">
-                      <option value="scheduled">Agendado</option>
-                      <option value="confirmed">Confirmado</option>
-                      <option value="completed">Concluído</option>
-                      <option value="canceled">Cancelado</option>
-                      <option value="no_show">Faltou</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Observações</span>
-                    <textarea name="notes" rows="4"></textarea>
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar agendamento</button>
-                    <button class="button" id="appointment-cancel-edit-button" type="button">Cancelar edição</button>
-                  </div>
-
-                  <p id="appointment-feedback" class="feedback"></p>
-                </form>
-              </div>
-
-              <div class="card">
-                <div class="filter-row">
-                  <label>
-                    <span>Início</span>
-                    <input id="appointments-filter-start" type="date">
-                  </label>
-
-                  <label>
-                    <span>Fim</span>
-                    <input id="appointments-filter-end" type="date">
-                  </label>
-
-                  <div class="filter-actions">
-                    <button class="button" id="appointments-filter-button" type="button">Filtrar</button>
-                    <button class="button" id="appointments-filter-reset-button" type="button">Limpar</button>
+                  <div class="setup-progress-bar">
+                    <div class="setup-progress-fill" id="setup-progress-fill"></div>
                   </div>
                 </div>
 
-                <div class="admin-scroll-panel">
-                  <ul class="simple-list" id="appointments-list"></ul>
+                <ul class="setup-checklist" id="setup-checklist"></ul>
+              </div>
+
+              <div class="stats-grid">
+                <article class="stat-card">
+                  <span class="stat-label">Serviços</span>
+                  <strong class="stat-value" id="summary-services-count">0</strong>
+                </article>
+
+                <article class="stat-card">
+                  <span class="stat-label">Clientes</span>
+                  <strong class="stat-value" id="summary-customers-count">0</strong>
+                </article>
+
+                <article class="stat-card">
+                  <span class="stat-label">Agendamentos no período</span>
+                  <strong class="stat-value" id="summary-appointments-count">0</strong>
+                </article>
+
+                <article class="stat-card">
+                  <span class="stat-label">Concluídos no período</span>
+                  <strong class="stat-value" id="summary-completed-count">0</strong>
+                </article>
+              </div>
+
+              <div class="card">
+                <div class="section-heading">
+                  <h3>Atalhos rápidos</h3>
+                  <p class="muted">Acesse as áreas principais do seu dia a dia.</p>
+                </div>
+
+                <div class="quick-actions client-quick-actions">
+                  <button class="button primary" type="button" data-client-tab-target="services-tab">
+                    Cadastrar serviço
+                  </button>
+                  <button class="button" type="button" data-client-tab-target="customers-tab">
+                    Cadastrar cliente
+                  </button>
+                  <button class="button" type="button" data-client-tab-target="appointments-tab">
+                    Ver agenda
+                  </button>
+                  <button class="button" type="button" data-client-tab-target="company-tab">
+                    Configurar empresa
+                  </button>
+                </div>
+
+                <p id="client-summary-feedback" class="feedback"></p>
+              </div>
+            </div>
+          </section>
+
+          <section id="company-tab" class="section tab-panel" hidden>
+            <div class="panel-shell">
+              <div class="section-heading">
+                <h3>Minha empresa</h3>
+                <p class="muted">
+                  Configure os dados principais da empresa e o funcionamento do atendimento.
+                </p>
+              </div>
+
+              <div class="client-two-columns">
+                <div class="card">
+                  <form id="tenant-company-form" class="stack">
+                    <label>
+                      <span>Nome da empresa</span>
+                      <input id="tenant-business-name" type="text">
+                    </label>
+
+                    <label>
+                      <span>Slug público</span>
+                      <input id="tenant-slug" type="text">
+                    </label>
+
+                    <label>
+                      <span>WhatsApp</span>
+                      <input id="tenant-whatsapp" type="text">
+                    </label>
+
+                    <label>
+                      <span>Descrição</span>
+                      <textarea id="tenant-description" rows="4"></textarea>
+                    </label>
+
+                    <label>
+                      <span>Logo (URL)</span>
+                      <input id="tenant-logo-url" type="text">
+                    </label>
+
+                    <label>
+                      <span>Instagram</span>
+                      <input id="tenant-instagram" type="text">
+                    </label>
+
+                    <label>
+                      <span>Endereço</span>
+                      <input id="tenant-address" type="text">
+                    </label>
+
+                    <label>
+                      <span>Página pública habilitada?</span>
+                      <select id="tenant-public-page-enabled">
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
+                      </select>
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="button primary" type="submit">Salvar dados da empresa</button>
+                    </div>
+
+                    <p id="tenant-company-feedback" class="feedback"></p>
+                  </form>
+                </div>
+
+                <div class="card">
+                  <div class="section-heading">
+                    <h3>Horários de atendimento</h3>
+                    <p class="muted">
+                      Defina os dias e horários em que sua empresa atende.
+                    </p>
+                  </div>
+
+                  <form id="tenant-business-hours-form" class="stack">
+                    <div class="business-hours-grid">
+                      <label>
+                        <span>Domingo</span>
+                        <select id="business-hours-sunday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início domingo</span>
+                        <input id="business-hours-sunday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim domingo</span>
+                        <input id="business-hours-sunday-end" type="time">
+                      </label>
+
+                      <label>
+                        <span>Segunda</span>
+                        <select id="business-hours-monday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início segunda</span>
+                        <input id="business-hours-monday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim segunda</span>
+                        <input id="business-hours-monday-end" type="time">
+                      </label>
+
+                      <label>
+                        <span>Terça</span>
+                        <select id="business-hours-tuesday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início terça</span>
+                        <input id="business-hours-tuesday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim terça</span>
+                        <input id="business-hours-tuesday-end" type="time">
+                      </label>
+
+                      <label>
+                        <span>Quarta</span>
+                        <select id="business-hours-wednesday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início quarta</span>
+                        <input id="business-hours-wednesday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim quarta</span>
+                        <input id="business-hours-wednesday-end" type="time">
+                      </label>
+
+                      <label>
+                        <span>Quinta</span>
+                        <select id="business-hours-thursday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início quinta</span>
+                        <input id="business-hours-thursday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim quinta</span>
+                        <input id="business-hours-thursday-end" type="time">
+                      </label>
+
+                      <label>
+                        <span>Sexta</span>
+                        <select id="business-hours-friday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início sexta</span>
+                        <input id="business-hours-friday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim sexta</span>
+                        <input id="business-hours-friday-end" type="time">
+                      </label>
+
+                      <label>
+                        <span>Sábado</span>
+                        <select id="business-hours-saturday-enabled">
+                          <option value="false">Fechado</option>
+                          <option value="true">Aberto</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Início sábado</span>
+                        <input id="business-hours-saturday-start" type="time">
+                      </label>
+                      <label>
+                        <span>Fim sábado</span>
+                        <input id="business-hours-saturday-end" type="time">
+                      </label>
+                    </div>
+
+                    <div class="form-actions">
+                      <button class="button primary" type="submit">Salvar horários</button>
+                    </div>
+
+                    <p id="tenant-business-hours-feedback" class="feedback"></p>
+                  </form>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section id="reports-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Relatórios</h3>
-              <p class="muted">Acompanhe concluídos e valores do período.</p>
+          <section id="services-tab" class="section tab-panel" hidden>
+            <div class="panel-shell">
+              <div class="section-heading">
+                <h3>Serviços</h3>
+                <p class="muted">Cadastre e edite os serviços da sua empresa.</p>
+              </div>
+
+              <div class="client-two-columns">
+                <div class="card">
+                  <form id="service-form" class="stack">
+                    <input id="service-edit-id" type="hidden">
+
+                    <label>
+                      <span>Nome do serviço</span>
+                      <input id="service-name" type="text">
+                    </label>
+
+                    <label>
+                      <span>Duração em minutos</span>
+                      <input id="service-duration" type="number" min="1" step="1">
+                    </label>
+
+                    <label>
+                      <span>Preço</span>
+                      <input id="service-price" type="number" min="0" step="0.01">
+                    </label>
+
+                    <label>
+                      <span>Descrição</span>
+                      <textarea id="service-description" rows="4"></textarea>
+                    </label>
+
+                    <label>
+                      <span>Ativo?</span>
+                      <select id="service-active">
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
+                      </select>
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="button primary" type="submit">Salvar serviço</button>
+                      <button class="button" id="service-cancel-edit-button" type="button">Cancelar edição</button>
+                    </div>
+
+                    <p id="service-feedback" class="feedback"></p>
+                  </form>
+                </div>
+
+                <div class="card">
+                  <div class="admin-scroll-panel">
+                    <ul class="simple-list" id="services-list"></ul>
+                  </div>
+                </div>
+              </div>
             </div>
+          </section>
 
-            <div class="client-two-columns">
-              <div class="card">
-                <div class="filter-row">
-                  <label>
-                    <span>Início</span>
-                    <input id="report-filter-start" type="date">
-                  </label>
+          <section id="customers-tab" class="section tab-panel" hidden>
+            <div class="panel-shell">
+              <div class="section-heading">
+                <h3>Clientes</h3>
+                <p class="muted">Cadastre e edite seus clientes finais.</p>
+              </div>
 
-                  <label>
-                    <span>Fim</span>
-                    <input id="report-filter-end" type="date">
-                  </label>
+              <div class="client-two-columns">
+                <div class="card">
+                  <form id="customer-form" class="stack">
+                    <input id="customer-edit-id" type="hidden">
 
-                  <div class="filter-actions">
-                    <button class="button" id="report-filter-button" type="button">Filtrar</button>
-                    <button class="button" id="report-filter-reset-button" type="button">Limpar</button>
+                    <label>
+                      <span>Nome</span>
+                      <input id="customer-name" type="text">
+                    </label>
+
+                    <label>
+                      <span>WhatsApp</span>
+                      <input id="customer-phone" type="text">
+                    </label>
+
+                    <label>
+                      <span>E-mail</span>
+                      <input id="customer-email" type="email">
+                    </label>
+
+                    <label>
+                      <span>Observações</span>
+                      <textarea id="customer-notes" rows="4"></textarea>
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="button primary" type="submit">Salvar cliente</button>
+                      <button class="button" id="customer-cancel-edit-button" type="button">Cancelar edição</button>
+                    </div>
+
+                    <p id="customer-feedback" class="feedback"></p>
+                  </form>
+                </div>
+
+                <div class="card">
+                  <div class="admin-scroll-panel">
+                    <ul class="simple-list" id="customers-list"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="appointments-tab" class="section tab-panel" hidden>
+            <div class="panel-shell">
+              <div class="section-heading">
+                <h3>Agenda</h3>
+                <p class="muted">Crie, filtre e gerencie seus agendamentos.</p>
+              </div>
+
+              <div class="client-two-columns">
+                <div class="card">
+                  <form id="appointment-form" class="stack">
+                    <input id="appointment-edit-id" type="hidden">
+                    <input name="customerId" type="hidden">
+                    <input name="customerName" type="hidden">
+                    <input name="serviceId" type="hidden">
+                    <input name="serviceName" type="hidden">
+
+                    <label>
+                      <span>Cliente</span>
+                      <select id="appointment-customer-select"></select>
+                    </label>
+
+                    <label>
+                      <span>Serviço</span>
+                      <select id="appointment-service-select"></select>
+                    </label>
+
+                    <label>
+                      <span>Data</span>
+                      <input name="date" type="date">
+                    </label>
+
+                    <label>
+                      <span>Hora</span>
+                      <input name="time" type="time">
+                    </label>
+
+                    <label>
+                      <span>Duração (minutos)</span>
+                      <input name="durationMinutes" type="number" min="1" step="1">
+                    </label>
+
+                    <label>
+                      <span>Preço</span>
+                      <input name="price" type="number" min="0" step="0.01">
+                    </label>
+
+                    <label>
+                      <span>Status</span>
+                      <select name="status">
+                        <option value="scheduled">Agendado</option>
+                        <option value="confirmed">Confirmado</option>
+                        <option value="completed">Concluído</option>
+                        <option value="canceled">Cancelado</option>
+                        <option value="no_show">Faltou</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Observações</span>
+                      <textarea name="notes" rows="4"></textarea>
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="button primary" type="submit">Salvar agendamento</button>
+                      <button class="button" id="appointment-cancel-edit-button" type="button">Cancelar edição</button>
+                    </div>
+
+                    <p id="appointment-feedback" class="feedback"></p>
+                  </form>
+                </div>
+
+                <div class="card">
+                  <div class="filter-row">
+                    <label>
+                      <span>Início</span>
+                      <input id="appointments-filter-start" type="date">
+                    </label>
+
+                    <label>
+                      <span>Fim</span>
+                      <input id="appointments-filter-end" type="date">
+                    </label>
+
+                    <div class="filter-actions">
+                      <button class="button" id="appointments-filter-button" type="button">Filtrar</button>
+                      <button class="button" id="appointments-filter-reset-button" type="button">Limpar</button>
+                    </div>
+                  </div>
+
+                  <div class="admin-scroll-panel">
+                    <ul class="simple-list" id="appointments-list"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="reports-tab" class="section tab-panel" hidden>
+            <div class="panel-shell">
+              <div class="section-heading">
+                <h3>Relatórios</h3>
+                <p class="muted">Acompanhe concluídos e valores do período.</p>
+              </div>
+
+              <div class="client-two-columns">
+                <div class="card">
+                  <div class="filter-row">
+                    <label>
+                      <span>Início</span>
+                      <input id="report-filter-start" type="date">
+                    </label>
+
+                    <label>
+                      <span>Fim</span>
+                      <input id="report-filter-end" type="date">
+                    </label>
+
+                    <div class="filter-actions">
+                      <button class="button" id="report-filter-button" type="button">Filtrar</button>
+                      <button class="button" id="report-filter-reset-button" type="button">Limpar</button>
+                    </div>
+                  </div>
+
+                  <div class="stats-grid">
+                    <article class="stat-card">
+                      <span class="stat-label">Concluídos</span>
+                      <strong class="stat-value" id="report-completed">0</strong>
+                    </article>
+
+                    <article class="stat-card">
+                      <span class="stat-label">Valor do período</span>
+                      <strong class="stat-value" id="report-total">R$ 0,00</strong>
+                    </article>
+                  </div>
+
+                  <div class="report-status-box">
+                    <strong>Status da cobrança</strong>
+                    <p id="report-status">-</p>
+                    <small id="report-status-help">-</small>
                   </div>
                 </div>
 
-                <div class="stats-grid">
-                  <article class="stat-card">
-                    <span class="stat-label">Concluídos</span>
-                    <strong class="stat-value" id="report-completed">0</strong>
-                  </article>
-
-                  <article class="stat-card">
-                    <span class="stat-label">Valor do período</span>
-                    <strong class="stat-value" id="report-total">R$ 0,00</strong>
-                  </article>
-                </div>
-
-                <div class="report-status-box">
-                  <strong>Status da cobrança</strong>
-                  <p id="report-status">-</p>
-                  <small id="report-status-help">-</small>
-                </div>
-              </div>
-
-              <div class="card">
-                <div class="admin-scroll-panel">
-                  <ul class="simple-list" id="report-appointments-list"></ul>
+                <div class="card">
+                  <div class="admin-scroll-panel">
+                    <ul class="simple-list" id="report-appointments-list"></ul>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </main>
   </div>
