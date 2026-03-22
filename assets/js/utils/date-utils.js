@@ -77,18 +77,6 @@ export function buildEndOfDayIsoFromDateInput(dateString) {
   return date.toISOString();
 }
 
-export function getStartAndEndOfCurrentMonth() {
-  const now = new Date();
-
-  const startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
-  return {
-    startIso: startDate.toISOString(),
-    endIso: endDate.toISOString()
-  };
-}
-
 export function normalizeMonthReference(value) {
   const raw = String(value || '').trim();
 
@@ -147,13 +135,13 @@ export function getMonthNumberFromReference(monthReference) {
     return 0;
   }
 
-  const parts = normalized.split('/');
+  const [yearPart, monthPart] = normalized.split('/');
 
-  if (parts.length !== 2) {
+  if (!yearPart || !monthPart) {
     return 0;
   }
 
-  return Number(parts[1] || 0);
+  return Number(monthPart || 0);
 }
 
 export function getYearFromReference(monthReference) {
@@ -163,13 +151,17 @@ export function getYearFromReference(monthReference) {
     return 0;
   }
 
-  const parts = normalized.split('/');
+  const [yearPart, monthPart] = normalized.split('/');
 
-  if (parts.length !== 2) {
+  if (!yearPart || !monthPart) {
     return 0;
   }
 
-  return Number(parts[0] || 0);
+  return Number(yearPart || 0);
+}
+
+export function getStartAndEndOfCurrentMonth() {
+  return getStartAndEndOfMonth(getMonthReference());
 }
 
 export function getStartAndEndOfMonth(monthReference) {
@@ -215,9 +207,9 @@ export function getPreviousMonthReference(monthReference) {
     return '';
   }
 
-  const previousMonthDate = new Date(year, monthNumber - 2, 1);
+  const previousDate = new Date(year, monthNumber - 2, 1);
 
-  return getMonthReference(previousMonthDate);
+  return getMonthReference(previousDate);
 }
 
 export function getNextMonthReference(monthReference) {
@@ -234,9 +226,9 @@ export function getNextMonthReference(monthReference) {
     return '';
   }
 
-  const nextMonthDate = new Date(year, monthNumber, 1);
+  const nextDate = new Date(year, monthNumber, 1);
 
-  return getMonthReference(nextMonthDate);
+  return getMonthReference(nextDate);
 }
 
 export function isDateWithinRange(isoString, startIso, endIso) {
