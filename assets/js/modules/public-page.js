@@ -36,12 +36,34 @@ const bookingServiceSelect = document.getElementById('booking-service');
 const bookingDateInput = document.getElementById('booking-date');
 const bookingTimeInput = document.getElementById('booking-time');
 const availableTimesContainer = document.getElementById('available-times');
+const publicLogoElement = document.getElementById('public-logo');
 
 let loadedServices = [];
 let loadedTenant = null;
 
 function getSelectedService() {
   return loadedServices.find((service) => service.id === bookingServiceSelect.value) || null;
+}
+
+function updatePublicLogo(tenant) {
+  if (!publicLogoElement) {
+    return;
+  }
+
+  const logoUrl = String(tenant?.logoUrl || '').trim();
+
+  if (!logoUrl) {
+    publicLogoElement.classList.add('hidden');
+    publicLogoElement.removeAttribute('src');
+    return;
+  }
+
+  publicLogoElement.src = logoUrl;
+  publicLogoElement.classList.remove('hidden');
+
+  publicLogoElement.onerror = () => {
+    publicLogoElement.classList.add('hidden');
+  };
 }
 
 function renderBookingSuccessSummary({
@@ -160,6 +182,7 @@ async function loadPublicTenant() {
   setText('public-description', tenant.description || '-');
   setText('public-whatsapp', formatPhone(tenant.whatsapp || '-'));
   setText('public-slug', tenant.slug || '-');
+  updatePublicLogo(tenant);
 }
 
 async function loadPublicServicesData() {
