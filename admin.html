@@ -154,13 +154,83 @@
             <div class="section-heading">
               <h3>Planos</h3>
               <p class="muted">
-                Gestão manual dos planos da plataforma.
+                Crie e edite os planos usados pelos clientes da plataforma.
               </p>
             </div>
 
-            <div class="card">
-              <div class="admin-scroll-panel">
-                <ul class="simple-list" id="plans-list"></ul>
+            <div class="admin-two-columns">
+              <div class="card">
+                <form id="plan-form" class="stack">
+                  <input id="plan-edit-id" type="hidden">
+
+                  <label>
+                    <span>Nome do plano</span>
+                    <input id="plan-form-name" type="text" required>
+                  </label>
+
+                  <label>
+                    <span>Modo de cobrança</span>
+                    <select id="plan-form-billing-mode" required>
+                      <option value="free">Gratuito</option>
+                      <option value="fixed_plan">Plano fixo</option>
+                      <option value="per_service">Por serviço concluído</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Preço fixo mensal</span>
+                    <input id="plan-form-price" type="number" min="0" step="0.01">
+                  </label>
+
+                  <label>
+                    <span>Preço por serviço concluído</span>
+                    <input id="plan-form-price-per-service" type="number" min="0" step="0.01">
+                  </label>
+
+                  <label>
+                    <span>Página pública habilitada?</span>
+                    <select id="plan-form-public-page-enabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Relatórios habilitados?</span>
+                    <select id="plan-form-reports-enabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Quantidade máxima de serviços</span>
+                    <input id="plan-form-max-services" type="number" min="0" step="1">
+                  </label>
+
+                  <label>
+                    <span>Quantidade máxima de clientes finais</span>
+                    <input id="plan-form-max-customers" type="number" min="0" step="1">
+                  </label>
+
+                  <label>
+                    <span>Quantidade máxima de agendamentos por mês</span>
+                    <input id="plan-form-max-appointments-month" type="number" min="0" step="1">
+                  </label>
+
+                  <div class="form-actions">
+                    <button class="button primary" type="submit">Salvar plano</button>
+                    <button class="button" id="plan-cancel-edit-button" type="button">Cancelar edição</button>
+                  </div>
+
+                  <p id="plan-feedback" class="feedback"></p>
+                </form>
+              </div>
+
+              <div class="card">
+                <div class="admin-scroll-panel">
+                  <ul class="simple-list" id="plans-list"></ul>
+                </div>
               </div>
             </div>
           </div>
@@ -197,14 +267,66 @@
         <section id="settings-tab" class="section tab-panel" hidden>
           <div class="panel-shell">
             <div class="section-heading">
-              <h3>Suporte e configurações</h3>
-              <p class="muted">Informações gerais da plataforma.</p>
+              <h3>Configurações da plataforma</h3>
+              <p class="muted">Edite configurações funcionais usadas no restante do app.</p>
             </div>
 
-            <div class="card">
-              <div class="settings-grid">
-                <p><strong>WhatsApp de suporte:</strong> <span id="support-whatsapp">-</span></p>
-                <p><strong>Mensagem padrão:</strong> <span id="support-message">-</span></p>
+            <div class="admin-two-columns">
+              <div class="card">
+                <form id="platform-settings-form" class="stack">
+                  <label>
+                    <span>Nome da plataforma</span>
+                    <input id="settings-platform-name" type="text">
+                  </label>
+
+                  <label>
+                    <span>Logo da plataforma (URL)</span>
+                    <input id="settings-platform-logo-url" type="text">
+                  </label>
+
+                  <label>
+                    <span>Texto público padrão</span>
+                    <input id="settings-public-description" type="text">
+                  </label>
+
+                  <label>
+                    <span>WhatsApp de suporte</span>
+                    <input id="settings-support-whatsapp" type="text">
+                  </label>
+
+                  <label>
+                    <span>Mensagem padrão do suporte</span>
+                    <textarea id="settings-support-message" rows="4"></textarea>
+                  </label>
+
+                  <label>
+                    <span>URL base do WhatsApp</span>
+                    <input id="settings-whatsapp-base-url" type="text" placeholder="https://wa.me/">
+                  </label>
+
+                  <label>
+                    <span>Mensagem padrão para cobrança</span>
+                    <textarea id="settings-billing-message-template" rows="4"></textarea>
+                  </label>
+
+                  <div class="form-actions">
+                    <button class="button primary" type="submit">Salvar configurações</button>
+                  </div>
+
+                  <p id="settings-feedback" class="feedback"></p>
+                </form>
+              </div>
+
+              <div class="card">
+                <div class="settings-grid">
+                  <p><strong>WhatsApp de suporte:</strong> <span id="support-whatsapp">-</span></p>
+                  <p><strong>Mensagem padrão:</strong> <span id="support-message">-</span></p>
+                  <p><strong>Nome da plataforma:</strong> <span id="platform-name-view">-</span></p>
+                  <p><strong>Logo URL:</strong> <span id="platform-logo-url-view">-</span></p>
+                  <p><strong>Descrição pública:</strong> <span id="platform-public-description-view">-</span></p>
+                  <p><strong>URL base WhatsApp:</strong> <span id="platform-whatsapp-base-url-view">-</span></p>
+                  <p><strong>Mensagem cobrança:</strong> <span id="platform-billing-template-view">-</span></p>
+                </div>
               </div>
             </div>
           </div>
