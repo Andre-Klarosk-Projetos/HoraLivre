@@ -13,7 +13,8 @@ import {
 } from '../services/billing-service.js';
 import {
   formatCurrencyBRL,
-  formatAppointmentStatus
+  formatAppointmentStatus,
+  formatMonthNumberToName
 } from '../utils/formatters.js';
 import {
   clearElement
@@ -24,7 +25,8 @@ import {
   formatDateTimeForDisplay,
   getMonthReference,
   getStartAndEndOfCurrentMonth,
-  normalizeMonthReference as normalizeMonthReferenceFromDateUtils
+  normalizeMonthReference as normalizeMonthReferenceFromDateUtils,
+  getMonthNumberFromReference
 } from '../utils/date-utils.js';
 
 if (!requireTenantUser()) {
@@ -58,6 +60,14 @@ function resolveEffectiveAnnualPrice(tenant, billingSettings, plan) {
     tenant?.annualPrice ??
     0
   );
+}
+
+function resolveEffectiveAnnualBillingMonth(tenant, billingSettings) {
+  return Number(
+    billingSettings?.annualBillingMonth ??
+    tenant?.annualBillingMonth ??
+    0
+  ) || null;
 }
 
 function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
@@ -141,13 +151,17 @@ function renderReportAppointmentsList(appointments, elementId = 'report-appointm
   });
 }
 
-function buildBillingStatusText(record, calculatedAmount) {
+function buildBillingStatusText(record, calculatedAmount, annualBillingMonth, currentMonthNumber, billingMode) {
   if (record) {
     if (record.status === 'paid') {
       return `Cobrança oficial gerada e marcada como paga. Valor: ${formatCurrencyBRL(record.totalAmount || 0)}.`;
     }
 
     return `Cobrança oficial gerada e pendente. Valor: ${formatCurrencyBRL(record.totalAmount || 0)}.`;
+  }
+
+  if (billingMode === 'annual_plan' && annualBillingMonth && Number(currentMonthNumber || 0) !== Number(annualBillingMonth || 0)) {
+    return `Plano anual fora do mês de cobrança. A próxima cobrança anual está prevista para ${formatMonthNumberToName(annualBillingMonth)}.`;
   }
 
   if (Number(calculatedAmount || 0) > 0) {
@@ -193,10 +207,13 @@ export async function loadTenantReportsIntoPage(options = {}) {
   const plan = tenant?.planId ? await getPlanById(tenant.planId) : null;
 
   const completedAppointments = countCompletedAppointments(appointments);
+  const monthReference = buildMonthReferenceFromRange(startIso, endIso);
+  const currentMonthNumber = monthReference ? getMonthNumberFromReference(monthReference) : 0;
 
   const effectiveBillingMode = resolveEffectiveBillingMode(tenant, billingSettings, plan);
   const effectiveFixedPrice = resolveEffectiveFixedPrice(tenant, billingSettings, plan);
   const effectiveAnnualPrice = resolveEffectiveAnnualPrice(tenant, billingSettings, plan);
+  const effectiveAnnualBillingMonth = resolveEffectiveAnnualBillingMonth(tenant, billingSettings);
   const effectiveUnitPrice = resolveEffectiveUnitPrice(tenant, billingSettings, plan);
 
   const calculatedAmount = calculateBillingForPeriod({
@@ -204,10 +221,11 @@ export async function loadTenantReportsIntoPage(options = {}) {
     completedAppointments,
     fixedMonthlyPrice: effectiveFixedPrice,
     annualPrice: effectiveAnnualPrice,
+    annualBillingMonth: effectiveAnnualBillingMonth,
+    currentMonthNumber,
     pricePerExecutedService: effectiveUnitPrice
   });
 
-  const monthReference = buildMonthReferenceFromRange(startIso, endIso);
   const billingRecord = monthReference
     ? await getBillingRecordByTenantAndMonth(tenantId, monthReference)
     : null;
@@ -218,7 +236,16 @@ export async function loadTenantReportsIntoPage(options = {}) {
 
   setTextContent('report-completed', String(completedAppointments));
   setTextContent('report-total', formatCurrencyBRL(displayedAmount));
-  setTextContent('report-status', buildBillingStatusText(billingRecord, calculatedAmount));
+  setTextContent(
+    'report-status',
+    buildBillingStatusText(
+      billingRecord,
+      calculatedAmount,
+      effectiveAnnualBillingMonth,
+      currentMonthNumber,
+      effectiveBillingMode
+    )
+  );
 
   const reportStatusHelp = document.getElementById('report-status-help');
 
@@ -226,6 +253,9 @@ export async function loadTenantReportsIntoPage(options = {}) {
     if (billingRecord) {
       reportStatusHelp.textContent =
         `Referência da cobrança: ${billingRecord.monthRef || '-'} | Status: ${billingRecord.status || '-'}.`;
+    } else if (effectiveBillingMode === 'annual_plan' && effectiveAnnualBillingMonth && Number(currentMonthNumber || 0) !== Number(effectiveAnnualBillingMonth || 0)) {
+      reportStatusHelp.textContent =
+        `Plano anual configurado para cobrança em ${formatMonthNumberToName(effectiveAnnualBillingMonth)}. No período atual não há cobrança prevista.`;
     } else if (monthReference) {
       reportStatusHelp.textContent =
         `Referência calculada: ${monthReference}. Ainda não existe cobrança oficial salva para este mês.`;
