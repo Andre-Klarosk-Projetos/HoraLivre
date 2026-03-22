@@ -1,0 +1,146 @@
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(191, 219, 254, 0.35), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(147, 197, 253, 0.22), transparent 26%),
+    linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+.login-shell {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 440px);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.login-brand-panel {
+  display: grid;
+  gap: 22px;
+  padding: 30px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(17, 24, 39, 1) 0%, rgba(30, 41, 59, 1) 100%);
+  color: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.login-brand-top {
+  display: grid;
+  gap: 14px;
+}
+
+.login-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.login-brand-name {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.login-brand-panel h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  line-height: 1.04;
+}
+
+.login-brand-panel .muted {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.login-info-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.login-info-card {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.login-info-card span {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.login-brand-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.login-brand-footer .button {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.login-form-panel {
+  display: grid;
+}
+
+.login-form-card {
+  display: grid;
+  gap: 18px;
+  padding: 30px;
+  border-radius: 30px;
+  background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 1);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
+}
+
+.login-form-header {
+  display: grid;
+  gap: 6px;
+}
+
+.login-form-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.login-submit-button {
+  width: 100%;
+  min-height: 46px;
+}
+
+.login-help-box {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 1);
+  border: 1px solid rgba(229, 231, 235, 1);
+}
+
+.login-help-box p {
+  margin: 0;
+  color: #6b7280;
+}
+
+@media (max-width: 960px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .login-page {
+    padding: 14px;
+  }
+
+  .login-brand-panel,
+  .login-form-card {
+    padding: 22px;
+    border-radius: 22px;
+  }
+}
