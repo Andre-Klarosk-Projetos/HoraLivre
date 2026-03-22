@@ -22,6 +22,7 @@ export async function createCompanyClientWithAccess({
   billingMode,
   fixedMonthlyPrice,
   annualPrice,
+  annualBillingMonth,
   pricePerExecutedService,
   publicPageEnabled,
   reportsEnabled,
@@ -44,6 +45,7 @@ export async function createCompanyClientWithAccess({
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
+    annualBillingMonth,
     pricePerExecutedService,
     subscriptionStatus,
     publicPageEnabled,
@@ -67,6 +69,7 @@ export async function createCompanyClientWithAccess({
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
+    annualBillingMonth,
     pricePerExecutedService
   });
 
