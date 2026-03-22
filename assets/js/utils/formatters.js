@@ -34,13 +34,23 @@ export function formatSubscriptionStatus(status) {
 }
 
 export function formatBillingMode(mode) {
-  const labels = {
-    free: 'Gratuito',
-    fixed_plan: 'Plano fixo',
-    per_service: 'Por serviço concluído'
-  };
+  if (mode === 'free') {
+    return 'Gratuito';
+  }
 
-  return labels[mode] || mode || '-';
+  if (mode === 'fixed_plan') {
+    return 'Plano mensal';
+  }
+
+  if (mode === 'annual_plan') {
+    return 'Plano anual';
+  }
+
+  if (mode === 'per_service') {
+    return 'Por serviço concluído';
+  }
+
+  return mode || '-';
 }
 
 export function formatAppointmentStatus(status) {
