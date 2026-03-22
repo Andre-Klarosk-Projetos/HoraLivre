@@ -13,13 +13,30 @@ import {
 
 import { db } from '../config/firebase-init.js';
 
+const CUSTOMERS_COLLECTION = 'customers';
+
+function buildCustomerPayload(data = {}) {
+  return {
+    tenantId: data.tenantId || '',
+    name: data.name || '',
+    phone: data.phone || '',
+    email: data.email || '',
+    notes: data.notes || '',
+    totalAppointments: Number(data.totalAppointments || 0),
+    completedAppointments: Number(data.completedAppointments || 0),
+    lastAppointmentAt: data.lastAppointmentAt || null,
+    createdAt: data.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
 export async function listTenantCustomers(tenantId) {
   if (!tenantId) {
     return [];
   }
 
   const customersQuery = query(
-    collection(db, 'customers'),
+    collection(db, CUSTOMERS_COLLECTION),
     where('tenantId', '==', tenantId),
     orderBy('name')
   );
@@ -41,7 +58,7 @@ export async function getTenantCustomerById(customerId) {
     return null;
   }
 
-  const reference = doc(db, 'customers', customerId);
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
   const snapshot = await getDoc(reference);
 
   if (!snapshot.exists()) {
@@ -55,18 +72,8 @@ export async function getTenantCustomerById(customerId) {
 }
 
 export async function createTenantCustomer(data) {
-  return addDoc(collection(db, 'customers'), {
-    tenantId: data.tenantId || '',
-    name: data.name || '',
-    phone: data.phone || '',
-    email: data.email || '',
-    notes: data.notes || '',
-    totalAppointments: Number(data.totalAppointments || 0),
-    completedAppointments: Number(data.completedAppointments || 0),
-    lastAppointmentAt: data.lastAppointmentAt || null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
+  const payload = buildCustomerPayload(data);
+  return addDoc(collection(db, CUSTOMERS_COLLECTION), payload);
 }
 
 export async function updateTenantCustomer(customerId, data) {
@@ -74,10 +81,10 @@ export async function updateTenantCustomer(customerId, data) {
     throw new Error('Cliente inválido para atualização.');
   }
 
-  const reference = doc(db, 'customers', customerId);
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
 
   await updateDoc(reference, {
-    ...(data.tenantId !== undefined ? { tenantId: data.tenantId } : {}),
+    ...(data.tenantId !== undefined ? { tenantId: data.tenantId || '' } : {}),
     ...(data.name !== undefined ? { name: data.name || '' } : {}),
     ...(data.phone !== undefined ? { phone: data.phone || '' } : {}),
     ...(data.email !== undefined ? { email: data.email || '' } : {}),
@@ -100,7 +107,7 @@ export async function deleteTenantCustomer(customerId) {
     throw new Error('Cliente inválido para exclusão.');
   }
 
-  await deleteDoc(doc(db, 'customers', customerId));
+  await deleteDoc(doc(db, CUSTOMERS_COLLECTION, customerId));
 }
 
 export async function updateCustomerStats(customerId, stats = {}) {
@@ -108,7 +115,7 @@ export async function updateCustomerStats(customerId, stats = {}) {
     throw new Error('Cliente inválido para atualizar estatísticas.');
   }
 
-  const reference = doc(db, 'customers', customerId);
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
 
   await updateDoc(reference, {
     ...(stats.totalAppointments !== undefined
