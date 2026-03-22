@@ -15,11 +15,16 @@ import { db } from '../config/firebase-init.js';
 
 const CUSTOMERS_COLLECTION = 'customers';
 
+function normalizePhone(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
 function buildCustomerPayload(data = {}) {
   return {
     tenantId: data.tenantId || '',
     name: data.name || '',
     phone: data.phone || '',
+    phoneNormalized: normalizePhone(data.phone || ''),
     email: data.email || '',
     notes: data.notes || '',
     totalAppointments: Number(data.totalAppointments || 0),
@@ -71,6 +76,29 @@ export async function getTenantCustomerById(customerId) {
   };
 }
 
+export async function findCustomerByPhone(tenantId, phone) {
+  if (!tenantId || !phone) {
+    return null;
+  }
+
+  const normalizedPhone = normalizePhone(phone);
+
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const customers = await listTenantCustomers(tenantId);
+
+  const foundCustomer = customers.find((customer) => {
+    const customerNormalizedPhone =
+      normalizePhone(customer.phoneNormalized || customer.phone || '');
+
+    return customerNormalizedPhone === normalizedPhone;
+  });
+
+  return foundCustomer || null;
+}
+
 export async function createTenantCustomer(data) {
   const payload = buildCustomerPayload(data);
   return addDoc(collection(db, CUSTOMERS_COLLECTION), payload);
@@ -86,7 +114,12 @@ export async function updateTenantCustomer(customerId, data) {
   await updateDoc(reference, {
     ...(data.tenantId !== undefined ? { tenantId: data.tenantId || '' } : {}),
     ...(data.name !== undefined ? { name: data.name || '' } : {}),
-    ...(data.phone !== undefined ? { phone: data.phone || '' } : {}),
+    ...(data.phone !== undefined
+      ? {
+          phone: data.phone || '',
+          phoneNormalized: normalizePhone(data.phone || '')
+        }
+      : {}),
     ...(data.email !== undefined ? { email: data.email || '' } : {}),
     ...(data.notes !== undefined ? { notes: data.notes || '' } : {}),
     ...(data.totalAppointments !== undefined
