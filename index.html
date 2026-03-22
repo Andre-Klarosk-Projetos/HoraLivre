@@ -3,42 +3,326 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HoraLivre</title>
+  <title>HoraLivre - Agendamento para autônomos e pequenas empresas</title>
+
+  <meta
+    name="description"
+    content="HoraLivre é uma plataforma de agendamento para autônomos e pequenas empresas, com página pública, painel do cliente, painel admin, cobrança e relatórios."
+  >
 
   <link rel="stylesheet" href="./assets/css/global.css">
   <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/home.css">
 </head>
 <body>
-  <main class="landing">
-    <section class="hero card">
-      <span class="badge">HoraLivre</span>
-      <h1>Bem-vindo ao HoraLivre</h1>
-      <p>
-        Plataforma multiempresa de agendamento com admin master, painel do cliente,
-        página pública por empresa, planos e trial manuais, cobrança fixa ou por serviço concluído,
-        logo por URL externa e suporte via WhatsApp.
-      </p>
+  <header class="home-header">
+    <div class="home-header-inner">
+      <a class="brand-link" href="./index.html">
+        <span class="badge">HoraLivre</span>
+        <span class="brand-text">Sistema de agendamento</span>
+      </a>
 
-      <div class="actions">
-        <a class="button primary" href="./login.html">Entrar</a>
-        <a class="button" href="./agendar.html?slug=demo-horalivre">Ver página pública</a>
+      <nav class="home-nav">
+        <a href="#recursos">Recursos</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#planos">Planos</a>
+        <a href="#acessar">Acessar</a>
+      </nav>
+
+      <div class="home-header-actions">
+        <a class="button" href="./login.html">Entrar</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="home-page">
+    <section class="hero-section">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Plataforma completa</span>
+          <h1>Organize agendamentos, clientes e cobrança em um só lugar</h1>
+          <p class="hero-description">
+            O HoraLivre foi pensado para autônomos e pequenas empresas que precisam
+            de uma página pública de agendamento, painel interno para gestão do dia a dia
+            e controle claro de cobrança.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button primary" href="./login.html">Entrar no sistema</a>
+            <a class="button" href="#como-funciona">Ver como funciona</a>
+          </div>
+
+          <div class="hero-highlights">
+            <div class="highlight-item">
+              <strong>Página pública</strong>
+              <span>Receba agendamentos pelo seu link</span>
+            </div>
+
+            <div class="highlight-item">
+              <strong>Painel da empresa</strong>
+              <span>Gerencie agenda, serviços, clientes e relatórios</span>
+            </div>
+
+            <div class="highlight-item">
+              <strong>Painel admin</strong>
+              <span>Controle empresas clientes, planos e cobrança</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-panel">
+          <div class="hero-card primary-card">
+            <span class="mini-label">Para a empresa cliente</span>
+            <h2>Agenda, serviços, clientes e cobrança</h2>
+            <p>
+              O painel da empresa centraliza tudo o que o negócio precisa para operar
+              de forma simples e organizada.
+            </p>
+
+            <ul class="feature-bullets">
+              <li>Cadastro de serviços</li>
+              <li>Cadastro de clientes finais</li>
+              <li>Agenda com status</li>
+              <li>Relatório de concluídos</li>
+              <li>Valor previsto a pagar</li>
+            </ul>
+          </div>
+
+          <div class="hero-card">
+            <span class="mini-label">Para o admin</span>
+            <h2>Controle da plataforma</h2>
+            <p>
+              Gerencie empresas clientes, planos, suporte e cobrança mensal em uma área central.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="grid two-col">
-      <article class="card">
-        <h2>Admin master</h2>
-        <p>
-          Controle dos seus clientes, planos, trial, cobrança manual e relatórios da plataforma.
-        </p>
-      </article>
+    <section class="trust-section">
+      <div class="trust-grid">
+        <article class="trust-card">
+          <strong>Mais clareza</strong>
+          <span>Todos os perfis têm áreas separadas e mais intuitivas.</span>
+        </article>
 
-      <article class="card">
-        <h2>Painel do cliente</h2>
-        <p>
-          Gestão da empresa, serviços, clientes finais, agenda, relatórios e página pública.
+        <article class="trust-card">
+          <strong>Mais controle</strong>
+          <span>Admin acompanha cobrança, planos e empresas clientes.</span>
+        </article>
+
+        <article class="trust-card">
+          <strong>Mais praticidade</strong>
+          <span>Cliente final agenda por uma página pública simples.</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="recursos" class="content-section">
+      <div class="section-heading center">
+        <span class="eyebrow">Recursos</span>
+        <h2>O que o HoraLivre já cobre</h2>
+        <p class="muted">
+          Estrutura pensada para operação real, com compatibilidade entre admin,
+          empresa cliente e página pública.
         </p>
-      </article>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card">
+          <h3>Página pública por empresa</h3>
+          <p>
+            Cada empresa pode ter seu próprio link público de agendamento com slug,
+            serviços e horários disponíveis.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <h3>Gestão de serviços</h3>
+          <p>
+            Cadastre, edite e controle os serviços disponíveis para agenda e página pública.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <h3>Gestão de clientes finais</h3>
+          <p>
+            Organize a base de clientes, histórico e informações importantes da operação.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <h3>Agenda com status</h3>
+          <p>
+            Acompanhe agendado, confirmado, concluído, cancelado e faltou em um fluxo simples.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <h3>Relatórios e cobrança</h3>
+          <p>
+            Mostre quantidade concluída no período e valor previsto conforme o tipo de cobrança.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <h3>Planos e administração</h3>
+          <p>
+            O admin gerencia planos, empresas clientes, suporte, cobrança mensal e configurações.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="como-funciona" class="content-section alt-section">
+      <div class="section-heading center">
+        <span class="eyebrow">Como funciona</span>
+        <h2>Fluxo simples para os três lados do sistema</h2>
+      </div>
+
+      <div class="steps-grid">
+        <article class="step-card">
+          <div class="step-number">1</div>
+          <h3>Admin configura a empresa cliente</h3>
+          <p>
+            O admin cria a empresa cliente, define plano, cobrança, status e suporte.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <div class="step-number">2</div>
+          <h3>A empresa organiza sua operação</h3>
+          <p>
+            A empresa cadastra serviços, clientes finais, agenda e disponibilidade.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <div class="step-number">3</div>
+          <h3>O cliente final agenda</h3>
+          <p>
+            O cliente final acessa a página pública e faz o agendamento nos horários disponíveis.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <div class="step-number">4</div>
+          <h3>O sistema consolida relatórios</h3>
+          <p>
+            A empresa vê os concluídos e o admin acompanha cobrança, status e operação.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="planos" class="content-section">
+      <div class="section-heading center">
+        <span class="eyebrow">Cobrança</span>
+        <h2>Modelos pensados para operação real</h2>
+        <p class="muted">
+          O HoraLivre suporta mais de um modelo de cobrança para diferentes perfis de empresa.
+        </p>
+      </div>
+
+      <div class="pricing-grid">
+        <article class="pricing-card">
+          <h3>Gratuito</h3>
+          <p class="pricing-description">
+            Ideal para onboarding, testes iniciais e configuração básica.
+          </p>
+          <ul class="feature-bullets">
+            <li>Sem cobrança</li>
+            <li>Pode ser usado para trial</li>
+            <li>Admin define regras manualmente</li>
+          </ul>
+        </article>
+
+        <article class="pricing-card featured">
+          <span class="mini-badge">Mais flexível</span>
+          <h3>Plano fixo</h3>
+          <p class="pricing-description">
+            Valor mensal fixo, simples de entender e fácil de operar.
+          </p>
+          <ul class="feature-bullets">
+            <li>Cobrança mensal previsível</li>
+            <li>Ideal para empresas com uso recorrente</li>
+            <li>Boa leitura para admin e cliente</li>
+          </ul>
+        </article>
+
+        <article class="pricing-card">
+          <h3>Por serviço concluído</h3>
+          <p class="pricing-description">
+            Cobrança proporcional ao que a empresa efetivamente concluiu.
+          </p>
+          <ul class="feature-bullets">
+            <li>Baseado em serviços concluídos</li>
+            <li>Mais aderente ao uso real</li>
+            <li>Relatório claro por período</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="acessar" class="content-section alt-section">
+      <div class="section-heading center">
+        <span class="eyebrow">Acesso</span>
+        <h2>Entre no sistema ou abra uma página pública</h2>
+        <p class="muted">
+          A home agora orienta melhor cada tipo de acesso do projeto.
+        </p>
+      </div>
+
+      <div class="access-grid">
+        <article class="access-card">
+          <h3>Entrar no sistema</h3>
+          <p>
+            Use esta opção para acessar como admin ou como empresa cliente.
+          </p>
+          <a class="button primary" href="./login.html">Ir para login</a>
+        </article>
+
+        <article class="access-card">
+          <h3>Painel admin</h3>
+          <p>
+            Área central para gestão da plataforma, planos, cobrança e empresas clientes.
+          </p>
+          <a class="button" href="./admin.html">Abrir admin</a>
+        </article>
+
+        <article class="access-card">
+          <h3>Painel da empresa</h3>
+          <p>
+            Área usada pela empresa cliente para serviços, clientes, agenda e relatórios.
+          </p>
+          <a class="button" href="./cliente.html">Abrir painel da empresa</a>
+        </article>
+
+        <article class="access-card">
+          <h3>Página pública</h3>
+          <p>
+            Link público para agendamento do cliente final usando o slug da empresa.
+          </p>
+          <a class="button" href="./agendar.html">Abrir página pública</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="final-cta-section">
+      <div class="final-cta-card">
+        <div>
+          <span class="eyebrow">Pronto para usar</span>
+          <h2>Uma base mais profissional para o HoraLivre</h2>
+          <p>
+            A home agora explica melhor o sistema e melhora a percepção de valor do projeto.
+          </p>
+        </div>
+
+        <div class="final-cta-actions">
+          <a class="button primary" href="./login.html">Entrar agora</a>
+          <a class="button" href="#recursos">Ver recursos</a>
+        </div>
+      </div>
     </section>
   </main>
 </body>
