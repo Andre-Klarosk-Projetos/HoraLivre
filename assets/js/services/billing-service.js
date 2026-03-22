@@ -31,6 +31,26 @@ function normalizeBillingMode(value) {
   return String(value || 'free').trim() || 'free';
 }
 
+export function normalizeMonthReference(value) {
+  const raw = String(value || '').trim();
+
+  if (!raw) {
+    return getMonthReference();
+  }
+
+  const normalized = raw.replace(/-/g, '/').replace(/\s+/g, '');
+  const match = normalized.match(/^(\d{4})\/(\d{1,2})$/);
+
+  if (!match) {
+    return getMonthReference();
+  }
+
+  const year = match[1];
+  const month = String(match[2]).padStart(2, '0');
+
+  return `${year}/${month}`;
+}
+
 function buildBillingSettingsPayload(tenantId, data = {}) {
   return {
     tenantId: tenantId || '',
@@ -46,7 +66,7 @@ function buildBillingSettingsPayload(tenantId, data = {}) {
 function buildBillingRecordPayload(tenantId, reference, data = {}) {
   return {
     tenantId: tenantId || '',
-    reference: reference || getMonthReference(),
+    reference: normalizeMonthReference(reference || getMonthReference()),
     billingMode: normalizeBillingMode(data.billingMode),
     completedAppointments: toNumber(data.completedAppointments, 0),
     unitPrice: toNumber(data.unitPrice, 0),
@@ -164,13 +184,11 @@ export async function listBillingRecordsByTenant(tenantId) {
 }
 
 export async function listBillingRecordsByMonth(monthReference) {
-  if (!monthReference) {
-    return [];
-  }
+  const normalizedReference = normalizeMonthReference(monthReference);
 
   const recordsQuery = query(
     collection(db, BILLING_RECORDS_COLLECTION),
-    where('reference', '==', monthReference),
+    where('reference', '==', normalizedReference),
     orderBy('tenantId')
   );
 
@@ -187,10 +205,12 @@ export async function getBillingRecordByTenantAndMonth(tenantId, monthReference)
     return null;
   }
 
+  const normalizedReference = normalizeMonthReference(monthReference);
+
   const recordsQuery = query(
     collection(db, BILLING_RECORDS_COLLECTION),
     where('tenantId', '==', tenantId),
-    where('reference', '==', monthReference)
+    where('reference', '==', normalizedReference)
   );
 
   const snapshot = await getDocs(recordsQuery);
@@ -216,7 +236,7 @@ export async function createBillingRecordForTenant(tenantId, monthReference, dat
     throw new Error('Tenant inválido para criar cobrança.');
   }
 
-  const reference = monthReference || getMonthReference();
+  const reference = normalizeMonthReference(monthReference || getMonthReference());
   const existingRecord = await getBillingRecordByTenantAndMonth(tenantId, reference);
   const payload = buildBillingRecordPayload(tenantId, reference, data);
 
@@ -249,6 +269,9 @@ export async function updateBillingRecord(recordId, data = {}) {
   const reference = doc(db, BILLING_RECORDS_COLLECTION, recordId);
 
   await updateDoc(reference, {
+    ...(data.reference !== undefined
+      ? { reference: normalizeMonthReference(data.reference) }
+      : {}),
     ...(data.billingMode !== undefined ? { billingMode: normalizeBillingMode(data.billingMode) } : {}),
     ...(data.completedAppointments !== undefined
       ? { completedAppointments: toNumber(data.completedAppointments, 0) }
@@ -285,7 +308,7 @@ export async function generateBillingRecordForTenant({
   pricePerExecutedService = 0,
   notes = ''
 }) {
-  const reference = monthReference || getMonthReference();
+  const reference = normalizeMonthReference(monthReference || getMonthReference());
   const currentMonthNumber = getMonthNumberFromReference(reference);
 
   const amount = calculateBillingForPeriod({
