@@ -36,6 +36,7 @@ export async function submitNewCompany(feedbackElement) {
   const subscriptionStatus = document.getElementById('new-company-status').value;
   const billingMode = document.getElementById('new-company-billing-mode').value;
   const fixedMonthlyPrice = Number(document.getElementById('new-company-fixed-price').value || 0);
+  const annualPrice = Number(document.getElementById('new-company-annual-price').value || 0);
   const pricePerExecutedService = Number(document.getElementById('new-company-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('new-company-public-page-enabled').value === 'true';
   const reportsEnabled = document.getElementById('new-company-reports-enabled').value === 'true';
@@ -56,6 +57,7 @@ export async function submitNewCompany(feedbackElement) {
     subscriptionStatus,
     billingMode,
     fixedMonthlyPrice,
+    annualPrice,
     pricePerExecutedService,
     publicPageEnabled,
     reportsEnabled,
