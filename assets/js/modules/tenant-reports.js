@@ -51,6 +51,15 @@ function resolveEffectiveFixedPrice(tenant, billingSettings, plan) {
   );
 }
 
+function resolveEffectiveAnnualPrice(tenant, billingSettings, plan) {
+  return Number(
+    billingSettings?.annualPrice ??
+    plan?.annualPrice ??
+    tenant?.annualPrice ??
+    0
+  );
+}
+
 function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
   return Number(
     billingSettings?.pricePerExecutedService ??
@@ -187,12 +196,14 @@ export async function loadTenantReportsIntoPage(options = {}) {
 
   const effectiveBillingMode = resolveEffectiveBillingMode(tenant, billingSettings, plan);
   const effectiveFixedPrice = resolveEffectiveFixedPrice(tenant, billingSettings, plan);
+  const effectiveAnnualPrice = resolveEffectiveAnnualPrice(tenant, billingSettings, plan);
   const effectiveUnitPrice = resolveEffectiveUnitPrice(tenant, billingSettings, plan);
 
   const calculatedAmount = calculateBillingForPeriod({
     billingMode: effectiveBillingMode,
     completedAppointments,
     fixedMonthlyPrice: effectiveFixedPrice,
+    annualPrice: effectiveAnnualPrice,
     pricePerExecutedService: effectiveUnitPrice
   });
 
