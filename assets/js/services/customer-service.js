@@ -1,11 +1,9 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
   updateDoc,
@@ -14,7 +12,11 @@ import {
 
 import { db } from '../config/firebase-init.js';
 
-export async function listCustomersByTenant(tenantId) {
+export async function listTenantCustomers(tenantId) {
+  if (!tenantId) {
+    return [];
+  }
+
   const customersQuery = query(
     collection(db, 'customers'),
     where('tenantId', '==', tenantId),
@@ -29,7 +31,15 @@ export async function listCustomersByTenant(tenantId) {
   }));
 }
 
-export async function getCustomerById(customerId) {
+export async function listTenantCustomersForSelect(tenantId) {
+  return listTenantCustomers(tenantId);
+}
+
+export async function getTenantCustomerById(customerId) {
+  if (!customerId) {
+    return null;
+  }
+
   const reference = doc(db, 'customers', customerId);
   const snapshot = await getDoc(reference);
 
@@ -43,66 +53,77 @@ export async function getCustomerById(customerId) {
   };
 }
 
-export async function createCustomer(data) {
-  const payload = {
-    tenantId: data.tenantId,
-    name: data.name,
+export async function createTenantCustomer(data) {
+  return addDoc(collection(db, 'customers'), {
+    tenantId: data.tenantId || '',
+    name: data.name || '',
     phone: data.phone || '',
     email: data.email || '',
     notes: data.notes || '',
     totalAppointments: Number(data.totalAppointments || 0),
-    totalSpent: Number(data.totalSpent || 0),
+    completedAppointments: Number(data.completedAppointments || 0),
     lastAppointmentAt: data.lastAppointmentAt || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  };
+  });
+}
 
-  return addDoc(collection(db, 'customers'), payload);
+export async function updateTenantCustomer(customerId, data) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para atualização.');
+  }
+
+  const reference = doc(db, 'customers', customerId);
+
+  await updateDoc(reference, {
+    ...(data.tenantId !== undefined ? { tenantId: data.tenantId } : {}),
+    ...(data.name !== undefined ? { name: data.name || '' } : {}),
+    ...(data.phone !== undefined ? { phone: data.phone || '' } : {}),
+    ...(data.email !== undefined ? { email: data.email || '' } : {}),
+    ...(data.notes !== undefined ? { notes: data.notes || '' } : {}),
+    ...(data.totalAppointments !== undefined
+      ? { totalAppointments: Number(data.totalAppointments || 0) }
+      : {}),
+    ...(data.completedAppointments !== undefined
+      ? { completedAppointments: Number(data.completedAppointments || 0) }
+      : {}),
+    ...(data.lastAppointmentAt !== undefined
+      ? { lastAppointmentAt: data.lastAppointmentAt || null }
+      : {}),
+    updatedAt: new Date().toISOString()
+  });
+}
+
+export async function saveTenantCustomer(customerId, data) {
+  if (customerId) {
+    await updateTenantCustomer(customerId, data);
+    return { id: customerId };
+  }
+
+  return createTenantCustomer(data);
+}
+
+/*
+  Aliases de compatibilidade
+  Mantidos para não quebrar arquivos antigos do projeto.
+*/
+
+export async function listCustomersByTenant(tenantId) {
+  return listTenantCustomers(tenantId);
+}
+
+export async function listCustomersForSelect(tenantId) {
+  return listTenantCustomersForSelect(tenantId);
+}
+
+export async function getCustomerById(customerId) {
+  return getTenantCustomerById(customerId);
+}
+
+export async function createCustomer(data) {
+  return createTenantCustomer(data);
 }
 
 export async function updateCustomer(customerId, data) {
-  const reference = doc(db, 'customers', customerId);
-
-  await updateDoc(reference, {
-    ...data,
-    updatedAt: new Date().toISOString()
-  });
-}
-
-export async function deleteCustomer(customerId) {
-  const reference = doc(db, 'customers', customerId);
-  await deleteDoc(reference);
-}
-
-export async function findCustomerByPhone(tenantId, phone) {
-  const customerQuery = query(
-    collection(db, 'customers'),
-    where('tenantId', '==', tenantId),
-    where('phone', '==', phone),
-    limit(1)
-  );
-
-  const snapshot = await getDocs(customerQuery);
-
-  if (snapshot.empty) {
-    return null;
-  }
-
-  const documentItem = snapshot.docs[0];
-
-  return {
-    id: documentItem.id,
-    ...documentItem.data()
-  };
-}
-
-export async function updateCustomerStats(customerId, stats) {
-  const reference = doc(db, 'customers', customerId);
-
-  await updateDoc(reference, {
-    totalAppointments: Number(stats.totalAppointments || 0),
-    totalSpent: Number(stats.totalSpent || 0),
-    lastAppointmentAt: stats.lastAppointmentAt || null,
-    updatedAt: new Date().toISOString()
-  });
+  return updateTenantCustomer(customerId, data);
 }
