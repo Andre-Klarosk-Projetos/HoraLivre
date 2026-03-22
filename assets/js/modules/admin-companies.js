@@ -11,7 +11,8 @@ import {
   formatBillingMode,
   formatSubscriptionStatus,
   buildWhatsAppLink,
-  formatPhone
+  formatPhone,
+  formatCurrencyBRL
 } from '../utils/formatters.js';
 
 if (!requireAdmin()) {
@@ -31,7 +32,8 @@ function getCompanyFilterState() {
 
 function applyCompanyFilters(companies, filters) {
   return companies.filter((company) => {
-    const matchesSearch = !filters.search ||
+    const matchesSearch =
+      !filters.search ||
       String(company.businessName || '').toLowerCase().includes(filters.search);
 
     const matchesPlan = !filters.planId || String(company.planId || '') === filters.planId;
@@ -49,6 +51,7 @@ export async function populateCompanyPlanFilters() {
 
   if (planFilter) {
     planFilter.innerHTML = '<option value="">Todos</option>';
+
     plans.forEach((plan) => {
       const option = document.createElement('option');
       option.value = plan.id;
@@ -59,6 +62,7 @@ export async function populateCompanyPlanFilters() {
 
   if (planSelect) {
     planSelect.innerHTML = '<option value="">Selecione um plano</option>';
+
     plans.forEach((plan) => {
       const option = document.createElement('option');
       option.value = plan.id;
@@ -81,7 +85,7 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
 
   clearElement(element);
 
-  if (companies.length === 0) {
+  if (!companies.length) {
     element.appendChild(createListItem(`
       <strong>Nenhuma empresa encontrada</strong><br>
       Ajuste a busca ou os filtros para localizar uma empresa cliente.
@@ -90,20 +94,21 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
   }
 
   companies.forEach((company) => {
-    const item = createListItem(`
+    element.appendChild(createListItem(`
       <strong>${company.businessName || '-'}</strong><br>
       WhatsApp: ${formatPhone(company.whatsapp || '-')}<br>
       Plano: ${company.planId || '-'}<br>
       Cobrança: ${formatBillingMode(company.billingMode)}<br>
       Status: ${formatSubscriptionStatus(company.subscriptionStatus)}<br>
+      Preço mensal: ${formatCurrencyBRL(company.fixedMonthlyPrice || 0)}<br>
+      Preço anual: ${formatCurrencyBRL(company.annualPrice || 0)}<br>
+      Preço por serviço: ${formatCurrencyBRL(company.pricePerExecutedService || 0)}<br>
       Página pública: ${company.publicPageEnabled === false ? 'Não' : 'Sim'}<br>
       Trial até: ${company.trialEndsAt || '-'}<br><br>
       <button class="button" type="button" data-company-action="edit" data-company-id="${company.id}">
         Editar
       </button>
-    `);
-
-    element.appendChild(item);
+    `));
   });
 
   bindCompanyActions(companies);
@@ -143,6 +148,7 @@ export function fillCompanyAdminForm(company) {
   document.getElementById('company-admin-plan-id').value = company.planId || '';
   document.getElementById('company-admin-billing-mode').value = company.billingMode || 'free';
   document.getElementById('company-admin-fixed-price').value = company.fixedMonthlyPrice || 0;
+  document.getElementById('company-admin-annual-price').value = company.annualPrice || 0;
   document.getElementById('company-admin-price-per-service').value = company.pricePerExecutedService || 0;
   document.getElementById('company-admin-public-page-enabled').value = String(company.publicPageEnabled !== false);
   document.getElementById('company-admin-trial-ends-at').value = company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '';
@@ -152,7 +158,7 @@ export function fillCompanyAdminForm(company) {
   if (whatsappButton) {
     whatsappButton.href = buildWhatsAppLink(
       company.whatsapp || '',
-      `Olá, estou entrando em contato sobre a sua empresa no HoraLivre.`
+      'Olá, estou entrando em contato sobre a sua empresa no HoraLivre.'
     );
   }
 }
@@ -168,6 +174,7 @@ export function resetCompanyAdminForm() {
   }
 
   const whatsappButton = document.getElementById('company-admin-whatsapp-button');
+
   if (whatsappButton) {
     whatsappButton.href = '#';
   }
@@ -182,6 +189,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
   const planId = document.getElementById('company-admin-plan-id').value;
   const billingMode = document.getElementById('company-admin-billing-mode').value;
   const fixedMonthlyPrice = Number(document.getElementById('company-admin-fixed-price').value || 0);
+  const annualPrice = Number(document.getElementById('company-admin-annual-price').value || 0);
   const pricePerExecutedService = Number(document.getElementById('company-admin-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('company-admin-public-page-enabled').value === 'true';
   const trialEndsAt = document.getElementById('company-admin-trial-ends-at').value || null;
@@ -204,6 +212,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
     planId,
     billingMode,
     fixedMonthlyPrice,
+    annualPrice,
     pricePerExecutedService,
     publicPageEnabled,
     isBlocked: subscriptionStatus === 'blocked',
@@ -213,6 +222,7 @@ export async function submitSaveCompanyAdmin(feedbackElement) {
   await saveBillingSettingsForTenant(companyId, {
     billingMode,
     fixedMonthlyPrice,
+    annualPrice,
     pricePerExecutedService
   });
 
