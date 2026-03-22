@@ -2,10 +2,20 @@ import { requireAdmin } from '../utils/guards.js';
 import { listPlans } from '../services/plan-service.js';
 import { showFeedback } from '../utils/dom-utils.js';
 import { createCompanyClientWithAccess } from '../services/company-user-service.js';
+import {
+  refreshBillingModeVisibility
+} from './admin-billing-mode-ui.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
 }
+
+const NEW_COMPANY_BILLING_FIELDS = {
+  monthlyPriceId: 'new-company-fixed-price',
+  annualPriceId: 'new-company-annual-price',
+  annualBillingMonthId: 'new-company-annual-billing-month',
+  perServicePriceId: 'new-company-price-per-service'
+};
 
 export async function populateNewCompanyPlans() {
   const plans = await listPlans();
@@ -25,6 +35,10 @@ export async function populateNewCompanyPlans() {
   });
 }
 
+export function refreshNewCompanyBillingModeUI() {
+  refreshBillingModeVisibility('new-company-billing-mode', NEW_COMPANY_BILLING_FIELDS);
+}
+
 export async function submitNewCompany(feedbackElement) {
   const businessName = document.getElementById('new-company-business-name').value.trim();
   const ownerName = document.getElementById('new-company-owner-name').value.trim();
@@ -37,7 +51,7 @@ export async function submitNewCompany(feedbackElement) {
   const billingMode = document.getElementById('new-company-billing-mode').value;
   const fixedMonthlyPrice = Number(document.getElementById('new-company-fixed-price').value || 0);
   const annualPrice = Number(document.getElementById('new-company-annual-price').value || 0);
-  const annualBillingMonth = Number(document.getElementById('new-company-annual-billing-month').value || 0);
+  const annualBillingMonth = Number(document.getElementById('new-company-annual-billing-month').value || 0) || null;
   const pricePerExecutedService = Number(document.getElementById('new-company-price-per-service').value || 0);
   const publicPageEnabled = document.getElementById('new-company-public-page-enabled').value === 'true';
   const reportsEnabled = document.getElementById('new-company-reports-enabled').value === 'true';
@@ -64,7 +78,7 @@ export async function submitNewCompany(feedbackElement) {
     billingMode,
     fixedMonthlyPrice,
     annualPrice,
-    annualBillingMonth: annualBillingMonth || null,
+    annualBillingMonth,
     pricePerExecutedService,
     publicPageEnabled,
     reportsEnabled,
