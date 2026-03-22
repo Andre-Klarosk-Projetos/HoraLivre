@@ -10,6 +10,11 @@ function getAllTabPanels() {
   ];
 }
 
+function closeMobileMenu() {
+  const sidebarNav = document.getElementById('client-tab-nav');
+  sidebarNav?.classList.remove('open');
+}
+
 export function activateClientTab(tabId) {
   const buttons = getAllTabButtons();
   const panels = getAllTabPanels();
@@ -17,15 +22,26 @@ export function activateClientTab(tabId) {
   buttons.forEach((button) => {
     const isActive = button.getAttribute('data-tab-target') === tabId;
     button.classList.toggle('active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
   });
 
   panels.forEach((panel) => {
-    panel.classList.toggle('active', panel.id === tabId);
+    const isActive = panel.id === tabId;
+    panel.classList.toggle('active', isActive);
+    panel.hidden = !isActive;
   });
 
+  const activePanel = document.getElementById(tabId);
+
+  if (activePanel) {
+    activePanel.scrollIntoView({
+      behavior: 'auto',
+      block: 'start'
+    });
+  }
+
   if (window.innerWidth <= 960) {
-    const sidebarNav = document.getElementById('client-tab-nav');
-    sidebarNav?.classList.remove('open');
+    closeMobileMenu();
   }
 }
 
@@ -35,7 +51,9 @@ export function bindClientTabs() {
   const sidebarNav = document.getElementById('client-tab-nav');
 
   buttons.forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+
       const tabId = button.getAttribute('data-tab-target');
 
       if (!tabId) {
