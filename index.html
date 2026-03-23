@@ -5,24 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HoraLivre - Agendamento para autônomos e pequenas empresas</title>
 
-  <meta
-    name="description"
-    content="HoraLivre é uma plataforma de agendamento para autônomos e pequenas empresas, com página pública, painel do cliente, painel admin, cobrança e relatórios."
-  >
-
   <link rel="stylesheet" href="./assets/css/global.css">
   <link rel="stylesheet" href="./assets/css/components.css">
   <link rel="stylesheet" href="./assets/css/home.css">
 </head>
-<body>
+<body class="shell-page">
   <header class="home-header">
     <div class="home-header-inner">
-      <a class="brand-link" href="./index.html">
-        <span class="badge">HoraLivre</span>
-        <span class="brand-text">Sistema de agendamento</span>
+      <a class="brand-link" href="#top" aria-label="HoraLivre">
+        <span class="brand-mark">⌚</span>
+        <span class="brand-text">HoraLivre</span>
       </a>
 
-      <nav class="home-nav">
+      <nav class="home-nav" aria-label="Navegação principal">
         <a href="#recursos">Recursos</a>
         <a href="#como-funciona">Como funciona</a>
         <a href="#planos">Planos</a>
@@ -35,16 +30,17 @@
     </div>
   </header>
 
-  <main class="home-page shell-page">
-    <section class="hero-section home-surface">
+  <main id="top" class="home-page">
+    <section class="home-surface hero-section">
       <div class="hero-grid">
         <div class="hero-copy">
-          <span class="eyebrow">Plataforma completa</span>
+          <span class="mini-label">Plataforma completa</span>
+
           <h1>Organize agendamentos, clientes e cobrança em um só lugar</h1>
+
           <p class="hero-description">
-            O HoraLivre foi pensado para autônomos e pequenas empresas que precisam
-            de uma página pública de agendamento, painel interno para gestão do dia a dia
-            e controle claro de cobrança.
+            O HoraLivre foi pensado para autônomos e pequenas empresas que precisam de uma página pública
+            de agendamento, painel interno para gestão do dia a dia e controle claro de cobrança.
           </p>
 
           <div class="hero-actions">
@@ -54,29 +50,31 @@
 
           <div class="hero-highlights">
             <div class="highlight-item">
+              <span class="highlight-icon public">🌐</span>
               <strong>Página pública</strong>
               <span>Receba agendamentos pelo seu link</span>
             </div>
 
             <div class="highlight-item">
+              <span class="highlight-icon company">🏢</span>
               <strong>Painel da empresa</strong>
               <span>Gerencie agenda, serviços, clientes e relatórios</span>
             </div>
 
             <div class="highlight-item">
+              <span class="highlight-icon admin">⚙</span>
               <strong>Painel admin</strong>
               <span>Controle empresas clientes, planos e cobrança</span>
             </div>
           </div>
         </div>
 
-        <div class="hero-panel">
-          <div class="hero-card primary-card">
-            <span class="mini-label">Para a empresa cliente</span>
+        <aside class="hero-panel">
+          <article class="hero-card primary-card">
+            <span class="mini-badge">Para a empresa cliente</span>
             <h2>Agenda, serviços, clientes e cobrança</h2>
             <p>
-              O painel da empresa centraliza tudo o que o negócio precisa para operar
-              de forma simples e organizada.
+              O painel da empresa centraliza tudo o que o negócio precisa para operar de forma simples e organizada.
             </p>
 
             <ul class="feature-bullets">
@@ -86,151 +84,136 @@
               <li>Relatório de concluídos</li>
               <li>Valor previsto a pagar</li>
             </ul>
-          </div>
+          </article>
 
-          <div class="hero-card">
-            <span class="mini-label">Para o admin</span>
+          <article class="hero-card">
+            <span class="mini-badge dark">Para o admin</span>
             <h2>Controle da plataforma</h2>
             <p>
               Gerencie empresas clientes, planos, suporte e cobrança mensal em uma área central.
             </p>
-          </div>
-        </div>
+
+            <div class="trust-grid">
+              <div class="trust-card">
+                <span class="trust-icon clarity">◉</span>
+                <strong>Mais clareza</strong>
+                <span>Todos os perfis têm áreas separadas e mais intuitivas.</span>
+              </div>
+
+              <div class="trust-card">
+                <span class="trust-icon control">▣</span>
+                <strong>Mais controle</strong>
+                <span>Admin acompanha cobrança, planos e empresas clientes.</span>
+              </div>
+
+              <div class="trust-card">
+                <span class="trust-icon practical">✓</span>
+                <strong>Mais praticidade</strong>
+                <span>Cliente final agenda por uma página pública simples.</span>
+              </div>
+            </div>
+          </article>
+        </aside>
       </div>
     </section>
 
-    <section class="trust-section">
-      <div class="trust-grid">
-        <article class="trust-card">
-          <strong>Mais clareza</strong>
-          <span>Todos os perfis têm áreas separadas e mais intuitivas.</span>
-        </article>
-
-        <article class="trust-card">
-          <strong>Mais controle</strong>
-          <span>Admin acompanha cobrança, planos e empresas clientes.</span>
-        </article>
-
-        <article class="trust-card">
-          <strong>Mais praticidade</strong>
-          <span>Cliente final agenda por uma página pública simples.</span>
-        </article>
-      </div>
-    </section>
-
-    <section id="recursos" class="content-section home-surface">
+    <section id="recursos" class="content-section alt-section">
       <div class="section-heading center">
-        <span class="eyebrow">Recursos</span>
+        <span class="mini-label">Recursos</span>
         <h2>O que o HoraLivre já cobre</h2>
         <p class="muted">
-          Estrutura pensada para operação real, com compatibilidade entre admin,
-          empresa cliente e página pública.
+          Estrutura pensada para operação real, com compatibilidade entre admin, empresa cliente e página pública.
         </p>
       </div>
 
       <div class="feature-grid">
         <article class="feature-card">
+          <span class="feature-icon public">🌐</span>
           <h3>Página pública por empresa</h3>
-          <p>
-            Cada empresa pode ter seu próprio link público de agendamento com slug,
-            serviços e horários disponíveis.
-          </p>
+          <p>Cada empresa pode ter seu próprio link público de agendamento com slug, serviços e horários disponíveis.</p>
         </article>
 
         <article class="feature-card">
+          <span class="feature-icon services">✂</span>
           <h3>Gestão de serviços</h3>
-          <p>
-            Cadastre, edite e controle os serviços disponíveis para agenda e página pública.
-          </p>
+          <p>Cadastre, edite e controle os serviços disponíveis para agenda e página pública.</p>
         </article>
 
         <article class="feature-card">
+          <span class="feature-icon customers">👥</span>
           <h3>Gestão de clientes finais</h3>
-          <p>
-            Organize a base de clientes, histórico e informações importantes da operação.
-          </p>
+          <p>Organize a base de clientes, histórico e informações importantes da operação.</p>
         </article>
 
         <article class="feature-card">
+          <span class="feature-icon agenda">📅</span>
           <h3>Agenda com status</h3>
-          <p>
-            Acompanhe agendado, confirmado, concluído, cancelado e faltou em um fluxo simples.
-          </p>
+          <p>Acompanhe agendado, confirmado, concluído, cancelado e faltou em um fluxo simples.</p>
         </article>
 
         <article class="feature-card">
+          <span class="feature-icon billing">💳</span>
           <h3>Relatórios e cobrança</h3>
-          <p>
-            Mostre quantidade concluída no período e valor previsto conforme o tipo de cobrança.
-          </p>
+          <p>Mostre quantidade concluída no período e valor previsto conforme o tipo de cobrança.</p>
         </article>
 
         <article class="feature-card">
+          <span class="feature-icon admin">🛠</span>
           <h3>Planos e administração</h3>
-          <p>
-            O admin gerencia planos, empresas clientes, suporte, cobrança mensal e configurações.
-          </p>
+          <p>O admin gerencia planos, empresas clientes, suporte, cobrança mensal e configurações.</p>
         </article>
       </div>
     </section>
 
-    <section id="como-funciona" class="content-section alt-section">
+    <section id="como-funciona" class="content-section home-surface">
       <div class="section-heading center">
-        <span class="eyebrow">Como funciona</span>
+        <span class="mini-label">Como funciona</span>
         <h2>Fluxo simples para os três lados do sistema</h2>
       </div>
 
       <div class="steps-grid">
         <article class="step-card">
-          <div class="step-number">1</div>
+          <span class="step-number">1</span>
           <h3>Admin configura a empresa cliente</h3>
-          <p>
-            O admin cria a empresa cliente, define plano, cobrança, status e suporte.
-          </p>
+          <p>O admin cria a empresa cliente, define plano, cobrança, status e suporte.</p>
         </article>
 
         <article class="step-card">
-          <div class="step-number">2</div>
+          <span class="step-number">2</span>
           <h3>A empresa organiza sua operação</h3>
-          <p>
-            A empresa cadastra serviços, clientes finais, agenda e disponibilidade.
-          </p>
+          <p>A empresa cadastra serviços, clientes finais, agenda e disponibilidade.</p>
         </article>
 
         <article class="step-card">
-          <div class="step-number">3</div>
+          <span class="step-number">3</span>
           <h3>O cliente final agenda</h3>
-          <p>
-            O cliente final acessa a página pública e faz o agendamento nos horários disponíveis.
-          </p>
+          <p>O cliente final acessa a página pública e faz o agendamento nos horários disponíveis.</p>
         </article>
 
         <article class="step-card">
-          <div class="step-number">4</div>
+          <span class="step-number">4</span>
           <h3>O sistema consolida relatórios</h3>
-          <p>
-            A empresa vê os concluídos e o admin acompanha cobrança, status e operação.
-          </p>
+          <p>A empresa vê os concluídos e o admin acompanha cobrança, status e operação.</p>
         </article>
       </div>
     </section>
 
-    <section id="planos" class="content-section home-surface">
+    <section id="planos" class="content-section alt-section">
       <div class="section-heading center">
-        <span class="eyebrow">Cobrança</span>
+        <span class="mini-label">Cobrança</span>
         <h2>Modelos pensados para operação real</h2>
         <p class="muted">
-          Os planos criados no admin ainda não são exibidos automaticamente aqui.
-          Esta seção continua institucional, explicando os modelos de cobrança do HoraLivre.
+          Os planos criados no admin ainda não são exibidos automaticamente aqui. Esta seção continua institucional,
+          explicando os modelos de cobrança do HoraLivre.
         </p>
       </div>
 
       <div class="pricing-grid">
         <article class="pricing-card">
+          <span class="mini-badge success">Gratuito</span>
           <h3>Gratuito</h3>
-          <p class="pricing-description">
-            Ideal para onboarding, testes iniciais e configuração básica.
-          </p>
+          <p class="plan-price-line">Sem cobrança</p>
+          <p class="pricing-description">Ideal para onboarding, testes iniciais e configuração básica.</p>
           <ul class="feature-bullets">
             <li>Sem cobrança</li>
             <li>Pode ser usado para trial</li>
@@ -241,9 +224,8 @@
         <article class="pricing-card featured">
           <span class="mini-badge">Mais flexível</span>
           <h3>Plano fixo</h3>
-          <p class="pricing-description">
-            Valor mensal fixo, simples de entender e fácil de operar.
-          </p>
+          <p class="plan-price-line">Valor mensal previsível</p>
+          <p class="pricing-description">Valor mensal fixo, simples de entender e fácil de operar.</p>
           <ul class="feature-bullets">
             <li>Cobrança mensal previsível</li>
             <li>Ideal para empresas com uso recorrente</li>
@@ -252,10 +234,10 @@
         </article>
 
         <article class="pricing-card">
+          <span class="mini-badge warn">Uso real</span>
           <h3>Por serviço concluído</h3>
-          <p class="pricing-description">
-            Cobrança proporcional ao que a empresa efetivamente concluiu.
-          </p>
+          <p class="plan-price-line">Cobrança proporcional</p>
+          <p class="pricing-description">Cobrança proporcional ao que a empresa efetivamente concluiu.</p>
           <ul class="feature-bullets">
             <li>Baseado em serviços concluídos</li>
             <li>Mais aderente ao uso real</li>
@@ -265,59 +247,54 @@
       </div>
     </section>
 
-    <section id="acessar" class="content-section alt-section">
+    <section id="acessar" class="content-section home-surface">
       <div class="section-heading center">
-        <span class="eyebrow">Acesso</span>
+        <span class="mini-label">Acesso</span>
         <h2>Entre no sistema ou abra uma página pública</h2>
-        <p class="muted">
-          A home agora orienta melhor cada tipo de acesso do projeto.
-        </p>
+        <p class="muted">A home agora orienta melhor cada tipo de acesso do projeto.</p>
       </div>
 
       <div class="access-grid">
         <article class="access-card">
+          <span class="access-icon login">→</span>
           <h3>Entrar no sistema</h3>
-          <p>
-            Use esta opção para acessar como admin ou como empresa cliente.
-          </p>
+          <p>Use esta opção para acessar como admin ou como empresa cliente.</p>
           <a class="button primary" href="./login.html">Ir para login</a>
         </article>
 
         <article class="access-card">
+          <span class="access-icon admin">⚙</span>
           <h3>Painel admin</h3>
-          <p>
-            Área central para gestão da plataforma, planos, cobrança e empresas clientes.
-          </p>
-          <button class="button" id="open-admin-button" type="button">Abrir admin</button>
+          <p>Área central para gestão da plataforma, planos, cobrança e empresas clientes.</p>
+          <button id="open-admin-button" class="button" type="button">Abrir admin</button>
         </article>
 
         <article class="access-card">
+          <span class="access-icon company">🏢</span>
           <h3>Painel da empresa</h3>
-          <p>
-            Área usada pela empresa cliente para serviços, clientes, agenda e relatórios.
-          </p>
-          <button class="button" id="open-client-panel-button" type="button">Abrir painel da empresa</button>
+          <p>Área usada pela empresa cliente para serviços, clientes, agenda e relatórios.</p>
+          <button id="open-client-panel-button" class="button" type="button">Abrir painel da empresa</button>
         </article>
 
         <article class="access-card">
+          <span class="access-icon public">🌐</span>
           <h3>Página pública</h3>
-          <p>
-            A página pública correta depende da empresa vinculada à conta logada.
-          </p>
-          <button class="button" id="open-public-page-button" type="button">Abrir página pública</button>
+          <p>A página pública correta depende da empresa vinculada à conta logada.</p>
+          <button id="open-public-page-button" class="button" type="button">Abrir página pública</button>
         </article>
       </div>
 
-      <div id="home-access-feedback" class="home-feedback hidden"></div>
+      <p id="home-access-feedback" class="home-feedback hidden"></p>
     </section>
 
-    <section class="final-cta-section">
+    <section class="content-section">
       <div class="final-cta-card">
         <div>
-          <span class="eyebrow">Pronto para usar</span>
+          <span class="mini-label light">Pronto para usar</span>
           <h2>Uma base mais profissional para o HoraLivre</h2>
           <p>
-            A home agora explica melhor o sistema e melhora a percepção de valor do projeto.
+            A home agora explica melhor o sistema, melhora a percepção de valor do projeto
+            e mantém a compatibilidade com o restante do app.
           </p>
         </div>
 
