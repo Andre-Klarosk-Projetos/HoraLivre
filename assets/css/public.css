@@ -313,6 +313,13 @@
   color: #475569;
 }
 
+.public-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
 .public-success-panel {
   display: grid;
 }
@@ -400,11 +407,13 @@
     grid-template-columns: 1fr;
   }
 
-  .public-tabs-nav {
+  .public-tabs-nav,
+  .public-summary-actions {
     flex-direction: column;
   }
 
   .public-tab-button,
+  .public-summary-actions .button,
   .public-success-actions .button {
     width: 100%;
   }
