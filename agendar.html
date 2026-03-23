@@ -39,11 +39,11 @@
         <button class="public-tab-button active" type="button" data-public-tab-target="public-services-tab">
           Serviços disponíveis
         </button>
-        <button class="public-tab-button" type="button" data-public-tab-target="public-summary-tab">
-          Resumo do agendamento
-        </button>
         <button class="public-tab-button" type="button" data-public-tab-target="public-booking-tab">
           Agendar agora
+        </button>
+        <button class="public-tab-button" type="button" data-public-tab-target="public-summary-tab">
+          Resumo do agendamento
         </button>
         <button class="public-tab-button" type="button" data-public-tab-target="public-company-tab">
           Dados da empresa
@@ -56,51 +56,10 @@
         <div class="card public-section public-section-services">
           <div class="section-heading">
             <h2>Serviços disponíveis</h2>
-            <p class="muted">Escolha o serviço desejado para visualizar os horários livres.</p>
+            <p class="muted">Escolha o serviço desejado para continuar seu agendamento.</p>
           </div>
 
           <div id="public-services-list" class="public-services-grid"></div>
-        </div>
-      </section>
-
-      <section id="public-summary-tab" class="public-tab-panel" hidden>
-        <div class="card public-section public-section-summary">
-          <div class="section-heading">
-            <h2>Resumo do agendamento</h2>
-            <p class="muted">Confira o que foi selecionado antes de confirmar.</p>
-          </div>
-
-          <div class="public-summary-grid">
-            <div class="public-summary-item">
-              <span>Serviço</span>
-              <strong id="public-summary-service">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Duração</span>
-              <strong id="public-summary-duration">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Valor</span>
-              <strong id="public-summary-price">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Data</span>
-              <strong id="public-summary-date">-</strong>
-            </div>
-
-            <div class="public-summary-item">
-              <span>Hora</span>
-              <strong id="public-summary-time">-</strong>
-            </div>
-          </div>
-
-          <div class="public-summary-highlight">
-            <strong>Próximo passo</strong>
-            <p>Depois de escolher serviço, data e horário, vá até a aba “Agendar agora” para confirmar.</p>
-          </div>
         </div>
       </section>
 
@@ -108,7 +67,7 @@
         <div class="card public-section public-section-booking">
           <div class="section-heading">
             <h2>Agendar agora</h2>
-            <p class="muted">Preencha seus dados e confirme o melhor horário.</p>
+            <p class="muted">Preencha seus dados, escolha a data e selecione o melhor horário.</p>
           </div>
 
           <form id="public-booking-form" class="stack">
@@ -170,11 +129,52 @@
         </div>
       </section>
 
+      <section id="public-summary-tab" class="public-tab-panel" hidden>
+        <div class="card public-section public-section-summary">
+          <div class="section-heading">
+            <h2>Resumo do agendamento</h2>
+            <p class="muted">Confira os dados selecionados antes de finalizar.</p>
+          </div>
+
+          <div class="public-summary-grid">
+            <div class="public-summary-item">
+              <span>Serviço</span>
+              <strong id="public-summary-service">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Duração</span>
+              <strong id="public-summary-duration">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Valor</span>
+              <strong id="public-summary-price">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Data</span>
+              <strong id="public-summary-date">-</strong>
+            </div>
+
+            <div class="public-summary-item">
+              <span>Hora</span>
+              <strong id="public-summary-time">-</strong>
+            </div>
+          </div>
+
+          <div class="public-summary-highlight">
+            <strong>Conferência final</strong>
+            <p>Revise as informações acima. Se estiver tudo certo, volte em “Agendar agora” e confirme.</p>
+          </div>
+        </div>
+      </section>
+
       <section id="public-company-tab" class="public-tab-panel" hidden>
         <div class="card public-section public-section-company">
           <div class="section-heading">
             <h2>Dados da empresa</h2>
-            <p class="muted">Veja as principais informações antes do atendimento.</p>
+            <p class="muted">Veja as principais informações da empresa antes do atendimento.</p>
           </div>
 
           <div class="public-business-info-list">
