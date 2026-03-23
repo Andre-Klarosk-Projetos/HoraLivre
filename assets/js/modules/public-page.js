@@ -136,27 +136,43 @@ function setBusinessInfo(tenant) {
     tenant.description || 'Confira os dados da empresa e fale diretamente pelo WhatsApp se precisar confirmar algum detalhe.';
 
   const logoElement = document.getElementById('public-business-logo');
-  if (tenant.logoUrl) {
-    logoElement.src = tenant.logoUrl;
-    logoElement.hidden = false;
-  } else {
-    logoElement.hidden = true;
+  if (logoElement) {
+    if (tenant.logoUrl) {
+      logoElement.src = tenant.logoUrl;
+      logoElement.hidden = false;
+    } else {
+      logoElement.hidden = true;
+      logoElement.removeAttribute('src');
+    }
   }
 
-  document.getElementById('public-business-whatsapp-text').textContent =
-    whatsapp || 'WhatsApp não informado';
+  const whatsappTextElement = document.getElementById('public-business-whatsapp-text');
+  const addressTextElement = document.getElementById('public-business-address-text');
+  const instagramTextElement = document.getElementById('public-business-instagram');
+  const addressCardTextElement = document.getElementById('public-business-address');
+  const whatsappCardTextElement = document.getElementById('public-business-whatsapp');
 
-  document.getElementById('public-business-address-text').textContent =
-    address || 'Endereço não informado';
+  if (whatsappTextElement) {
+    whatsappTextElement.textContent = whatsapp || 'WhatsApp não informado';
+  }
 
-  document.getElementById('public-business-instagram').textContent =
-    instagram ? `@${normalizeInstagramHandle(instagram)}` : '-';
+  if (addressTextElement) {
+    addressTextElement.textContent = address || 'Endereço não informado';
+  }
 
-  document.getElementById('public-business-address').textContent =
-    address || '-';
+  if (instagramTextElement) {
+    instagramTextElement.textContent = instagram
+      ? `@${normalizeInstagramHandle(instagram)}`
+      : '-';
+  }
 
-  document.getElementById('public-business-whatsapp').textContent =
-    whatsapp || '-';
+  if (addressCardTextElement) {
+    addressCardTextElement.textContent = address || '-';
+  }
+
+  if (whatsappCardTextElement) {
+    whatsappCardTextElement.textContent = whatsapp || '-';
+  }
 
   const whatsappMessage = `Olá! Vim pela página pública da ${businessName}.`;
   const whatsappHref = buildPublicWhatsAppMessageLink(whatsapp, whatsappMessage);
@@ -225,7 +241,11 @@ function renderServices() {
         <span>Valor: ${formatCurrencyBRL(service.price || 0)}</span>
         <span>${service.description || 'Sem descrição cadastrada.'}</span>
       </div>
-      <button class="button primary public-service-select-button" type="button" data-service-id="${service.id}">
+      <button
+        class="button primary public-service-select-button"
+        type="button"
+        data-service-id="${service.id}"
+      >
         ${isSelected ? 'Selecionado' : 'Selecionar'}
       </button>
     `;
@@ -310,10 +330,17 @@ async function refreshAvailableSlots() {
     return;
   }
 
-  const availability = await getAvailabilityForDate(state.tenant, state.selectedService, date);
+  const availability = await getAvailabilityForDate(
+    state.tenant,
+    state.selectedService,
+    date
+  );
 
   if (availability.status === 'closed') {
-    renderAvailabilityMessage('closed', availability.message || 'A empresa está fechada nesta data.');
+    renderAvailabilityMessage(
+      'closed',
+      availability.message || 'A empresa está fechada nesta data.'
+    );
 
     const empty = document.createElement('div');
     empty.className = 'public-slot-empty';
@@ -323,7 +350,10 @@ async function refreshAvailableSlots() {
   }
 
   if (availability.status === 'full') {
-    renderAvailabilityMessage('warning', availability.message || 'Não há horários livres para esta data.');
+    renderAvailabilityMessage(
+      'warning',
+      availability.message || 'Não há horários livres para esta data.'
+    );
 
     const empty = document.createElement('div');
     empty.className = 'public-slot-empty';
@@ -333,9 +363,15 @@ async function refreshAvailableSlots() {
   }
 
   if (availability.status === 'special_hours') {
-    renderAvailabilityMessage('special', availability.message || 'Expediente especial nesta data.');
+    renderAvailabilityMessage(
+      'special',
+      availability.message || 'Expediente especial nesta data.'
+    );
   } else {
-    renderAvailabilityMessage('available', availability.message || 'Horários disponíveis carregados.');
+    renderAvailabilityMessage(
+      'available',
+      availability.message || 'Horários disponíveis carregados.'
+    );
   }
 
   const slots = availability.slots || [];
@@ -403,14 +439,13 @@ function fillSuccessPanel({ customerName, customerPhone, date }) {
   document.getElementById('public-success-customer').textContent = customerName || '-';
   document.getElementById('public-success-phone').textContent = customerPhone || '-';
 
-  const whatsappLink = document.getElementById('public-success-whatsapp-link');
   const successWhatsappHref = buildPublicWhatsAppMessageLink(
     state.tenant?.whatsapp || '',
     `Olá! Acabei de fazer um agendamento para ${customerName || 'cliente'} no serviço ${state.selectedService?.name || ''}, em ${date || ''} às ${state.selectedTime || ''}.`
   );
 
   applyLinkState(
-    whatsappLink,
+    document.getElementById('public-success-whatsapp-link'),
     successWhatsappHref,
     Boolean(state.tenant?.whatsapp)
   );
@@ -432,6 +467,7 @@ function resetPublicBookingFlow() {
   bookingForm.reset();
   state.selectedService = null;
   state.selectedTime = '';
+
   fillSelectedService();
   updateSummaryDateTime();
   renderServices();
@@ -533,7 +569,11 @@ async function init() {
   const tenant = await getPublicTenantBySlug(slug);
 
   if (!tenant) {
-    showFeedback(bookingFeedbackElement, 'Página pública não encontrada ou indisponível.', 'error');
+    showFeedback(
+      bookingFeedbackElement,
+      'Página pública não encontrada ou indisponível.',
+      'error'
+    );
     return;
   }
 
