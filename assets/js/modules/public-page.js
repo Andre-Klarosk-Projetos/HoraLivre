@@ -1,11 +1,12 @@
 import {
   getPublicTenantBySlug,
   listPublicServicesByTenant,
-  listAvailableSlotsForDate,
+  getAvailabilityForDate,
   ensurePublicCustomer,
   createPublicAppointment,
   getSlugFromUrl,
-  buildPublicWhatsAppMessageLink
+  buildPublicWhatsAppMessageLink,
+  getReadableBusinessHours
 } from '../services/public-booking-service.js';
 import { formatCurrencyBRL } from '../utils/formatters.js';
 import { showFeedback, clearElement } from '../utils/dom-utils.js';
@@ -59,6 +60,28 @@ function bindPublicTabs() {
   });
 }
 
+function renderBusinessHours() {
+  const container = document.getElementById('public-business-hours-list');
+
+  if (!container || !state.tenant) {
+    return;
+  }
+
+  clearElement(container);
+
+  const readableHours = getReadableBusinessHours(state.tenant);
+
+  readableHours.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = `public-hours-item ${item.enabled ? 'enabled' : 'disabled'}`;
+    row.innerHTML = `
+      <span>${item.label}</span>
+      <strong>${item.text}</strong>
+    `;
+    container.appendChild(row);
+  });
+}
+
 function setBusinessInfo(tenant) {
   document.getElementById('public-tenant-id').value = tenant.id || '';
   document.getElementById('public-business-name').textContent = tenant.businessName || 'Sua empresa';
@@ -96,6 +119,8 @@ function setBusinessInfo(tenant) {
     tenant.whatsapp || '',
     `Olá! Vim pela página pública da ${tenant.businessName || 'empresa'}.`
   );
+
+  renderBusinessHours();
 }
 
 function renderServices() {
@@ -172,8 +197,21 @@ function updateSummaryDateTime() {
   document.getElementById('public-summary-time').textContent = state.selectedTime || '-';
 }
 
+function renderAvailabilityMessage(type, message) {
+  const infoBox = document.getElementById('public-availability-info');
+
+  if (!infoBox) {
+    return;
+  }
+
+  infoBox.className = `public-availability-info ${type}`;
+  infoBox.textContent = message || '';
+  infoBox.hidden = !message;
+}
+
 async function refreshAvailableSlots() {
   clearElement(slotsElement);
+  renderAvailabilityMessage('neutral', '');
 
   const date = document.getElementById('public-booking-date').value || '';
 
@@ -193,7 +231,35 @@ async function refreshAvailableSlots() {
     return;
   }
 
-  const slots = await listAvailableSlotsForDate(state.tenant, state.selectedService, date);
+  const availability = await getAvailabilityForDate(state.tenant, state.selectedService, date);
+
+  if (availability.status === 'closed') {
+    renderAvailabilityMessage('closed', availability.message || 'A empresa está fechada nesta data.');
+
+    const empty = document.createElement('div');
+    empty.className = 'public-slot-empty';
+    empty.textContent = 'Não é possível agendar nesta data.';
+    slotsElement.appendChild(empty);
+    return;
+  }
+
+  if (availability.status === 'full') {
+    renderAvailabilityMessage('warning', availability.message || 'Não há horários livres para esta data.');
+
+    const empty = document.createElement('div');
+    empty.className = 'public-slot-empty';
+    empty.textContent = 'Escolha outra data para continuar.';
+    slotsElement.appendChild(empty);
+    return;
+  }
+
+  if (availability.status === 'special_hours') {
+    renderAvailabilityMessage('special', availability.message || 'Expediente especial nesta data.');
+  } else {
+    renderAvailabilityMessage('available', availability.message || 'Horários disponíveis carregados.');
+  }
+
+  const slots = availability.slots || [];
 
   if (!slots.length) {
     const empty = document.createElement('div');
@@ -290,6 +356,8 @@ function resetPublicBookingFlow() {
   empty.className = 'public-slot-empty';
   empty.textContent = 'Selecione um serviço e uma data para visualizar os horários.';
   slotsElement.appendChild(empty);
+
+  renderAvailabilityMessage('neutral', '');
 
   if (bookingFeedbackElement) {
     bookingFeedbackElement.textContent = '';
@@ -393,6 +461,7 @@ async function init() {
   fillSelectedService();
   updateSummaryDateTime();
   hideSuccessPanel();
+  renderAvailabilityMessage('neutral', '');
 
   document.getElementById('public-booking-date')?.addEventListener('change', async () => {
     state.selectedTime = '';
