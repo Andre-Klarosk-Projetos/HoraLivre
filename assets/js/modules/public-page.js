@@ -60,6 +60,45 @@ function bindPublicTabs() {
   });
 }
 
+function normalizeInstagramHandle(value) {
+  return String(value || '').trim().replace(/^@+/, '');
+}
+
+function buildInstagramLink(value) {
+  const handle = normalizeInstagramHandle(value);
+
+  if (!handle) {
+    return '#';
+  }
+
+  return `https://www.instagram.com/${encodeURIComponent(handle)}/`;
+}
+
+function buildMapsLink(address) {
+  const normalized = String(address || '').trim();
+
+  if (!normalized) {
+    return '#';
+  }
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(normalized)}`;
+}
+
+function applyLinkState(anchorElement, href, enabled) {
+  if (!anchorElement) {
+    return;
+  }
+
+  anchorElement.href = enabled ? href : '#';
+  anchorElement.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+
+  if (enabled) {
+    anchorElement.classList.remove('is-disabled');
+  } else {
+    anchorElement.classList.add('is-disabled');
+  }
+}
+
 function renderBusinessHours() {
   const container = document.getElementById('public-business-hours-list');
 
@@ -83,8 +122,13 @@ function renderBusinessHours() {
 }
 
 function setBusinessInfo(tenant) {
+  const businessName = tenant?.businessName || 'Sua empresa';
+  const whatsapp = tenant?.whatsapp || '';
+  const address = tenant?.address || '';
+  const instagram = tenant?.instagram || '';
+
   document.getElementById('public-tenant-id').value = tenant.id || '';
-  document.getElementById('public-business-name').textContent = tenant.businessName || 'Sua empresa';
+  document.getElementById('public-business-name').textContent = businessName;
   document.getElementById('public-business-description').textContent =
     tenant.description || 'Escolha um serviço, selecione um horário e confirme seu agendamento.';
 
@@ -100,24 +144,59 @@ function setBusinessInfo(tenant) {
   }
 
   document.getElementById('public-business-whatsapp-text').textContent =
-    tenant.whatsapp || 'WhatsApp não informado';
+    whatsapp || 'WhatsApp não informado';
 
   document.getElementById('public-business-address-text').textContent =
-    tenant.address || 'Endereço não informado';
+    address || 'Endereço não informado';
 
   document.getElementById('public-business-instagram').textContent =
-    tenant.instagram || '-';
+    instagram ? `@${normalizeInstagramHandle(instagram)}` : '-';
 
   document.getElementById('public-business-address').textContent =
-    tenant.address || '-';
+    address || '-';
 
   document.getElementById('public-business-whatsapp').textContent =
-    tenant.whatsapp || '-';
+    whatsapp || '-';
 
-  const whatsappLink = document.getElementById('public-business-whatsapp-link');
-  whatsappLink.href = buildPublicWhatsAppMessageLink(
-    tenant.whatsapp || '',
-    `Olá! Vim pela página pública da ${tenant.businessName || 'empresa'}.`
+  const whatsappMessage = `Olá! Vim pela página pública da ${businessName}.`;
+  const whatsappHref = buildPublicWhatsAppMessageLink(whatsapp, whatsappMessage);
+  const addressHref = buildMapsLink(address);
+  const instagramHref = buildInstagramLink(instagram);
+
+  applyLinkState(
+    document.getElementById('public-business-whatsapp-link'),
+    whatsappHref,
+    Boolean(whatsapp)
+  );
+
+  applyLinkState(
+    document.getElementById('public-business-whatsapp-button'),
+    whatsappHref,
+    Boolean(whatsapp)
+  );
+
+  applyLinkState(
+    document.getElementById('public-business-whatsapp-card-link'),
+    whatsappHref,
+    Boolean(whatsapp)
+  );
+
+  applyLinkState(
+    document.getElementById('public-business-address-link'),
+    addressHref,
+    Boolean(address)
+  );
+
+  applyLinkState(
+    document.getElementById('public-business-address-card-link'),
+    addressHref,
+    Boolean(address)
+  );
+
+  applyLinkState(
+    document.getElementById('public-business-instagram-link'),
+    instagramHref,
+    Boolean(normalizeInstagramHandle(instagram))
   );
 
   renderBusinessHours();
@@ -325,9 +404,15 @@ function fillSuccessPanel({ customerName, customerPhone, date }) {
   document.getElementById('public-success-phone').textContent = customerPhone || '-';
 
   const whatsappLink = document.getElementById('public-success-whatsapp-link');
-  whatsappLink.href = buildPublicWhatsAppMessageLink(
+  const successWhatsappHref = buildPublicWhatsAppMessageLink(
     state.tenant?.whatsapp || '',
     `Olá! Acabei de fazer um agendamento para ${customerName || 'cliente'} no serviço ${state.selectedService?.name || ''}, em ${date || ''} às ${state.selectedTime || ''}.`
+  );
+
+  applyLinkState(
+    whatsappLink,
+    successWhatsappHref,
+    Boolean(state.tenant?.whatsapp)
   );
 }
 
