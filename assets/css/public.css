@@ -93,31 +93,41 @@
   justify-items: end;
 }
 
-.public-hero-whatsapp-button {
-  min-width: 210px;
-}
-
-.public-social-inline {
-  display: flex;
-  flex-wrap: wrap;
+.public-business-meta {
+  display: grid;
   gap: 10px;
-  margin-top: 4px;
+  justify-items: end;
 }
 
-.public-social-chip {
+.public-meta-link {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 42px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(191, 219, 254, 0.5);
   color: #334155;
+  text-decoration: none;
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.05);
+  transition: all 0.2s ease;
+  max-width: 100%;
 }
 
-.public-social-icon,
+.public-meta-link:hover {
+  border-color: rgba(96, 165, 250, 0.72);
+  background: rgba(239, 246, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.public-meta-link.is-disabled {
+  pointer-events: none;
+  opacity: 0.72;
+  text-decoration: none;
+}
+
+.public-meta-icon,
 .public-info-icon {
   width: 28px;
   height: 28px;
@@ -130,13 +140,6 @@
   font-size: 0.9rem;
   font-weight: 800;
   flex-shrink: 0;
-}
-
-.public-business-meta {
-  display: grid;
-  gap: 6px;
-  text-align: right;
-  color: #475569;
 }
 
 .public-tabs-shell {
@@ -400,6 +403,23 @@
   gap: 10px;
 }
 
+.public-info-link {
+  color: #0f172a;
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.public-info-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.public-info-link.is-disabled {
+  pointer-events: none;
+  opacity: 0.72;
+  text-decoration: none;
+}
+
 .public-summary-item span,
 .public-business-info-item span,
 .public-success-item span,
@@ -534,7 +554,7 @@
   }
 
   .public-business-meta {
-    text-align: left;
+    justify-items: start;
   }
 }
 
@@ -559,11 +579,7 @@
   .public-tab-button,
   .public-summary-actions .button,
   .public-success-actions .button,
-  .public-hero-whatsapp-button {
+  .public-hero-actions .button {
     width: 100%;
-  }
-
-  .public-social-inline {
-    flex-direction: column;
   }
 }
