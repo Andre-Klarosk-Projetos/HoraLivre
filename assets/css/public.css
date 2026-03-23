@@ -130,14 +130,14 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(239, 246, 255, 0.9) 100%);
 }
 
-.public-section-summary {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.92) 100%);
-  border-color: rgba(165, 180, 252, 0.42);
-}
-
 .public-section-booking {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 250, 0.92) 100%);
   border-color: rgba(94, 234, 212, 0.34);
+}
+
+.public-section-summary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.92) 100%);
+  border-color: rgba(165, 180, 252, 0.42);
 }
 
 .public-section-company {
