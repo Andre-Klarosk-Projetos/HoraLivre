@@ -28,7 +28,13 @@
           <span id="public-business-whatsapp-text">WhatsApp não informado</span>
           <span id="public-business-address-text">Endereço não informado</span>
         </div>
-        <a id="public-business-whatsapp-link" class="button primary" href="#" target="_blank" rel="noopener noreferrer">
+        <a
+          id="public-business-whatsapp-link"
+          class="button primary"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Falar no WhatsApp
         </a>
       </div>
@@ -110,12 +116,17 @@
                 <p class="muted">Os horários abaixo respeitam a agenda e o expediente configurado.</p>
               </div>
 
+              <div id="public-availability-info" class="public-availability-info" hidden></div>
               <div id="public-available-slots" class="public-slots-grid"></div>
             </div>
 
             <label>
               <span>Observações</span>
-              <textarea id="public-booking-notes" rows="4" placeholder="Digite alguma observação, se necessário."></textarea>
+              <textarea
+                id="public-booking-notes"
+                rows="4"
+                placeholder="Digite alguma observação, se necessário."
+              ></textarea>
             </label>
 
             <div class="form-actions">
@@ -165,7 +176,10 @@
 
           <div class="public-summary-highlight">
             <strong>Conferência final</strong>
-            <p>Se estiver tudo certo, confirme seu agendamento abaixo. Se precisar ajustar algo, volte para a etapa anterior.</p>
+            <p>
+              Se estiver tudo certo, confirme seu agendamento abaixo. Se precisar ajustar algo,
+              volte para a etapa anterior.
+            </p>
           </div>
 
           <div class="public-summary-actions">
@@ -204,6 +218,13 @@
               <strong id="public-business-whatsapp">-</strong>
             </div>
           </div>
+
+          <div class="public-hours-box">
+            <strong>Horários de funcionamento</strong>
+            <p>Confira abaixo os dias e horários em que a empresa atende.</p>
+          </div>
+
+          <div id="public-business-hours-list" class="public-business-hours-list"></div>
 
           <div class="public-company-box">
             <strong>Sobre a empresa</strong>
@@ -252,7 +273,13 @@
         </div>
 
         <div class="public-success-actions">
-          <a id="public-success-whatsapp-link" class="button primary" href="#" target="_blank" rel="noopener noreferrer">
+          <a
+            id="public-success-whatsapp-link"
+            class="button primary"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Falar no WhatsApp
           </a>
           <button id="public-success-new-booking-button" class="button" type="button">
