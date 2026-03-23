@@ -119,8 +119,8 @@
             </label>
 
             <div class="form-actions">
-              <button id="public-booking-submit" class="button primary" type="submit">
-                Confirmar agendamento
+              <button id="public-booking-continue-button" class="button primary" type="button">
+                Continuar para revisão
               </button>
             </div>
 
@@ -165,8 +165,19 @@
 
           <div class="public-summary-highlight">
             <strong>Conferência final</strong>
-            <p>Revise as informações acima. Se estiver tudo certo, volte em “Agendar agora” e confirme.</p>
+            <p>Se estiver tudo certo, confirme seu agendamento abaixo. Se precisar ajustar algo, volte para a etapa anterior.</p>
           </div>
+
+          <div class="public-summary-actions">
+            <button id="public-summary-back-button" class="button" type="button">
+              Ajustar dados
+            </button>
+            <button id="public-summary-confirm-button" class="button primary" type="button">
+              Confirmar agendamento
+            </button>
+          </div>
+
+          <p id="public-summary-feedback" class="feedback"></p>
         </div>
       </section>
 
