@@ -218,6 +218,39 @@
   gap: 14px;
 }
 
+.public-availability-info {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(191, 219, 254, 0.45);
+  background: rgba(239, 246, 255, 0.9);
+  color: #334155;
+  font-weight: 600;
+}
+
+.public-availability-info.available {
+  background: rgba(239, 246, 255, 0.92);
+  border-color: rgba(147, 197, 253, 0.65);
+  color: #1d4ed8;
+}
+
+.public-availability-info.special {
+  background: rgba(238, 242, 255, 0.94);
+  border-color: rgba(165, 180, 252, 0.7);
+  color: #4338ca;
+}
+
+.public-availability-info.warning {
+  background: rgba(255, 251, 235, 0.95);
+  border-color: rgba(251, 191, 36, 0.65);
+  color: #b45309;
+}
+
+.public-availability-info.closed {
+  background: rgba(254, 242, 242, 0.96);
+  border-color: rgba(252, 165, 165, 0.72);
+  color: #b91c1c;
+}
+
 .public-slots-grid {
   display: flex;
   flex-wrap: wrap;
@@ -258,7 +291,8 @@
 
 .public-summary-grid,
 .public-business-info-list,
-.public-success-grid {
+.public-success-grid,
+.public-business-hours-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
@@ -266,7 +300,8 @@
 
 .public-summary-item,
 .public-business-info-item,
-.public-success-item {
+.public-success-item,
+.public-hours-item {
   padding: 16px;
   border-radius: 20px;
   border: 1px solid rgba(191, 219, 254, 0.46);
@@ -278,7 +313,8 @@
 
 .public-summary-item span,
 .public-business-info-item span,
-.public-success-item span {
+.public-success-item span,
+.public-hours-item span {
   color: #64748b;
   font-size: 0.88rem;
   font-weight: 700;
@@ -286,13 +322,25 @@
 
 .public-summary-item strong,
 .public-business-info-item strong,
-.public-success-item strong {
+.public-success-item strong,
+.public-hours-item strong {
   color: #0f172a;
   word-break: break-word;
 }
 
+.public-hours-item.enabled {
+  border-color: rgba(134, 239, 172, 0.72);
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.public-hours-item.disabled {
+  border-color: rgba(226, 232, 240, 0.9);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
 .public-summary-highlight,
-.public-company-box {
+.public-company-box,
+.public-hours-box {
   margin-top: 18px;
   padding: 18px;
   border-radius: 22px;
@@ -301,14 +349,16 @@
 }
 
 .public-summary-highlight strong,
-.public-company-box strong {
+.public-company-box strong,
+.public-hours-box strong {
   display: block;
   margin-bottom: 8px;
   color: #0f172a;
 }
 
 .public-summary-highlight p,
-.public-company-box p {
+.public-company-box p,
+.public-hours-box p {
   margin: 0;
   color: #475569;
 }
