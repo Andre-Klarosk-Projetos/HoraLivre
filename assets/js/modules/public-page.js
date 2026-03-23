@@ -11,7 +11,8 @@ import { formatCurrencyBRL } from '../utils/formatters.js';
 import { showFeedback, clearElement } from '../utils/dom-utils.js';
 
 const servicesListElement = document.getElementById('public-services-list');
-const feedbackElement = document.getElementById('public-booking-feedback');
+const bookingFeedbackElement = document.getElementById('public-booking-feedback');
+const summaryFeedbackElement = document.getElementById('public-summary-feedback');
 const bookingForm = document.getElementById('public-booking-form');
 const slotsElement = document.getElementById('public-available-slots');
 const successPanel = document.getElementById('public-success-panel');
@@ -212,11 +213,39 @@ async function refreshAvailableSlots() {
       state.selectedTime = slot;
       updateSummaryDateTime();
       refreshAvailableSlots();
-      activatePublicTab('public-summary-tab');
     });
 
     slotsElement.appendChild(button);
   });
+}
+
+function validateBookingStep() {
+  const tenantId = document.getElementById('public-tenant-id').value || '';
+  const customerName = document.getElementById('public-customer-name').value.trim();
+  const customerPhone = document.getElementById('public-customer-phone').value.trim();
+  const date = document.getElementById('public-booking-date').value || '';
+
+  if (!tenantId || !state.tenant) {
+    return 'Empresa não encontrada para agendamento.';
+  }
+
+  if (!state.selectedService) {
+    return 'Selecione um serviço.';
+  }
+
+  if (!customerName || !customerPhone) {
+    return 'Informe seu nome e WhatsApp.';
+  }
+
+  if (!date) {
+    return 'Selecione uma data.';
+  }
+
+  if (!state.selectedTime) {
+    return 'Selecione um horário disponível.';
+  }
+
+  return '';
 }
 
 function fillSuccessPanel({ customerName, customerPhone, date }) {
@@ -262,12 +291,34 @@ function resetPublicBookingFlow() {
   empty.textContent = 'Selecione um serviço e uma data para visualizar os horários.';
   slotsElement.appendChild(empty);
 
+  if (bookingFeedbackElement) {
+    bookingFeedbackElement.textContent = '';
+    bookingFeedbackElement.className = 'feedback';
+  }
+
+  if (summaryFeedbackElement) {
+    summaryFeedbackElement.textContent = '';
+    summaryFeedbackElement.className = 'feedback';
+  }
+
   hideSuccessPanel();
   activatePublicTab('public-services-tab');
 }
 
-async function handleSubmit(event) {
-  event.preventDefault();
+async function confirmBooking() {
+  const validationError = validateBookingStep();
+
+  if (validationError) {
+    showFeedback(summaryFeedbackElement, validationError, 'error');
+
+    if (validationError === 'Selecione um serviço.') {
+      activatePublicTab('public-services-tab');
+    } else {
+      activatePublicTab('public-booking-tab');
+    }
+
+    return;
+  }
 
   const tenantId = document.getElementById('public-tenant-id').value || '';
   const customerName = document.getElementById('public-customer-name').value.trim();
@@ -276,37 +327,8 @@ async function handleSubmit(event) {
   const date = document.getElementById('public-booking-date').value || '';
   const notes = document.getElementById('public-booking-notes').value.trim();
 
-  if (!tenantId || !state.tenant) {
-    showFeedback(feedbackElement, 'Empresa não encontrada para agendamento.', 'error');
-    return;
-  }
-
-  if (!state.selectedService) {
-    showFeedback(feedbackElement, 'Selecione um serviço.', 'error');
-    activatePublicTab('public-services-tab');
-    return;
-  }
-
-  if (!customerName || !customerPhone) {
-    showFeedback(feedbackElement, 'Informe seu nome e WhatsApp.', 'error');
-    activatePublicTab('public-booking-tab');
-    return;
-  }
-
-  if (!date) {
-    showFeedback(feedbackElement, 'Selecione uma data.', 'error');
-    activatePublicTab('public-booking-tab');
-    return;
-  }
-
-  if (!state.selectedTime) {
-    showFeedback(feedbackElement, 'Selecione um horário disponível.', 'error');
-    activatePublicTab('public-booking-tab');
-    return;
-  }
-
   try {
-    showFeedback(feedbackElement, 'Confirmando agendamento...', 'success');
+    showFeedback(summaryFeedbackElement, 'Confirmando agendamento...', 'success');
 
     const customer = await ensurePublicCustomer({
       tenantId,
@@ -328,11 +350,7 @@ async function handleSubmit(event) {
       notes
     });
 
-    showFeedback(
-      feedbackElement,
-      'Agendamento confirmado com sucesso!',
-      'success'
-    );
+    showFeedback(summaryFeedbackElement, 'Agendamento confirmado com sucesso!', 'success');
 
     fillSuccessPanel({
       customerName,
@@ -341,11 +359,10 @@ async function handleSubmit(event) {
     });
 
     showSuccessPanel();
-    activatePublicTab('public-summary-tab');
   } catch (error) {
     console.error(error);
     showFeedback(
-      feedbackElement,
+      summaryFeedbackElement,
       error?.message || 'Não foi possível confirmar o agendamento.',
       'error'
     );
@@ -356,14 +373,14 @@ async function init() {
   const slug = getSlugFromUrl();
 
   if (!slug) {
-    showFeedback(feedbackElement, 'Slug público não informado.', 'error');
+    showFeedback(bookingFeedbackElement, 'Slug público não informado.', 'error');
     return;
   }
 
   const tenant = await getPublicTenantBySlug(slug);
 
   if (!tenant) {
-    showFeedback(feedbackElement, 'Página pública não encontrada ou indisponível.', 'error');
+    showFeedback(bookingFeedbackElement, 'Página pública não encontrada ou indisponível.', 'error');
     return;
   }
 
@@ -383,17 +400,43 @@ async function init() {
     await refreshAvailableSlots();
   });
 
+  document.getElementById('public-booking-continue-button')?.addEventListener('click', () => {
+    const validationError = validateBookingStep();
+
+    if (validationError) {
+      showFeedback(bookingFeedbackElement, validationError, 'error');
+      return;
+    }
+
+    if (bookingFeedbackElement) {
+      bookingFeedbackElement.textContent = '';
+      bookingFeedbackElement.className = 'feedback';
+    }
+
+    activatePublicTab('public-summary-tab');
+  });
+
+  document.getElementById('public-summary-back-button')?.addEventListener('click', () => {
+    activatePublicTab('public-booking-tab');
+  });
+
+  document.getElementById('public-summary-confirm-button')?.addEventListener('click', async () => {
+    await confirmBooking();
+  });
+
   document.getElementById('public-success-new-booking-button')?.addEventListener('click', () => {
     resetPublicBookingFlow();
   });
 
-  bookingForm?.addEventListener('submit', handleSubmit);
+  bookingForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+  });
 }
 
 init().catch((error) => {
   console.error('Erro ao carregar a página pública do HoraLivre:', error);
   showFeedback(
-    feedbackElement,
+    bookingFeedbackElement,
     'Não foi possível carregar a página pública.',
     'error'
   );
