@@ -14,23 +14,31 @@
     <section class="public-hero card">
       <div class="public-hero-brand">
         <img id="public-business-logo" class="public-business-logo" alt="Logo da empresa" hidden>
-        <div>
+        <div class="public-hero-copy">
           <p class="public-eyebrow">Agendamento online</p>
           <h1 id="public-business-name">Sua empresa</h1>
-          <p id="public-business-description" class="muted">
+          <p id="public-business-description" class="muted public-hero-description">
             Escolha um serviço, selecione um horário e confirme seu agendamento.
           </p>
+
+          <div class="public-social-inline">
+            <div class="public-social-chip">
+              <span class="public-social-icon">✆</span>
+              <span id="public-business-whatsapp-text">WhatsApp não informado</span>
+            </div>
+
+            <div class="public-social-chip">
+              <span class="public-social-icon">⌂</span>
+              <span id="public-business-address-text">Endereço não informado</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="public-hero-actions">
-        <div class="public-business-meta">
-          <span id="public-business-whatsapp-text">WhatsApp não informado</span>
-          <span id="public-business-address-text">Endereço não informado</span>
-        </div>
         <a
           id="public-business-whatsapp-link"
-          class="button primary"
+          class="button primary public-hero-whatsapp-button"
           href="#"
           target="_blank"
           rel="noopener noreferrer"
@@ -204,17 +212,26 @@
 
           <div class="public-business-info-list">
             <div class="public-business-info-item">
-              <span>Instagram</span>
+              <div class="public-info-topline">
+                <span class="public-info-icon">◎</span>
+                <span>Instagram</span>
+              </div>
               <strong id="public-business-instagram">-</strong>
             </div>
 
             <div class="public-business-info-item">
-              <span>Endereço</span>
+              <div class="public-info-topline">
+                <span class="public-info-icon">⌂</span>
+                <span>Endereço</span>
+              </div>
               <strong id="public-business-address">-</strong>
             </div>
 
             <div class="public-business-info-item">
-              <span>WhatsApp</span>
+              <div class="public-info-topline">
+                <span class="public-info-icon">✆</span>
+                <span>WhatsApp</span>
+              </div>
               <strong id="public-business-whatsapp">-</strong>
             </div>
           </div>
