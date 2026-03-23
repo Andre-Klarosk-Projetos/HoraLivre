@@ -14,6 +14,7 @@ const servicesListElement = document.getElementById('public-services-list');
 const feedbackElement = document.getElementById('public-booking-feedback');
 const bookingForm = document.getElementById('public-booking-form');
 const slotsElement = document.getElementById('public-available-slots');
+const successPanel = document.getElementById('public-success-panel');
 
 const state = {
   tenant: null,
@@ -218,6 +219,53 @@ async function refreshAvailableSlots() {
   });
 }
 
+function fillSuccessPanel({ customerName, customerPhone, date }) {
+  document.getElementById('public-success-business-name').textContent =
+    state.tenant?.businessName || '-';
+  document.getElementById('public-success-service').textContent =
+    state.selectedService?.name || '-';
+  document.getElementById('public-success-date').textContent = date || '-';
+  document.getElementById('public-success-time').textContent = state.selectedTime || '-';
+  document.getElementById('public-success-customer').textContent = customerName || '-';
+  document.getElementById('public-success-phone').textContent = customerPhone || '-';
+
+  const whatsappLink = document.getElementById('public-success-whatsapp-link');
+  whatsappLink.href = buildPublicWhatsAppMessageLink(
+    state.tenant?.whatsapp || '',
+    `Olá! Acabei de fazer um agendamento para ${customerName || 'cliente'} no serviço ${state.selectedService?.name || ''}, em ${date || ''} às ${state.selectedTime || ''}.`
+  );
+}
+
+function showSuccessPanel() {
+  if (successPanel) {
+    successPanel.hidden = false;
+  }
+}
+
+function hideSuccessPanel() {
+  if (successPanel) {
+    successPanel.hidden = true;
+  }
+}
+
+function resetPublicBookingFlow() {
+  bookingForm.reset();
+  state.selectedService = null;
+  state.selectedTime = '';
+  fillSelectedService();
+  updateSummaryDateTime();
+  renderServices();
+  clearElement(slotsElement);
+
+  const empty = document.createElement('div');
+  empty.className = 'public-slot-empty';
+  empty.textContent = 'Selecione um serviço e uma data para visualizar os horários.';
+  slotsElement.appendChild(empty);
+
+  hideSuccessPanel();
+  activatePublicTab('public-services-tab');
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
 
@@ -282,14 +330,17 @@ async function handleSubmit(event) {
 
     showFeedback(
       feedbackElement,
-      'Agendamento confirmado com sucesso! Se quiser, fale com a empresa pelo WhatsApp para confirmar os detalhes.',
+      'Agendamento confirmado com sucesso!',
       'success'
     );
 
-    bookingForm.reset();
-    state.selectedTime = '';
-    updateSummaryDateTime();
-    await refreshAvailableSlots();
+    fillSuccessPanel({
+      customerName,
+      customerPhone,
+      date
+    });
+
+    showSuccessPanel();
     activatePublicTab('public-summary-tab');
   } catch (error) {
     console.error(error);
@@ -324,11 +375,16 @@ async function init() {
   renderServices();
   fillSelectedService();
   updateSummaryDateTime();
+  hideSuccessPanel();
 
   document.getElementById('public-booking-date')?.addEventListener('change', async () => {
     state.selectedTime = '';
     updateSummaryDateTime();
     await refreshAvailableSlots();
+  });
+
+  document.getElementById('public-success-new-booking-button')?.addEventListener('click', () => {
+    resetPublicBookingFlow();
   });
 
   bookingForm?.addEventListener('submit', handleSubmit);
