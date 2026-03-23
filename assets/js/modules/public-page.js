@@ -138,7 +138,7 @@ function renderServices() {
       fillSelectedService();
       renderServices();
       await refreshAvailableSlots();
-      activatePublicTab('public-summary-tab');
+      activatePublicTab('public-booking-tab');
     });
   });
 }
@@ -211,6 +211,7 @@ async function refreshAvailableSlots() {
       state.selectedTime = slot;
       updateSummaryDateTime();
       refreshAvailableSlots();
+      activatePublicTab('public-summary-tab');
     });
 
     slotsElement.appendChild(button);
