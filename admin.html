@@ -119,10 +119,18 @@
 
             <div class="card">
               <div class="quick-actions">
-                <button class="button primary" id="quick-open-companies" type="button">Abrir empresas clientes</button>
-                <button class="button" id="quick-open-plans" type="button">Abrir planos</button>
-                <button class="button" id="quick-open-billing" type="button">Abrir cobrança</button>
-                <button class="button" id="quick-generate-billing" type="button">Gerar cobrança do mês</button>
+                <button class="button primary" id="quick-open-companies" type="button">
+                  Abrir empresas clientes
+                </button>
+                <button class="button" id="quick-open-plans" type="button">
+                  Abrir planos
+                </button>
+                <button class="button" id="quick-open-billing" type="button">
+                  Abrir cobrança
+                </button>
+                <button class="button" id="quick-generate-billing" type="button">
+                  Gerar cobrança do mês
+                </button>
               </div>
             </div>
 
@@ -368,8 +376,16 @@
 
                   <div class="form-actions">
                     <button class="button primary" type="submit">Salvar empresa cliente</button>
-                    <button class="button" id="company-admin-cancel-edit-button" type="button">Cancelar edição</button>
-                    <a class="button" id="company-admin-whatsapp-button" href="#" target="_blank" rel="noopener noreferrer">
+                    <button class="button" id="company-admin-cancel-edit-button" type="button">
+                      Cancelar edição
+                    </button>
+                    <a
+                      class="button"
+                      id="company-admin-whatsapp-button"
+                      href="#"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Falar no WhatsApp
                     </a>
                   </div>
@@ -436,6 +452,8 @@
                 <form id="plan-form" class="stack">
                   <input id="plan-edit-id" type="hidden">
 
+                  <h4>Novo plano ou edição</h4>
+
                   <label>
                     <span>Nome do plano</span>
                     <input id="plan-form-name" type="text" required>
@@ -443,7 +461,11 @@
 
                   <label>
                     <span>Descrição curta para a home</span>
-                    <input id="plan-form-description" type="text" placeholder="Ex.: Ideal para quem está começando">
+                    <input
+                      id="plan-form-description"
+                      type="text"
+                      placeholder="Ex.: Ideal para quem está começando"
+                    >
                   </label>
 
                   <label>
@@ -517,7 +539,9 @@
 
                   <div class="form-actions">
                     <button class="button primary" type="submit">Salvar plano</button>
-                    <button class="button" id="plan-cancel-edit-button" type="button">Cancelar edição</button>
+                    <button class="button" id="plan-cancel-edit-button" type="button">
+                      Cancelar edição
+                    </button>
                   </div>
 
                   <p id="plan-feedback" class="feedback"></p>
@@ -571,9 +595,18 @@
                   </div>
 
                   <div class="summary-inline" id="billing-summary-inline">
-                    <div><strong>Total previsto:</strong> <span id="billing-summary-total">R$ 0,00</span></div>
-                    <div><strong>Total pago:</strong> <span id="billing-summary-paid">R$ 0,00</span></div>
-                    <div><strong>Total pendente:</strong> <span id="billing-summary-pending">R$ 0,00</span></div>
+                    <div>
+                      <strong>Total previsto:</strong>
+                      <span id="billing-summary-total">R$ 0,00</span>
+                    </div>
+                    <div>
+                      <strong>Total pago:</strong>
+                      <span id="billing-summary-paid">R$ 0,00</span>
+                    </div>
+                    <div>
+                      <strong>Total pendente:</strong>
+                      <span id="billing-summary-pending">R$ 0,00</span>
+                    </div>
                   </div>
 
                   <p id="billing-feedback" class="feedback"></p>
@@ -607,7 +640,13 @@
                   </label>
 
                   <div class="form-actions">
-                    <a class="button primary" id="billing-message-whatsapp-button" href="#" target="_blank" rel="noopener noreferrer">
+                    <a
+                      class="button primary"
+                      id="billing-message-whatsapp-button"
+                      href="#"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Enviar cobrança no WhatsApp
                     </a>
                   </div>
@@ -654,7 +693,11 @@
 
                   <label>
                     <span>URL base do WhatsApp</span>
-                    <input id="settings-whatsapp-base-url" type="text" placeholder="https://wa.me/">
+                    <input
+                      id="settings-whatsapp-base-url"
+                      type="text"
+                      placeholder="https://wa.me/"
+                    >
                   </label>
 
                   <label>
