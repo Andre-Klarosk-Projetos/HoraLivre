@@ -12,6 +12,76 @@ import {
 
 import { db } from '../config/firebase-init.js';
 
+function normalizeString(value, fallback = '') {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeBoolean(value, fallback = false) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  return fallback;
+}
+
+function buildServiceCreatePayload(data = {}) {
+  return {
+    tenantId: normalizeString(data.tenantId),
+    name: normalizeString(data.name),
+    description: normalizeString(data.description),
+    durationMinutes: normalizeNumber(data.durationMinutes, 0),
+    price: normalizeNumber(data.price, 0),
+    isActive: normalizeBoolean(data.isActive, true),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function buildServiceUpdatePayload(data = {}) {
+  const payload = {};
+
+  if ('tenantId' in data) {
+    payload.tenantId = normalizeString(data.tenantId);
+  }
+
+  if ('name' in data) {
+    payload.name = normalizeString(data.name);
+  }
+
+  if ('description' in data) {
+    payload.description = normalizeString(data.description);
+  }
+
+  if ('durationMinutes' in data) {
+    payload.durationMinutes = normalizeNumber(data.durationMinutes, 0);
+  }
+
+  if ('price' in data) {
+    payload.price = normalizeNumber(data.price, 0);
+  }
+
+  if ('isActive' in data) {
+    payload.isActive = normalizeBoolean(data.isActive, true);
+  }
+
+  payload.updatedAt = new Date().toISOString();
+
+  return payload;
+}
+
 export async function listServicesByTenant(tenantId) {
   const servicesQuery = query(
     collection(db, 'services'),
@@ -44,27 +114,16 @@ export async function listActiveServicesByTenant(tenantId) {
 }
 
 export async function createService(data) {
-  const payload = {
-    tenantId: data.tenantId,
-    name: data.name,
-    description: data.description || '',
-    durationMinutes: Number(data.durationMinutes || 0),
-    price: Number(data.price || 0),
-    isActive: data.isActive !== false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+  const payload = buildServiceCreatePayload(data);
 
   return addDoc(collection(db, 'services'), payload);
 }
 
 export async function updateService(serviceId, data) {
   const reference = doc(db, 'services', serviceId);
+  const payload = buildServiceUpdatePayload(data);
 
-  await updateDoc(reference, {
-    ...data,
-    updatedAt: new Date().toISOString()
-  });
+  await updateDoc(reference, payload);
 }
 
 export async function toggleServiceActive(serviceId, isActive) {
