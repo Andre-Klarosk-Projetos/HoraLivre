@@ -7,7 +7,6 @@ import {
   setDoc,
   where
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
-
 import { db } from '../config/firebase-init.js';
 
 export async function listTenantUsersByTenant(tenantId) {
@@ -48,13 +47,11 @@ export async function createOrUpdateTenantUser(data) {
       uid: data.uid,
       name: data.name,
       email: data.email,
-      role: data.role || 'owner',
+      role: data.role || 'tenant',
       createdAt: data.createdAt || new Date().toISOString()
     },
     { merge: true }
   );
 
-  return {
-    id: data.uid
-  };
+  return { id: data.uid };
 }
