@@ -175,7 +175,7 @@ export async function getPublicTenantBySlug(slug) {
     ...snapshot.docs[0].data()
   };
 
-  if (tenant.publicPageEnabled === false) {
+  if (tenant.publicPageEnabled === false || tenant.isBlocked === true) {
     return null;
   }
 
