@@ -161,7 +161,9 @@ export function getReadableBusinessHours(tenant) {
 export async function getPublicTenantBySlug(slug) {
   const tenantsQuery = query(
     collection(db, 'tenants'),
-    where('slug', '==', slug)
+    where('slug', '==', slug),
+    where('publicPageEnabled', '==', true),
+    where('isBlocked', '==', false)
   );
 
   const snapshot = await getDocs(tenantsQuery);
@@ -170,16 +172,10 @@ export async function getPublicTenantBySlug(slug) {
     return null;
   }
 
-  const tenant = {
+  return {
     id: snapshot.docs[0].id,
     ...snapshot.docs[0].data()
   };
-
-  if (tenant.publicPageEnabled === false || tenant.isBlocked === true) {
-    return null;
-  }
-
-  return tenant;
 }
 
 export async function listPublicServicesByTenant(tenantId) {
@@ -240,7 +236,7 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
   }
 
   const appointments = await listAppointmentsByTenantAndDate(tenant.id, dateString);
-  const durationMinutes = Number(service.durationMinutes || 0);
+  const durationMinutes = Number(service?.durationMinutes || 0);
   const slotInterval = Number(tenant?.slotIntervalMinutes || 30);
   const startMinutes = parseTimeToMinutes(daySchedule.start);
   const endMinutes = parseTimeToMinutes(daySchedule.end);
@@ -294,7 +290,6 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
 
 export async function listAvailableSlotsForDate(tenant, service, dateString) {
   const availability = await getAvailabilityForDate(tenant, service, dateString);
-
   return availability.slots || [];
 }
 
@@ -363,7 +358,6 @@ export async function createPublicAppointment({
 
 export function getSlugFromUrl() {
   const url = new URL(window.location.href);
-
   return url.searchParams.get('slug') || '';
 }
 
