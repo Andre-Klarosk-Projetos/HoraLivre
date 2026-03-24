@@ -48,7 +48,9 @@ service cloud.firestore {
     }
 
     function unchanged(field) {
-      return request.resource.data[field] == resource.data[field];
+      return !(field in request.resource.data)
+        ? !(field in resource.data)
+        : request.resource.data[field] == resource.data[field];
     }
 
     function isNonEmptyString(value) {
@@ -56,7 +58,7 @@ service cloud.firestore {
     }
 
     function validIsoString(value) {
-      return value is string && value.size() >= 20;
+      return value is string && value.size() >= 19;
     }
 
     function tenantUserOwnDocumentIsValid() {
@@ -67,14 +69,13 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && (
           request.resource.data.role == resource.data.role
-          || request.resource.data.role == "owner"
           || request.resource.data.role == "tenant"
+          || request.resource.data.role == "owner"
         );
     }
 
     function tenantSafeUpdate() {
       return
-        // campos administrativos travados
         unchanged("planId") &&
         unchanged("billingMode") &&
         unchanged("fixedMonthlyPrice") &&
@@ -86,7 +87,6 @@ service cloud.firestore {
         unchanged("isBlocked") &&
         unchanged("createdAt") &&
 
-        // tenant pode editar a própria vitrine/operação
         request.resource.data.updatedAt is string &&
         request.resource.data.businessName is string &&
         request.resource.data.slug is string &&
@@ -175,9 +175,11 @@ service cloud.firestore {
       allow create: if isAdmin();
 
       allow update: if isAdmin()
-        || (signedIn()
+        || (
+          signedIn()
           && request.auth.uid == tenantUserId
-          && tenantUserOwnDocumentIsValid());
+          && tenantUserOwnDocumentIsValid()
+        );
 
       allow delete: if isAdmin();
     }
@@ -205,9 +207,11 @@ service cloud.firestore {
         || (isTenantUser() && request.resource.data.tenantId == currentTenantId());
 
       allow update: if isAdmin()
-        || (isTenantUser()
+        || (
+          isTenantUser()
           && resource.data.tenantId == currentTenantId()
-          && request.resource.data.tenantId == currentTenantId());
+          && request.resource.data.tenantId == currentTenantId()
+        );
 
       allow delete: if isAdmin()
         || (isTenantUser() && resource.data.tenantId == currentTenantId());
@@ -222,9 +226,11 @@ service cloud.firestore {
         || validPublicCustomerCreate();
 
       allow update: if isAdmin()
-        || (isTenantUser()
+        || (
+          isTenantUser()
           && resource.data.tenantId == currentTenantId()
-          && request.resource.data.tenantId == currentTenantId());
+          && request.resource.data.tenantId == currentTenantId()
+        );
 
       allow delete: if isAdmin()
         || (isTenantUser() && resource.data.tenantId == currentTenantId());
@@ -239,9 +245,11 @@ service cloud.firestore {
         || validPublicAppointmentCreate();
 
       allow update: if isAdmin()
-        || (isTenantUser()
+        || (
+          isTenantUser()
           && resource.data.tenantId == currentTenantId()
-          && request.resource.data.tenantId == currentTenantId());
+          && request.resource.data.tenantId == currentTenantId()
+        );
 
       allow delete: if isAdmin()
         || (isTenantUser() && resource.data.tenantId == currentTenantId());
