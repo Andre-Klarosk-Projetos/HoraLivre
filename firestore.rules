@@ -12,28 +12,90 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
     }
 
-    function currentTenantUserDocument() {
-      return get(
-        /databases/$(database)/documents/tenantUsers/$(request.auth.uid)
-      );
-    }
-
-    function isTenantUser() {
+    function hasTenantUserDoc() {
       return signedIn() &&
         exists(/databases/$(database)/documents/tenantUsers/$(request.auth.uid));
     }
 
+    function tenantUserDoc() {
+      return get(/databases/$(database)/documents/tenantUsers/$(request.auth.uid));
+    }
+
     function currentTenantId() {
-      return currentTenantUserDocument().data.tenantId;
+      return tenantUserDoc().data.tenantId;
     }
 
-    function belongsToCurrentTenant(resourceTenantId) {
-      return isTenantUser() && resourceTenantId == currentTenantId();
+    function isTenantUser() {
+      return hasTenantUserDoc();
     }
 
-    function isPublicTenant() {
-      return resource.data.publicPageEnabled == true &&
-        resource.data.isBlocked == false;
+    function belongsToCurrentTenant(tenantId) {
+      return isTenantUser() && tenantId == currentTenantId();
+    }
+
+    function tenantExists(tenantId) {
+      return exists(/databases/$(database)/documents/tenants/$(tenantId));
+    }
+
+    function tenantDoc(tenantId) {
+      return get(/databases/$(database)/documents/tenants/$(tenantId));
+    }
+
+    function isTenantPublicAndActive(tenantId) {
+      return tenantExists(tenantId) &&
+        tenantDoc(tenantId).data.publicPageEnabled == true &&
+        tenantDoc(tenantId).data.isBlocked == false;
+    }
+
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    function tenantSafeUpdate() {
+      return unchanged("id") &&
+        unchanged("ownerUid") &&
+        unchanged("email") &&
+        unchanged("status") &&
+        unchanged("planId") &&
+        unchanged("billingMode") &&
+        unchanged("fixedPrice") &&
+        unchanged("annualPrice") &&
+        unchanged("annualBillingMonth") &&
+        unchanged("pricePerService") &&
+        unchanged("trialEndsAt") &&
+        unchanged("createdAt") &&
+        unchanged("updatedAt") &&
+        unchanged("isBlocked");
+    }
+
+    function tenantUserSelfFieldsOnly() {
+      return request.resource.data.uid == request.auth.uid &&
+        request.resource.data.role == "tenant" &&
+        request.resource.data.tenantId == resource.data.tenantId &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validPublicCustomerCreate() {
+      return request.auth == null &&
+        request.resource.data.tenantId is string &&
+        request.resource.data.name is string &&
+        request.resource.data.phone is string &&
+        request.resource.data.email is string &&
+        isTenantPublicAndActive(request.resource.data.tenantId);
+    }
+
+    function validPublicAppointmentCreate() {
+      return request.auth == null &&
+        request.resource.data.tenantId is string &&
+        request.resource.data.customerName is string &&
+        request.resource.data.serviceName is string &&
+        request.resource.data.startAt is string &&
+        request.resource.data.endAt is string &&
+        request.resource.data.status == "scheduled" &&
+        request.resource.data.source == "public_page" &&
+        isTenantPublicAndActive(request.resource.data.tenantId);
     }
 
     match /platformAdmins/{adminId} {
@@ -51,16 +113,27 @@ service cloud.firestore {
     }
 
     match /tenants/{tenantId} {
-      allow read: if isAdmin() || belongsToCurrentTenant(resource.data.id != null ? resource.data.id : tenantId);
+      allow read: if isAdmin() || belongsToCurrentTenant(tenantId);
+
       allow create: if isAdmin();
-      allow update: if isAdmin() || belongsToCurrentTenant(tenantId);
+
+      allow update: if isAdmin() ||
+        (belongsToCurrentTenant(tenantId) && tenantSafeUpdate());
+
       allow delete: if isAdmin();
     }
 
     match /tenantUsers/{tenantUserId} {
-      allow read: if isAdmin() || (signedIn() && request.auth.uid == resource.data.uid);
-      allow create: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid);
-      allow update: if isAdmin() || (signedIn() && request.auth.uid == resource.data.uid);
+      allow read: if isAdmin() ||
+        (signedIn() && request.auth.uid == tenantUserId);
+
+      allow create: if isAdmin();
+
+      allow update: if isAdmin() ||
+        (signedIn() &&
+          request.auth.uid == tenantUserId &&
+          tenantUserSelfFieldsOnly());
+
       allow delete: if isAdmin();
     }
 
@@ -82,16 +155,16 @@ service cloud.firestore {
       allow read: if isAdmin() ||
         (isTenantUser() && resource.data.tenantId == currentTenantId()) ||
         (resource.data.isActive == true &&
-         exists(/databases/$(database)/documents/tenants/$(resource.data.tenantId)) &&
-         get(/databases/$(database)/documents/tenants/$(resource.data.tenantId)).data.publicPageEnabled == true &&
-         get(/databases/$(database)/documents/tenants/$(resource.data.tenantId)).data.isBlocked == false);
+          isTenantPublicAndActive(resource.data.tenantId));
 
       allow create: if isAdmin() ||
-        (isTenantUser() && request.resource.data.tenantId == currentTenantId());
+        (isTenantUser() &&
+          request.resource.data.tenantId == currentTenantId());
 
       allow update: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId() &&
-         request.resource.data.tenantId == currentTenantId());
+        (isTenantUser() &&
+          resource.data.tenantId == currentTenantId() &&
+          request.resource.data.tenantId == currentTenantId());
 
       allow delete: if isAdmin() ||
         (isTenantUser() && resource.data.tenantId == currentTenantId());
@@ -102,17 +175,14 @@ service cloud.firestore {
         (isTenantUser() && resource.data.tenantId == currentTenantId());
 
       allow create: if isAdmin() ||
-        (isTenantUser() && request.resource.data.tenantId == currentTenantId()) ||
-        (
-          request.auth == null &&
-          exists(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)) &&
-          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.publicPageEnabled == true &&
-          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.isBlocked == false
-        );
+        (isTenantUser() &&
+          request.resource.data.tenantId == currentTenantId()) ||
+        validPublicCustomerCreate();
 
       allow update: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId() &&
-         request.resource.data.tenantId == currentTenantId());
+        (isTenantUser() &&
+          resource.data.tenantId == currentTenantId() &&
+          request.resource.data.tenantId == currentTenantId());
 
       allow delete: if isAdmin() ||
         (isTenantUser() && resource.data.tenantId == currentTenantId());
@@ -123,19 +193,14 @@ service cloud.firestore {
         (isTenantUser() && resource.data.tenantId == currentTenantId());
 
       allow create: if isAdmin() ||
-        (isTenantUser() && request.resource.data.tenantId == currentTenantId()) ||
-        (
-          request.auth == null &&
-          exists(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)) &&
-          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.publicPageEnabled == true &&
-          get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)).data.isBlocked == false &&
-          request.resource.data.source == 'public_page'
-        );
+        (isTenantUser() &&
+          request.resource.data.tenantId == currentTenantId()) ||
+        validPublicAppointmentCreate();
 
       allow update: if isAdmin() ||
         (isTenantUser() &&
-         resource.data.tenantId == currentTenantId() &&
-         request.resource.data.tenantId == currentTenantId());
+          resource.data.tenantId == currentTenantId() &&
+          request.resource.data.tenantId == currentTenantId());
 
       allow delete: if isAdmin() ||
         (isTenantUser() && resource.data.tenantId == currentTenantId());
