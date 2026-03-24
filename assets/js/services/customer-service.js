@@ -49,6 +49,7 @@ function buildCustomerCreatePayload(data = {}) {
     notes: normalizeString(data.notes),
     totalAppointments: normalizeNumber(data.totalAppointments, 0),
     completedAppointments: normalizeNumber(data.completedAppointments, 0),
+    totalSpent: normalizeNumber(data.totalSpent, 0),
     lastAppointmentAt: normalizeNullableString(data.lastAppointmentAt),
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -89,6 +90,10 @@ function buildCustomerUpdatePayload(data = {}) {
     payload.completedAppointments = normalizeNumber(data.completedAppointments, 0);
   }
 
+  if ('totalSpent' in data) {
+    payload.totalSpent = normalizeNumber(data.totalSpent, 0);
+  }
+
   if ('lastAppointmentAt' in data) {
     payload.lastAppointmentAt = normalizeNullableString(data.lastAppointmentAt);
   }
@@ -107,6 +112,10 @@ function buildCustomerStatsPayload(stats = {}) {
 
   if ('completedAppointments' in stats) {
     payload.completedAppointments = normalizeNumber(stats.completedAppointments, 0);
+  }
+
+  if ('totalSpent' in stats) {
+    payload.totalSpent = normalizeNumber(stats.totalSpent, 0);
   }
 
   if ('lastAppointmentAt' in stats) {
