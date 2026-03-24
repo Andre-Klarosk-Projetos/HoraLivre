@@ -6,6 +6,7 @@ import {
   query,
   where
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
 import { db } from '../config/firebase-init.js';
 import { findCustomerByPhone, createTenantCustomer } from './customer-service.js';
 
@@ -48,6 +49,10 @@ function parseTimeToMinutes(value) {
 
   const [hours, minutes] = String(value).split(':').map(Number);
 
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return 0;
+  }
+
   return (hours * 60) + minutes;
 }
 
@@ -58,24 +63,121 @@ function formatMinutesToTime(value) {
   return `${padTwoDigits(hours)}:${padTwoDigits(minutes)}`;
 }
 
+function formatDateToIsoDay(date) {
+  return [
+    date.getFullYear(),
+    padTwoDigits(date.getMonth() + 1),
+    padTwoDigits(date.getDate())
+  ].join('-');
+}
+
+function normalizeDateKey(value) {
+  if (!value) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return value.slice(0, 10);
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return formatDateToIsoDay(value);
+  }
+
+  return '';
+}
+
+function getTenantBusinessHours(tenant) {
+  return tenant?.businessHours || {};
+}
+
+function getTenantSlotInterval(tenant) {
+  const businessHours = getTenantBusinessHours(tenant);
+
+  return Number(
+    tenant?.slotIntervalMinutes ||
+    businessHours?.slotIntervalMinutes ||
+    30
+  );
+}
+
+function getTenantHolidayDates(tenant) {
+  const businessHours = getTenantBusinessHours(tenant);
+
+  return [
+    ...(Array.isArray(tenant?.holidayDates) ? tenant.holidayDates : []),
+    ...(Array.isArray(businessHours?.holidays) ? businessHours.holidays : [])
+  ].map(normalizeDateKey).filter(Boolean);
+}
+
+function getTenantClosedDates(tenant) {
+  const businessHours = getTenantBusinessHours(tenant);
+
+  return [
+    ...(Array.isArray(tenant?.closedDates) ? tenant.closedDates : []),
+    ...(Array.isArray(businessHours?.blockedDates) ? businessHours.blockedDates : [])
+  ].map(normalizeDateKey).filter(Boolean);
+}
+
+function getTenantUnavailableDates(tenant) {
+  return (Array.isArray(tenant?.unavailableDates) ? tenant.unavailableDates : [])
+    .map(normalizeDateKey)
+    .filter(Boolean);
+}
+
 function getSpecialBusinessHoursForDate(tenant, dateString) {
-  const special = tenant?.specialBusinessHours;
+  const directSpecial = tenant?.specialBusinessHours;
 
-  if (Array.isArray(special)) {
-    return special.find((item) => item?.date === dateString) || null;
+  if (Array.isArray(directSpecial)) {
+    const found = directSpecial.find((item) => normalizeDateKey(item?.date) === dateString);
+
+    if (found) {
+      return {
+        enabled: found.enabled === true,
+        start: found.start || '',
+        end: found.end || ''
+      };
+    }
   }
 
-  if (special && typeof special === 'object') {
-    return special[dateString] || null;
+  if (directSpecial && typeof directSpecial === 'object') {
+    const found = directSpecial[dateString];
+
+    if (found) {
+      return {
+        enabled: found.enabled === true,
+        start: found.start || '',
+        end: found.end || ''
+      };
+    }
   }
 
-  return null;
+  const businessHours = getTenantBusinessHours(tenant);
+  const specialDates = Array.isArray(businessHours?.specialDates)
+    ? businessHours.specialDates
+    : [];
+
+  const foundSpecialDate = specialDates.find(
+    (item) => normalizeDateKey(item?.date) === dateString
+  );
+
+  if (!foundSpecialDate) {
+    return null;
+  }
+
+  return {
+    enabled: foundSpecialDate.enabled !== false,
+    start: foundSpecialDate.openingTime || foundSpecialDate.start || '',
+    end: foundSpecialDate.closingTime || foundSpecialDate.end || '',
+    lunchStartTime: foundSpecialDate.lunchStartTime || '',
+    lunchEndTime: foundSpecialDate.lunchEndTime || ''
+  };
 }
 
 function isDateClosed(tenant, dateString) {
-  const holidayDates = Array.isArray(tenant?.holidayDates) ? tenant.holidayDates : [];
-  const closedDates = Array.isArray(tenant?.closedDates) ? tenant.closedDates : [];
-  const unavailableDates = Array.isArray(tenant?.unavailableDates) ? tenant.unavailableDates : [];
+  const holidayDates = getTenantHolidayDates(tenant);
+  const closedDates = getTenantClosedDates(tenant);
+  const unavailableDates = getTenantUnavailableDates(tenant);
 
   return (
     holidayDates.includes(dateString) ||
@@ -84,12 +186,89 @@ function isDateClosed(tenant, dateString) {
   );
 }
 
+function getRegularBusinessHoursForDate(tenant, dateString) {
+  const currentDate = new Date(`${dateString}T00:00:00`);
+  const dayKey = getWeekDayKey(currentDate);
+  const businessHours = getTenantBusinessHours(tenant);
+  const dayConfig = businessHours?.[dayKey];
+
+  if (dayConfig && typeof dayConfig === 'object') {
+    if (dayConfig.enabled !== true || !dayConfig.start || !dayConfig.end) {
+      return {
+        enabled: false,
+        start: '',
+        end: '',
+        lunchStartTime: '',
+        lunchEndTime: '',
+        reason: 'non_working_day',
+        message: `${getWeekDayLabel(dayKey)} não é um dia de atendimento da empresa.`
+      };
+    }
+
+    return {
+      enabled: true,
+      start: dayConfig.start || '',
+      end: dayConfig.end || '',
+      lunchStartTime: dayConfig.lunchStartTime || businessHours?.lunchStartTime || '',
+      lunchEndTime: dayConfig.lunchEndTime || businessHours?.lunchEndTime || '',
+      reason: 'regular_hours',
+      message: `Horário de atendimento: ${dayConfig.start || '--:--'} às ${dayConfig.end || '--:--'}.`
+    };
+  }
+
+  const workingDays = Array.isArray(businessHours?.workingDays)
+    ? businessHours.workingDays
+    : [];
+
+  const openingTime = businessHours?.openingTime || '';
+  const closingTime = businessHours?.closingTime || '';
+
+  if (!workingDays.includes(dayKey) || !openingTime || !closingTime) {
+    return {
+      enabled: false,
+      start: '',
+      end: '',
+      lunchStartTime: '',
+      lunchEndTime: '',
+      reason: 'non_working_day',
+      message: `${getWeekDayLabel(dayKey)} não é um dia de atendimento da empresa.`
+    };
+  }
+
+  return {
+    enabled: true,
+    start: openingTime,
+    end: closingTime,
+    lunchStartTime: businessHours?.lunchStartTime || '',
+    lunchEndTime: businessHours?.lunchEndTime || '',
+    reason: 'regular_hours',
+    message: `Horário de atendimento: ${openingTime || '--:--'} às ${closingTime || '--:--'}.`
+  };
+}
+
+function isInsideLunchBreak(slotStart, slotEnd, lunchStartTime, lunchEndTime) {
+  if (!lunchStartTime || !lunchEndTime) {
+    return false;
+  }
+
+  const lunchStartMinutes = parseTimeToMinutes(lunchStartTime);
+  const lunchEndMinutes = parseTimeToMinutes(lunchEndTime);
+
+  if (!lunchStartMinutes && !lunchEndMinutes) {
+    return false;
+  }
+
+  return slotStart < lunchEndMinutes && slotEnd > lunchStartMinutes;
+}
+
 export function getBusinessHoursForDate(tenant, dateString) {
   if (isDateClosed(tenant, dateString)) {
     return {
       enabled: false,
       start: '',
       end: '',
+      lunchStartTime: '',
+      lunchEndTime: '',
       reason: 'closed_date',
       message: 'A empresa está fechada nesta data.'
     };
@@ -102,39 +281,20 @@ export function getBusinessHoursForDate(tenant, dateString) {
       enabled: specialBusinessHours.enabled === true,
       start: specialBusinessHours.start || '',
       end: specialBusinessHours.end || '',
+      lunchStartTime: specialBusinessHours.lunchStartTime || '',
+      lunchEndTime: specialBusinessHours.lunchEndTime || '',
       reason: specialBusinessHours.enabled === true ? 'special_hours' : 'special_closed',
-      message:
-        specialBusinessHours.enabled === true
-          ? `Expediente especial nesta data: ${specialBusinessHours.start || '--:--'} às ${specialBusinessHours.end || '--:--'}.`
-          : 'A empresa definiu esta data como indisponível.'
+      message: specialBusinessHours.enabled === true
+        ? `Expediente especial nesta data: ${specialBusinessHours.start || '--:--'} às ${specialBusinessHours.end || '--:--'}.`
+        : 'A empresa definiu esta data como indisponível.'
     };
   }
 
-  const currentDate = new Date(`${dateString}T00:00:00`);
-  const dayKey = getWeekDayKey(currentDate);
-  const dayConfig = tenant?.businessHours?.[dayKey] || {};
-
-  if (dayConfig.enabled !== true || !dayConfig.start || !dayConfig.end) {
-    return {
-      enabled: false,
-      start: '',
-      end: '',
-      reason: 'non_working_day',
-      message: `${getWeekDayLabel(dayKey)} não é um dia de atendimento da empresa.`
-    };
-  }
-
-  return {
-    enabled: true,
-    start: dayConfig.start || '',
-    end: dayConfig.end || '',
-    reason: 'regular_hours',
-    message: `Horário de atendimento: ${dayConfig.start || '--:--'} às ${dayConfig.end || '--:--'}.`
-  };
+  return getRegularBusinessHoursForDate(tenant, dateString);
 }
 
 export function getReadableBusinessHours(tenant) {
-  const businessHours = tenant?.businessHours || {};
+  const businessHours = getTenantBusinessHours(tenant);
   const orderedDays = [
     'monday',
     'tuesday',
@@ -146,13 +306,35 @@ export function getReadableBusinessHours(tenant) {
   ];
 
   return orderedDays.map((dayKey) => {
-    const config = businessHours?.[dayKey] || {};
-    const enabled = config.enabled === true && config.start && config.end;
+    const dayConfig = businessHours?.[dayKey];
+
+    if (dayConfig && typeof dayConfig === 'object') {
+      const enabled = dayConfig.enabled === true && dayConfig.start && dayConfig.end;
+
+      return {
+        dayKey,
+        label: getWeekDayLabel(dayKey),
+        text: enabled ? `${dayConfig.start} às ${dayConfig.end}` : 'Fechado',
+        enabled
+      };
+    }
+
+    const workingDays = Array.isArray(businessHours?.workingDays)
+      ? businessHours.workingDays
+      : [];
+
+    const enabled = (
+      workingDays.includes(dayKey) &&
+      businessHours?.openingTime &&
+      businessHours?.closingTime
+    );
 
     return {
       dayKey,
       label: getWeekDayLabel(dayKey),
-      text: enabled ? `${config.start} às ${config.end}` : 'Fechado',
+      text: enabled
+        ? `${businessHours.openingTime} às ${businessHours.closingTime}`
+        : 'Fechado',
       enabled
     };
   });
@@ -161,7 +343,9 @@ export function getReadableBusinessHours(tenant) {
 export async function getPublicTenantBySlug(slug) {
   const tenantsQuery = query(
     collection(db, 'tenants'),
-    where('slug', '==', slug)
+    where('slug', '==', slug),
+    where('publicPageEnabled', '==', true),
+    where('isBlocked', '==', false)
   );
 
   const snapshot = await getDocs(tenantsQuery);
@@ -170,16 +354,10 @@ export async function getPublicTenantBySlug(slug) {
     return null;
   }
 
-  const tenant = {
+  return {
     id: snapshot.docs[0].id,
     ...snapshot.docs[0].data()
   };
-
-  if (tenant.publicPageEnabled === false || tenant.isBlocked === true) {
-    return null;
-  }
-
-  return tenant;
 }
 
 export async function listPublicServicesByTenant(tenantId) {
@@ -240,10 +418,29 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
   }
 
   const appointments = await listAppointmentsByTenantAndDate(tenant.id, dateString);
-  const durationMinutes = Number(service.durationMinutes || 0);
-  const slotInterval = Number(tenant?.slotIntervalMinutes || 30);
+  const durationMinutes = Number(service?.durationMinutes || 0);
+  const slotInterval = getTenantSlotInterval(tenant);
+
+  if (!durationMinutes || durationMinutes <= 0) {
+    return {
+      status: 'invalid',
+      message: 'A duração do serviço é inválida.',
+      slots: [],
+      schedule: daySchedule
+    };
+  }
+
   const startMinutes = parseTimeToMinutes(daySchedule.start);
   const endMinutes = parseTimeToMinutes(daySchedule.end);
+
+  if (startMinutes >= endMinutes) {
+    return {
+      status: 'invalid',
+      message: 'A configuração de horário da empresa está inválida.',
+      slots: [],
+      schedule: daySchedule
+    };
+  }
 
   const blockedAppointments = appointments.filter((appointment) => {
     return appointment.status !== 'canceled' && appointment.status !== 'no_show';
@@ -259,13 +456,28 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
     const slotStart = current;
     const slotEnd = current + durationMinutes;
 
+    if (
+      isInsideLunchBreak(
+        slotStart,
+        slotEnd,
+        daySchedule.lunchStartTime,
+        daySchedule.lunchEndTime
+      )
+    ) {
+      continue;
+    }
+
     const hasConflict = blockedAppointments.some((appointment) => {
       const appointmentStartDate = new Date(appointment.startAt);
       const appointmentEndDate = new Date(appointment.endAt);
-      const appointmentStartMinutes =
-        (appointmentStartDate.getHours() * 60) + appointmentStartDate.getMinutes();
-      const appointmentEndMinutes =
-        (appointmentEndDate.getHours() * 60) + appointmentEndDate.getMinutes();
+
+      const appointmentStartMinutes = (
+        appointmentStartDate.getHours() * 60
+      ) + appointmentStartDate.getMinutes();
+
+      const appointmentEndMinutes = (
+        appointmentEndDate.getHours() * 60
+      ) + appointmentEndDate.getMinutes();
 
       return slotStart < appointmentEndMinutes && slotEnd > appointmentStartMinutes;
     });
@@ -294,7 +506,6 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
 
 export async function listAvailableSlotsForDate(tenant, service, dateString) {
   const availability = await getAvailabilityForDate(tenant, service, dateString);
-
   return availability.slots || [];
 }
 
@@ -339,9 +550,19 @@ export async function createPublicAppointment({
   price,
   notes
 }) {
+  if (!tenantId || !serviceId || !date || !time) {
+    throw new Error('Dados obrigatórios do agendamento não informados.');
+  }
+
+  const parsedDurationMinutes = Number(durationMinutes || 0);
+
+  if (!parsedDurationMinutes || parsedDurationMinutes <= 0) {
+    throw new Error('Duração inválida para o serviço.');
+  }
+
   const startAt = new Date(`${date}T${time}:00`).toISOString();
   const endAt = new Date(
-    new Date(`${date}T${time}:00`).getTime() + (Number(durationMinutes || 0) * 60000)
+    new Date(`${date}T${time}:00`).getTime() + (parsedDurationMinutes * 60000)
   ).toISOString();
 
   return addDoc(collection(db, 'appointments'), {
@@ -363,7 +584,6 @@ export async function createPublicAppointment({
 
 export function getSlugFromUrl() {
   const url = new URL(window.location.href);
-
   return url.searchParams.get('slug') || '';
 }
 
