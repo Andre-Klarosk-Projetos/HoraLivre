@@ -6,7 +6,6 @@ import {
   query,
   where
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
-
 import { db } from '../config/firebase-init.js';
 import { findCustomerByPhone, createTenantCustomer } from './customer-service.js';
 
@@ -38,6 +37,7 @@ function getWeekDayLabel(dayKey) {
   if (dayKey === 'wednesday') return 'Quarta-feira';
   if (dayKey === 'thursday') return 'Quinta-feira';
   if (dayKey === 'friday') return 'Sexta-feira';
+
   return 'Sábado';
 }
 
@@ -47,6 +47,7 @@ function parseTimeToMinutes(value) {
   }
 
   const [hours, minutes] = String(value).split(':').map(Number);
+
   return (hours * 60) + minutes;
 }
 
@@ -76,9 +77,11 @@ function isDateClosed(tenant, dateString) {
   const closedDates = Array.isArray(tenant?.closedDates) ? tenant.closedDates : [];
   const unavailableDates = Array.isArray(tenant?.unavailableDates) ? tenant.unavailableDates : [];
 
-  return holidayDates.includes(dateString) ||
+  return (
+    holidayDates.includes(dateString) ||
     closedDates.includes(dateString) ||
-    unavailableDates.includes(dateString);
+    unavailableDates.includes(dateString)
+  );
 }
 
 export function getBusinessHoursForDate(tenant, dateString) {
@@ -100,9 +103,10 @@ export function getBusinessHoursForDate(tenant, dateString) {
       start: specialBusinessHours.start || '',
       end: specialBusinessHours.end || '',
       reason: specialBusinessHours.enabled === true ? 'special_hours' : 'special_closed',
-      message: specialBusinessHours.enabled === true
-        ? `Expediente especial nesta data: ${specialBusinessHours.start || '--:--'} às ${specialBusinessHours.end || '--:--'}.`
-        : 'A empresa definiu esta data como indisponível.'
+      message:
+        specialBusinessHours.enabled === true
+          ? `Expediente especial nesta data: ${specialBusinessHours.start || '--:--'} às ${specialBusinessHours.end || '--:--'}.`
+          : 'A empresa definiu esta data como indisponível.'
     };
   }
 
@@ -148,9 +152,7 @@ export function getReadableBusinessHours(tenant) {
     return {
       dayKey,
       label: getWeekDayLabel(dayKey),
-      text: enabled
-        ? `${config.start} às ${config.end}`
-        : 'Fechado',
+      text: enabled ? `${config.start} às ${config.end}` : 'Fechado',
       enabled
     };
   });
@@ -240,7 +242,6 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
   const appointments = await listAppointmentsByTenantAndDate(tenant.id, dateString);
   const durationMinutes = Number(service.durationMinutes || 0);
   const slotInterval = Number(tenant?.slotIntervalMinutes || 30);
-
   const startMinutes = parseTimeToMinutes(daySchedule.start);
   const endMinutes = parseTimeToMinutes(daySchedule.end);
 
@@ -250,17 +251,19 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
 
   const availableSlots = [];
 
-  for (let current = startMinutes; current + durationMinutes <= endMinutes; current += slotInterval) {
+  for (
+    let current = startMinutes;
+    current + durationMinutes <= endMinutes;
+    current += slotInterval
+  ) {
     const slotStart = current;
     const slotEnd = current + durationMinutes;
 
     const hasConflict = blockedAppointments.some((appointment) => {
       const appointmentStartDate = new Date(appointment.startAt);
       const appointmentEndDate = new Date(appointment.endAt);
-
       const appointmentStartMinutes =
         (appointmentStartDate.getHours() * 60) + appointmentStartDate.getMinutes();
-
       const appointmentEndMinutes =
         (appointmentEndDate.getHours() * 60) + appointmentEndDate.getMinutes();
 
@@ -291,6 +294,7 @@ export async function getAvailabilityForDate(tenant, service, dateString) {
 
 export async function listAvailableSlotsForDate(tenant, service, dateString) {
   const availability = await getAvailabilityForDate(tenant, service, dateString);
+
   return availability.slots || [];
 }
 
@@ -350,7 +354,7 @@ export async function createPublicAppointment({
     endAt,
     price: Number(price || 0),
     status: 'scheduled',
-    source: 'public',
+    source: 'public_page',
     notes: notes || '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -359,6 +363,7 @@ export async function createPublicAppointment({
 
 export function getSlugFromUrl() {
   const url = new URL(window.location.href);
+
   return url.searchParams.get('slug') || '';
 }
 
