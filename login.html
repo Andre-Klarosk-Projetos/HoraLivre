@@ -5,92 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Entrar - HoraLivre</title>
 
-  <meta
-    name="description"
-    content="Acesse o HoraLivre para entrar como admin ou empresa cliente."
-  >
-
   <link rel="stylesheet" href="./assets/css/global.css">
   <link rel="stylesheet" href="./assets/css/components.css">
   <link rel="stylesheet" href="./assets/css/login.css">
 </head>
-<body>
-  <main class="login-page">
-    <section class="login-shell">
-      <div class="login-brand-panel">
-        <div class="login-brand-top">
-          <a class="login-brand-link" href="./index.html">
-            <span class="badge">HoraLivre</span>
-            <span class="login-brand-name">Sistema de agendamento</span>
-          </a>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-brand-panel">
+      <div class="login-brand-top">
+        <a class="login-brand-link" href="./index.html" aria-label="Voltar para a home do HoraLivre">
+          <span class="login-brand-mark">⌚</span>
+          <span class="login-brand-name">HoraLivre</span>
+        </a>
 
-          <span class="eyebrow">Acesso ao sistema</span>
+        <div class="login-hero-copy">
+          <span class="login-kicker">Acesso ao sistema</span>
           <h1>Entre no HoraLivre</h1>
           <p class="muted">
             Acesse sua área para gerenciar empresas clientes, serviços, agenda, clientes finais e cobrança.
           </p>
         </div>
-
-        <div class="login-info-grid">
-          <article class="login-info-card">
-            <strong>Admin master</strong>
-            <span>Controle empresas clientes, planos, suporte e cobrança.</span>
-          </article>
-
-          <article class="login-info-card">
-            <strong>Empresa cliente</strong>
-            <span>Organize serviços, agenda, clientes finais e relatórios.</span>
-          </article>
-
-          <article class="login-info-card">
-            <strong>Página pública</strong>
-            <span>Cada empresa pode receber agendamentos pelo próprio link.</span>
-          </article>
-        </div>
-
-        <div class="login-brand-footer">
-          <a class="button" href="./index.html">Voltar para a home</a>
-        </div>
       </div>
 
-      <div class="login-form-panel">
-        <div class="login-form-card">
-          <div class="login-form-header">
-            <h2>Entrar</h2>
-            <p class="muted">
-              Use seu e-mail e senha para acessar sua área.
-            </p>
+      <div class="login-info-grid">
+        <article class="login-info-card">
+          <div class="login-info-icon admin" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2a3 3 0 0 1 3 3v1.1a6.96 6.96 0 0 1 2.34 1.35l.96-.55a3 3 0 1 1 3 5.2l-.96.56c.1.43.16.88.16 1.34s-.06.91-.16 1.34l.96.56a3 3 0 1 1-3 5.2l-.96-.55A6.96 6.96 0 0 1 15 20.9V22a3 3 0 1 1-6 0v-1.1a6.96 6.96 0 0 1-2.34-1.35l-.96.55a3 3 0 1 1-3-5.2l.96-.56A5.8 5.8 0 0 1 3.5 13c0-.46.06-.91.16-1.34l-.96-.56a3 3 0 1 1 3-5.2l.96.55A6.96 6.96 0 0 1 9 6.1V5a3 3 0 0 1 3-3Zm0 7.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/>
+            </svg>
           </div>
+          <strong>Admin master</strong>
+          <span>Controle empresas clientes, planos, suporte e cobrança.</span>
+        </article>
 
-          <form id="login-form" class="stack">
-            <label>
-              <span>E-mail</span>
-              <input id="email" name="email" type="email" autocomplete="email" required placeholder="voce@empresa.com">
-            </label>
-
-            <label>
-              <span>Senha</span>
-              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha">
-            </label>
-
-            <button class="button primary login-submit-button" type="submit">
-              Entrar no sistema
-            </button>
-
-            <p id="login-feedback" class="feedback"></p>
-          </form>
-
-          <div class="login-help-box">
-            <strong>Dica</strong>
-            <p>
-              O admin entra na área central da plataforma. A empresa cliente entra no painel operacional do próprio negócio.
-            </p>
+        <article class="login-info-card">
+          <div class="login-info-icon company" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 3h10a2 2 0 0 1 2 2v4h4a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm3 4v2h2V7H7Zm0 4v2h2v-2H7Zm0 4v2h2v-2H7Zm5-8v2h2V7h-2Zm0 4v2h2v-2h-2Zm0 4v2h2v-2h-2Zm5 0v2h2v-2h-2Z"/>
+            </svg>
           </div>
+          <strong>Empresa cliente</strong>
+          <span>Organize serviços, agenda, clientes finais e relatórios.</span>
+        </article>
+
+        <article class="login-info-card">
+          <div class="login-info-icon public" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm6.9 9h-3.02a15.7 15.7 0 0 0-1.06-4.02A8.03 8.03 0 0 1 18.9 11ZM12 4.05c-.7.84-1.73 2.86-2.05 6.95h4.1c-.32-4.09-1.35-6.11-2.05-6.95ZM9.18 6.98A15.7 15.7 0 0 0 8.12 11H5.1a8.03 8.03 0 0 1 4.08-4.02ZM5.1 13h3.02c.12 1.45.5 2.83 1.06 4.02A8.03 8.03 0 0 1 5.1 13Zm4.84 0c.32 4.09 1.35 6.11 2.05 6.95.7-.84 1.73-2.86 2.05-6.95h-4.1Zm4.88 4.02A15.7 15.7 0 0 0 15.88 13h3.02a8.03 8.03 0 0 1-4.08 4.02Z"/>
+            </svg>
+          </div>
+          <strong>Página pública</strong>
+          <span>Cada empresa pode receber agendamentos pelo próprio link.</span>
+        </article>
+      </div>
+
+      <div class="login-brand-footer">
+        <a class="button" href="./index.html">Voltar para a home</a>
+      </div>
+    </section>
+
+    <section class="login-form-panel">
+      <div class="login-form-card">
+        <div class="login-form-header">
+          <span class="login-form-kicker">Entrar</span>
+          <h2>Acesse sua conta</h2>
+          <p class="muted">
+            Use seu e-mail e senha para acessar sua área.
+          </p>
+        </div>
+
+        <form id="login-form" class="stack" novalidate>
+          <label>
+            <span>E-mail</span>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="voce@empresa.com"
+              required
+            >
+          </label>
+
+          <label>
+            <span>Senha</span>
+            <div class="login-password-field">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Digite sua senha"
+                required
+              >
+              <button
+                id="toggle-password-button"
+                class="login-password-toggle"
+                type="button"
+                aria-label="Mostrar ou ocultar senha"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 5c5.5 0 9.27 4.11 10.5 6.04a1.8 1.8 0 0 1 0 1.92C21.27 14.89 17.5 19 12 19S2.73 14.89 1.5 12.96a1.8 1.8 0 0 1 0-1.92C2.73 9.11 6.5 5 12 5Zm0 2c-4.28 0-7.4 3.03-8.49 5 .99 1.97 4.21 5 8.49 5 4.28 0 7.4-3.03 8.49-5-.99-1.97-4.21-5-8.49-5Zm0 2.2A2.8 2.8 0 1 1 9.2 12 2.8 2.8 0 0 1 12 9.2Z"/>
+                </svg>
+              </button>
+            </div>
+          </label>
+
+          <button id="login-submit-button" class="button primary login-submit-button" type="submit">
+            Entrar no sistema
+          </button>
+
+          <p id="login-feedback" class="feedback" aria-live="polite"></p>
+        </form>
+
+        <div class="login-help-box">
+          <strong>Dica</strong>
+          <p>
+            O admin entra na área central da plataforma. A empresa cliente entra no painel operacional do próprio negócio.
+          </p>
         </div>
       </div>
     </section>
   </main>
 
-  <script type="module" src="./assets/js/modules/login.js"></script>
+  <script type="module" src="./assets/js/login.js"></script>
+  <script>
+    (function () {
+      const passwordInput = document.getElementById('password');
+      const toggleButton = document.getElementById('toggle-password-button');
+
+      if (!passwordInput || !toggleButton) {
+        return;
+      }
+
+      toggleButton.addEventListener('click', function () {
+        passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+      });
+    })();
+  </script>
 </body>
 </html>
