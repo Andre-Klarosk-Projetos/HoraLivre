@@ -1,147 +1,197 @@
+function normalizeString(value, fallback = '') {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  return String(value).trim();
+}
+
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizePhoneDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function tryFormatDate(dateValue, options = {}) {
+  if (!dateValue) {
+    return '-';
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(dateValue);
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', options).format(date);
+}
+
 export function formatCurrencyBRL(value) {
-  const numericValue = Number(value || 0);
+  const amount = normalizeNumber(value, 0);
 
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
-  }).format(numericValue);
+  }).format(amount);
 }
 
 export function formatPhone(value) {
-  const raw = String(value || '').trim();
+  const digits = normalizePhoneDigits(value);
 
-  if (!raw) {
-    return '';
+  if (!digits) {
+    return '-';
   }
 
-  return raw;
+  if (digits.length === 11) {
+    return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+
+  if (digits.length === 10) {
+    return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  }
+
+  if (digits.length > 11) {
+    const countryCode = digits.slice(0, digits.length - 11);
+    const local = digits.slice(-11).replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+
+    return `+${countryCode} ${local}`;
+  }
+
+  return digits;
 }
 
-export function buildWhatsAppLink(phone, message = '') {
-  const normalizedPhone = String(phone || '').replace(/\D/g, '');
-  const encodedMessage = encodeURIComponent(String(message || ''));
+export function formatSubscriptionStatus(value) {
+  const normalized = normalizeString(value).toLowerCase();
 
-  if (!normalizedPhone) {
-    return '#';
+  if (normalized === 'trial') {
+    return 'Em teste';
   }
 
-  if (!encodedMessage) {
-    return `https://wa.me/${normalizedPhone}`;
-  }
-
-  return `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
-}
-
-export function formatAppointmentStatus(status) {
-  if (status === 'scheduled') {
-    return 'Agendado';
-  }
-
-  if (status === 'confirmed') {
-    return 'Confirmado';
-  }
-
-  if (status === 'completed') {
-    return 'Concluído';
-  }
-
-  if (status === 'canceled') {
-    return 'Cancelado';
-  }
-
-  if (status === 'no_show') {
-    return 'Faltou';
-  }
-
-  return status || '-';
-}
-
-export function formatSubscriptionStatus(status) {
-  if (status === 'trial') {
-    return 'Trial';
-  }
-
-  if (status === 'active') {
+  if (normalized === 'active') {
     return 'Ativo';
   }
 
-  if (status === 'blocked') {
+  if (normalized === 'inactive') {
+    return 'Inativo';
+  }
+
+  if (normalized === 'blocked') {
     return 'Bloqueado';
   }
 
-  return status || '-';
+  if (normalized === 'canceled') {
+    return 'Cancelado';
+  }
+
+  if (normalized === 'past_due') {
+    return 'Pagamento pendente';
+  }
+
+  return normalized || '-';
 }
 
-export function formatBillingMode(mode) {
-  if (mode === 'free') {
+export function formatBillingMode(value) {
+  const normalized = normalizeString(value).toLowerCase();
+
+  if (normalized === 'free') {
     return 'Gratuito';
   }
 
-  if (mode === 'fixed_plan') {
-    return 'Plano mensal';
+  if (normalized === 'fixed') {
+    return 'Mensal fixo';
   }
 
-  if (mode === 'annual_plan') {
-    return 'Plano anual';
+  if (normalized === 'annual') {
+    return 'Anual';
   }
 
-  if (mode === 'per_service') {
-    return 'Por serviço concluído';
+  if (normalized === 'per_service') {
+    return 'Por serviço executado';
   }
 
-  return mode || '-';
+  if (normalized === 'fixed_plus_per_service') {
+    return 'Fixo + por serviço';
+  }
+
+  return normalized || '-';
 }
 
-export function formatMonthNumberToName(monthNumber) {
-  const month = Number(monthNumber || 0);
+export function formatAppointmentStatus(value) {
+  const normalized = normalizeString(value).toLowerCase();
 
-  if (month === 1) {
-    return 'Janeiro';
+  if (normalized === 'scheduled') {
+    return 'Agendado';
   }
 
-  if (month === 2) {
-    return 'Fevereiro';
+  if (normalized === 'confirmed') {
+    return 'Confirmado';
   }
 
-  if (month === 3) {
-    return 'Março';
+  if (normalized === 'completed') {
+    return 'Concluído';
   }
 
-  if (month === 4) {
-    return 'Abril';
+  if (normalized === 'canceled') {
+    return 'Cancelado';
   }
 
-  if (month === 5) {
-    return 'Maio';
+  if (normalized === 'no_show') {
+    return 'Faltou';
   }
 
-  if (month === 6) {
-    return 'Junho';
+  return normalized || '-';
+}
+
+export function formatDateBR(value) {
+  return tryFormatDate(value, {
+    dateStyle: 'short'
+  });
+}
+
+export function formatDateTimeBR(value) {
+  return tryFormatDate(value, {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  });
+}
+
+export function formatDateTimeForDisplay(value) {
+  return formatDateTimeBR(value);
+}
+
+export function formatDateForDisplay(value) {
+  return formatDateBR(value);
+}
+
+export function buildWhatsAppLink(phone, message = '') {
+  const digits = normalizePhoneDigits(phone);
+
+  if (!digits) {
+    return '#';
   }
 
-  if (month === 7) {
-    return 'Julho';
-  }
+  return `https://wa.me/${digits}?text=${encodeURIComponent(String(message || ''))}`;
+}
 
-  if (month === 8) {
-    return 'Agosto';
-  }
+export function formatPercent(value, fractionDigits = 2) {
+  const amount = normalizeNumber(value, 0) / 100;
 
-  if (month === 9) {
-    return 'Setembro';
-  }
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits
+  }).format(amount);
+}
 
-  if (month === 10) {
-    return 'Outubro';
-  }
+export function formatPlainNumber(value) {
+  const amount = normalizeNumber(value, 0);
 
-  if (month === 11) {
-    return 'Novembro';
-  }
+  return new Intl.NumberFormat('pt-BR').format(amount);
+}
 
-  if (month === 12) {
-    return 'Dezembro';
-  }
-
-  return '-';
+export function formatSlug(value) {
+  return normalizeString(value).toLowerCase();
 }
