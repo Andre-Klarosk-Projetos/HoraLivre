@@ -83,6 +83,52 @@ const serviceCancelEditButton = document.getElementById('service-cancel-edit-but
 const customerCancelEditButton = document.getElementById('customer-cancel-edit-button');
 const appointmentCancelEditButton = document.getElementById('appointment-cancel-edit-button');
 
+function getInputValue(id, fallback = '') {
+  return document.getElementById(id)?.value ?? fallback;
+}
+
+function setInputValue(id, value) {
+  const element = document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+  element.value = value ?? '';
+}
+
+function getCheckboxValue(id, fallback = false) {
+  const element = document.getElementById(id);
+
+  if (!element || element.type !== 'checkbox') {
+    return fallback;
+  }
+
+  return Boolean(element.checked);
+}
+
+function setCheckboxValue(id, value) {
+  const element = document.getElementById(id);
+
+  if (!element || element.type !== 'checkbox') {
+    return;
+  }
+
+  element.checked = Boolean(value);
+}
+
+function timeStringToMinutes(timeString) {
+  const [hours, minutes] = String(timeString || '00:00')
+    .split(':')
+    .map(Number);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return 0;
+  }
+
+  return (hours * 60) + minutes;
+}
+
 function resolveEffectiveBillingMode(tenant, billingSettings, plan) {
   return (
     billingSettings?.billingMode ||
@@ -110,25 +156,139 @@ function resolveEffectiveUnitPrice(tenant, billingSettings, plan) {
   );
 }
 
-logoutButton?.addEventListener('click', async () => {
-  await logoutUser();
-  window.location.href = './login.html';
-});
+function validateBusinessHoursForm({
+  openingTime,
+  closingTime,
+  lunchStartTime,
+  lunchEndTime,
+  slotIntervalMinutes,
+  workingDays
+}) {
+  if (!Array.isArray(workingDays) || !workingDays.length) {
+    return 'Selecione pelo menos um dia de atendimento.';
+  }
 
-serviceCancelEditButton?.addEventListener('click', () => {
-  resetServiceForm();
-  showFeedback(serviceFeedback, 'Edição de serviço cancelada.', 'success');
-});
+  if (!required(openingTime) || !required(closingTime)) {
+    return 'Defina o horário de abertura e fechamento.';
+  }
 
-customerCancelEditButton?.addEventListener('click', () => {
-  resetCustomerForm();
-  showFeedback(customerFeedback, 'Edição de cliente cancelada.', 'success');
-});
+  const openingMinutes = timeStringToMinutes(openingTime);
+  const closingMinutes = timeStringToMinutes(closingTime);
 
-appointmentCancelEditButton?.addEventListener('click', () => {
-  resetAppointmentForm();
-  showFeedback(appointmentFeedback, 'Edição de agendamento cancelada.', 'success');
-});
+  if (openingMinutes >= closingMinutes) {
+    return 'O horário de abertura deve ser menor que o horário de fechamento.';
+  }
+
+  if (lunchStartTime && lunchEndTime) {
+    const lunchStartMinutes = timeStringToMinutes(lunchStartTime);
+    const lunchEndMinutes = timeStringToMinutes(lunchEndTime);
+
+    if (lunchStartMinutes >= lunchEndMinutes) {
+      return 'O início do almoço deve ser menor que o fim do almoço.';
+    }
+
+    if (lunchStartMinutes < openingMinutes || lunchEndMinutes > closingMinutes) {
+      return 'O intervalo de almoço deve estar dentro do horário de atendimento.';
+    }
+  }
+
+  if (!Number.isInteger(Number(slotIntervalMinutes)) || Number(slotIntervalMinutes) <= 0) {
+    return 'O intervalo entre horários deve ser um número inteiro maior que zero.';
+  }
+
+  return null;
+}
+
+function buildTenantUpdatePayload() {
+  const businessName = getInputValue('company-form-business-name').trim();
+  const slug = getInputValue('company-form-slug').trim();
+  const whatsapp = getInputValue('company-form-whatsapp').trim();
+  const description = getInputValue('company-form-description').trim();
+  const logoUrl = getInputValue('company-form-logo-url').trim();
+  const instagram = getInputValue('company-form-instagram').trim();
+  const address = getInputValue('company-form-address').trim();
+
+  const openingTime = getInputValue('company-form-opening-time');
+  const closingTime = getInputValue('company-form-closing-time');
+  const lunchStartTime = getInputValue('company-form-lunch-start-time');
+  const lunchEndTime = getInputValue('company-form-lunch-end-time');
+  const slotIntervalMinutes = Number(
+    getInputValue('company-form-slot-interval-minutes', '30') || 30
+  );
+
+  const availabilityState = getAvailabilityUiState();
+
+  if (!required(businessName)) {
+    return { error: 'Nome da empresa é obrigatório.' };
+  }
+
+  if (!required(slug) || !isValidSlug(slug)) {
+    return {
+      error: 'Slug inválido. Use letras minúsculas, números e hífen.'
+    };
+  }
+
+  if (!required(whatsapp) || !isValidPhone(whatsapp)) {
+    return { error: 'WhatsApp inválido.' };
+  }
+
+  if (logoUrl && !isValidUrl(logoUrl)) {
+    return { error: 'Logo URL inválida.' };
+  }
+
+  const businessHoursError = validateBusinessHoursForm({
+    openingTime,
+    closingTime,
+    lunchStartTime,
+    lunchEndTime,
+    slotIntervalMinutes,
+    workingDays: availabilityState.workingDays
+  });
+
+  if (businessHoursError) {
+    return { error: businessHoursError };
+  }
+
+  const payload = {
+    businessName,
+    slug,
+    whatsapp,
+    description,
+    logoUrl,
+    instagram,
+    address,
+    businessHours: {
+      workingDays: availabilityState.workingDays,
+      openingTime,
+      closingTime,
+      lunchStartTime,
+      lunchEndTime,
+      slotIntervalMinutes,
+      holidays: availabilityState.holidays,
+      blockedDates: availabilityState.blockedDates,
+      specialDates: availabilityState.specialDates
+    }
+  };
+
+  const publicPageEnabledElement = document.getElementById('company-form-public-page-enabled');
+  const reportsEnabledElement = document.getElementById('company-form-reports-enabled');
+
+  if (publicPageEnabledElement?.type === 'checkbox') {
+    payload.publicPageEnabled = getCheckboxValue(
+      'company-form-public-page-enabled',
+      true
+    );
+  }
+
+  if (reportsEnabledElement?.type === 'checkbox') {
+    payload.reportsEnabled = getCheckboxValue(
+      'company-form-reports-enabled',
+      true
+    );
+  }
+
+  return { payload };
+}
 
 async function loadTenantData() {
   const tenant = await getTenantById(tenantId);
@@ -149,24 +309,44 @@ async function loadTenantData() {
   setText('company-billing-mode', formatBillingMode(tenant.billingMode));
   setText('company-status', formatSubscriptionStatus(tenant.subscriptionStatus));
 
-  document.getElementById('company-form-business-name').value = tenant.businessName || '';
-  document.getElementById('company-form-slug').value = tenant.slug || '';
-  document.getElementById('company-form-whatsapp').value = tenant.whatsapp || '';
-  document.getElementById('company-form-description').value = tenant.description || '';
-  document.getElementById('company-form-logo-url').value = tenant.logoUrl || '';
-  document.getElementById('company-form-instagram').value = tenant.instagram || '';
-  document.getElementById('company-form-address').value = tenant.address || '';
-  document.getElementById('company-form-opening-time').value = businessHours.openingTime;
-  document.getElementById('company-form-closing-time').value = businessHours.closingTime;
-  document.getElementById('company-form-lunch-start-time').value = businessHours.lunchStartTime;
-  document.getElementById('company-form-lunch-end-time').value = businessHours.lunchEndTime;
-  document.getElementById('company-form-slot-interval-minutes').value = String(businessHours.slotIntervalMinutes);
+  setInputValue('company-form-business-name', tenant.businessName || '');
+  setInputValue('company-form-slug', tenant.slug || '');
+  setInputValue('company-form-whatsapp', tenant.whatsapp || '');
+  setInputValue('company-form-description', tenant.description || '');
+  setInputValue('company-form-logo-url', tenant.logoUrl || '');
+  setInputValue('company-form-instagram', tenant.instagram || '');
+  setInputValue('company-form-address', tenant.address || '');
+
+  setInputValue('company-form-opening-time', businessHours.openingTime);
+  setInputValue('company-form-closing-time', businessHours.closingTime);
+  setInputValue('company-form-lunch-start-time', businessHours.lunchStartTime);
+  setInputValue('company-form-lunch-end-time', businessHours.lunchEndTime);
+  setInputValue(
+    'company-form-slot-interval-minutes',
+    String(businessHours.slotIntervalMinutes)
+  );
+
+  setCheckboxValue(
+    'company-form-public-page-enabled',
+    tenant.publicPageEnabled !== false
+  );
+
+  setCheckboxValue(
+    'company-form-reports-enabled',
+    tenant.reportsEnabled !== false
+  );
 
   setAvailabilityUiState(businessHours);
   renderAvailabilitySummary();
 
-  if (publicPageLinkButton && tenant.slug) {
-    publicPageLinkButton.href = `./agendar.html?slug=${tenant.slug}`;
+  if (publicPageLinkButton) {
+    if (tenant.slug) {
+      publicPageLinkButton.href = `./agendar.html?slug=${tenant.slug}`;
+      publicPageLinkButton.removeAttribute('aria-disabled');
+    } else {
+      publicPageLinkButton.href = '#';
+      publicPageLinkButton.setAttribute('aria-disabled', 'true');
+    }
   }
 
   return tenant;
@@ -183,11 +363,30 @@ async function loadDashboardSummary() {
   ]);
 
   const { startIso, endIso } = getStartAndEndOfCurrentMonth();
-  const completedAppointmentsCount = await countCompletedAppointments(tenantId, startIso, endIso);
 
-  const effectiveBillingMode = resolveEffectiveBillingMode(tenant, billingSettings, plan);
-  const effectiveFixedPrice = resolveEffectiveFixedPrice(tenant, billingSettings, plan);
-  const effectiveUnitPrice = resolveEffectiveUnitPrice(tenant, billingSettings, plan);
+  const completedAppointmentsCount = await countCompletedAppointments(
+    tenantId,
+    startIso,
+    endIso
+  );
+
+  const effectiveBillingMode = resolveEffectiveBillingMode(
+    tenant,
+    billingSettings,
+    plan
+  );
+
+  const effectiveFixedPrice = resolveEffectiveFixedPrice(
+    tenant,
+    billingSettings,
+    plan
+  );
+
+  const effectiveUnitPrice = resolveEffectiveUnitPrice(
+    tenant,
+    billingSettings,
+    plan
+  );
 
   const totalBillingAmount = calculateBillingForPeriod({
     billingMode: effectiveBillingMode,
@@ -198,8 +397,8 @@ async function loadDashboardSummary() {
 
   const todayDate = new Date().toISOString().slice(0, 10);
 
-  const todayAppointments = appointments.filter((appointment) =>
-    String(appointment.startAt || '').slice(0, 10) === todayDate
+  const todayAppointments = appointments.filter(
+    (appointment) => String(appointment.startAt || '').slice(0, 10) === todayDate
   );
 
   setText('tenant-stat-billing', formatCurrencyBRL(totalBillingAmount));
@@ -221,74 +420,45 @@ async function loadSupportButton() {
   );
 }
 
+logoutButton?.addEventListener('click', async () => {
+  await logoutUser();
+  window.location.href = './login.html';
+});
+
+serviceCancelEditButton?.addEventListener('click', () => {
+  resetServiceForm();
+  showFeedback(serviceFeedback, 'Edição de serviço cancelada.', 'success');
+});
+
+customerCancelEditButton?.addEventListener('click', () => {
+  resetCustomerForm();
+  showFeedback(customerFeedback, 'Edição de cliente cancelada.', 'success');
+});
+
+appointmentCancelEditButton?.addEventListener('click', () => {
+  resetAppointmentForm();
+  showFeedback(appointmentFeedback, 'Edição de agendamento cancelada.', 'success');
+});
+
 companyForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   try {
-    const businessName = document.getElementById('company-form-business-name').value.trim();
-    const slug = document.getElementById('company-form-slug').value.trim();
-    const whatsapp = document.getElementById('company-form-whatsapp').value.trim();
-    const description = document.getElementById('company-form-description').value.trim();
-    const logoUrl = document.getElementById('company-form-logo-url').value.trim();
-    const instagram = document.getElementById('company-form-instagram').value.trim();
-    const address = document.getElementById('company-form-address').value.trim();
+    const { error, payload } = buildTenantUpdatePayload();
 
-    const openingTime = document.getElementById('company-form-opening-time').value;
-    const closingTime = document.getElementById('company-form-closing-time').value;
-    const lunchStartTime = document.getElementById('company-form-lunch-start-time').value;
-    const lunchEndTime = document.getElementById('company-form-lunch-end-time').value;
-    const slotIntervalMinutes = Number(document.getElementById('company-form-slot-interval-minutes').value || 30);
-
-    const availabilityState = getAvailabilityUiState();
-
-    if (!required(businessName)) {
-      showFeedback(companyFeedback, 'Nome da empresa é obrigatório.', 'error');
+    if (error) {
+      showFeedback(companyFeedback, error, 'error');
       return;
     }
 
-    if (!required(slug) || !isValidSlug(slug)) {
-      showFeedback(companyFeedback, 'Slug inválido. Use letras minúsculas, números e hífen.', 'error');
-      return;
-    }
-
-    if (!required(whatsapp) || !isValidPhone(whatsapp)) {
-      showFeedback(companyFeedback, 'WhatsApp inválido.', 'error');
-      return;
-    }
-
-    if (logoUrl && !isValidUrl(logoUrl)) {
-      showFeedback(companyFeedback, 'Logo URL inválida.', 'error');
-      return;
-    }
-
-    if (!availabilityState.workingDays.length) {
-      showFeedback(companyFeedback, 'Selecione pelo menos um dia de atendimento.', 'error');
-      return;
-    }
-
-    await updateTenant(tenantId, {
-      businessName,
-      slug,
-      whatsapp,
-      description,
-      logoUrl,
-      instagram,
-      address,
-      businessHours: {
-        workingDays: availabilityState.workingDays,
-        openingTime,
-        closingTime,
-        lunchStartTime,
-        lunchEndTime,
-        slotIntervalMinutes,
-        holidays: availabilityState.holidays,
-        blockedDates: availabilityState.blockedDates,
-        specialDates: availabilityState.specialDates
-      }
-    });
-
+    await updateTenant(tenantId, payload);
     await loadTenantData();
-    showFeedback(companyFeedback, 'Dados da empresa e disponibilidade atualizados com sucesso.', 'success');
+
+    showFeedback(
+      companyFeedback,
+      'Dados da empresa e disponibilidade atualizados com sucesso.',
+      'success'
+    );
   } catch (error) {
     console.error(error);
     showFeedback(
@@ -325,7 +495,10 @@ customerForm?.addEventListener('submit', async (event) => {
 appointmentForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const success = await submitSaveAppointment(appointmentForm, appointmentFeedback);
+  const success = await submitSaveAppointment(
+    appointmentForm,
+    appointmentFeedback
+  );
 
   if (success) {
     await renderTenantAppointmentsList();
@@ -347,9 +520,12 @@ async function init() {
 
     await renderTenantServicesList();
     await renderTenantCustomersList();
+
     await loadAppointmentFormDependencies();
     bindAppointmentFormSelects();
+
     await renderTenantAppointmentsList();
+
     await loadTenantReportsIntoPage({
       reportAppointmentsListElementId: 'report-appointments-list'
     });
