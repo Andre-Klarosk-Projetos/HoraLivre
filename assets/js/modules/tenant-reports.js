@@ -1,24 +1,24 @@
 import { requireTenantUser } from '../utils/guards.js';
 import { getTenantId } from '../state/session-store.js';
 import {
+  listAppointmentsByTenant,
   listAppointmentsByTenantAndPeriod
 } from '../services/appointment-service.js';
-import {
-  getCurrentMonthBillingRecordForTenant
-} from '../services/billing-service.js';
+import { listServicesByTenant } from '../services/service-service.js';
+import { listCustomersByTenant } from '../services/customer-service.js';
 import {
   formatCurrencyBRL,
   formatAppointmentStatus
 } from '../utils/formatters.js';
 import {
-  clearElement
-} from '../utils/dom-utils.js';
-import {
+  formatDateTimeForDisplay,
   buildStartOfDayIsoFromDateInput,
-  buildEndOfDayIsoFromDateInput,
-  getStartAndEndOfCurrentMonth,
-  formatDateTimeForDisplay
+  buildEndOfDayIsoFromDateInput
 } from '../utils/date-utils.js';
+import {
+  clearElement,
+  setText
+} from '../utils/dom-utils.js';
 
 if (!requireTenantUser()) {
   throw new Error('Acesso negado.');
@@ -26,58 +26,163 @@ if (!requireTenantUser()) {
 
 const tenantId = getTenantId();
 
-function buildBillingStatusText(record) {
-  if (!record) {
-    return {
-      title: 'Nenhuma cobrança oficial encontrada para o mês atual.',
-      help: 'O resumo abaixo mostra apenas o período filtrado.'
-    };
-  }
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getReportsFilterValues() {
+  const startInput = document.getElementById('reports-filter-start');
+  const endInput = document.getElementById('reports-filter-end');
 
   return {
-    title: `Cobrança oficial gerada e ${record.status === 'pending' ? 'pendente' : record.status}. Valor: ${formatCurrencyBRL(record.amount || 0)}.`,
-    help: `Referência da cobrança: ${record.reference || '-'} | Status: ${record.status || '-'}`
+    startValue: startInput?.value || '',
+    endValue: endInput?.value || '',
+    startIso: buildStartOfDayIsoFromDateInput(startInput?.value || ''),
+    endIso: buildEndOfDayIsoFromDateInput(endInput?.value || '')
+  };
+}
+
+function getAppointmentStatusClassName(status) {
+  if (status === 'scheduled') {
+    return 'scheduled';
+  }
+
+  if (status === 'confirmed') {
+    return 'confirmed';
+  }
+
+  if (status === 'completed') {
+    return 'completed';
+  }
+
+  if (status === 'canceled') {
+    return 'canceled';
+  }
+
+  if (status === 'no_show') {
+    return 'no-show';
+  }
+
+  return 'default';
+}
+
+function calculateReportsSummary(appointments = [], customers = [], services = []) {
+  const completedAppointments = appointments.filter(
+    (appointment) => appointment.status === 'completed'
+  );
+
+  const confirmedAppointments = appointments.filter(
+    (appointment) => appointment.status === 'confirmed'
+  );
+
+  const scheduledAppointments = appointments.filter(
+    (appointment) => appointment.status === 'scheduled'
+  );
+
+  const canceledAppointments = appointments.filter(
+    (appointment) => appointment.status === 'canceled'
+  );
+
+  const noShowAppointments = appointments.filter(
+    (appointment) => appointment.status === 'no_show'
+  );
+
+  const grossRevenue = completedAppointments.reduce(
+    (total, appointment) => total + normalizeNumber(appointment.price, 0),
+    0
+  );
+
+  return {
+    totalAppointments: appointments.length,
+    completedAppointments: completedAppointments.length,
+    confirmedAppointments: confirmedAppointments.length,
+    scheduledAppointments: scheduledAppointments.length,
+    canceledAppointments: canceledAppointments.length,
+    noShowAppointments: noShowAppointments.length,
+    totalCustomers: customers.length,
+    totalServices: services.length,
+    grossRevenue
+  };
+}
+
+function buildReportAppointmentCardHtml(appointment) {
+  const statusClassName = getAppointmentStatusClassName(appointment.status);
+
+  return `
+    <div class="entity-card-header">
+      <div>
+        <h3>${appointment.customerName || '-'}</h3>
+        <span class="appointment-status-badge appointment-status-${statusClassName}">
+          ${formatAppointmentStatus(appointment.status)}
+        </span>
+      </div>
+    </div>
+
+    <div class="entity-card-body">
+      <p><strong>Serviço</strong><br>${appointment.serviceName || '-'}</p>
+      <p><strong>Valor</strong><br>${formatCurrencyBRL(appointment.price || 0)}</p>
+      <p><strong>Início</strong><br>${formatDateTimeForDisplay(appointment.startAt)}</p>
+      <p><strong>Fim</strong><br>${formatDateTimeForDisplay(appointment.endAt)}</p>
+      <p><strong>Origem</strong><br>${appointment.source || '-'}</p>
+      <p><strong>Observações</strong><br>${appointment.notes || '-'}</p>
+      <p><strong>Identificador</strong><br>${appointment.id}</p>
+    </div>
+  `;
+}
+
+function updateReportsSummaryIntoPage(summary) {
+  setText('report-stat-total-appointments', String(summary.totalAppointments));
+  setText('report-stat-completed', String(summary.completedAppointments));
+  setText('report-stat-confirmed', String(summary.confirmedAppointments));
+  setText('report-stat-scheduled', String(summary.scheduledAppointments));
+  setText('report-stat-canceled', String(summary.canceledAppointments));
+  setText('report-stat-no-show', String(summary.noShowAppointments));
+  setText('report-stat-customers', String(summary.totalCustomers));
+  setText('report-stat-services', String(summary.totalServices));
+  setText('report-stat-gross-revenue', formatCurrencyBRL(summary.grossRevenue));
+}
+
+async function getReportData(options = {}) {
+  const appointments = (
+    options.startIso && options.endIso
+      ? await listAppointmentsByTenantAndPeriod(
+          tenantId,
+          options.startIso,
+          options.endIso
+        )
+      : await listAppointmentsByTenant(tenantId)
+  );
+
+  const [customers, services] = await Promise.all([
+    listCustomersByTenant(tenantId),
+    listServicesByTenant(tenantId)
+  ]);
+
+  return {
+    appointments,
+    customers,
+    services,
+    summary: calculateReportsSummary(appointments, customers, services)
   };
 }
 
 export async function loadTenantReportsIntoPage(options = {}) {
-  const startIso = options.startIso || getStartAndEndOfCurrentMonth().startIso;
-  const endIso = options.endIso || getStartAndEndOfCurrentMonth().endIso;
+  const {
+    reportAppointmentsListElementId = 'report-appointments-list'
+  } = options;
 
-  const [appointments, billingRecord] = await Promise.all([
-    listAppointmentsByTenantAndPeriod(tenantId, startIso, endIso),
-    getCurrentMonthBillingRecordForTenant(tenantId)
-  ]);
+  const reportAppointmentsListElement = document.getElementById(
+    reportAppointmentsListElementId
+  );
 
-  const completedAppointments = appointments.filter((appointment) => appointment.status === 'completed');
-  const completedCount = completedAppointments.length;
-  const totalValue = completedAppointments.reduce((sum, appointment) => {
-    return sum + Number(appointment.price || 0);
-  }, 0);
+  const filterValues = getReportsFilterValues();
+  const { appointments, summary } = await getReportData({
+    startIso: filterValues.startIso,
+    endIso: filterValues.endIso
+  });
 
-  const reportCompletedElement = document.getElementById('report-completed');
-  const reportTotalElement = document.getElementById('report-total');
-  const reportStatusElement = document.getElementById('report-status');
-  const reportStatusHelpElement = document.getElementById('report-status-help');
-  const reportAppointmentsListElement = document.getElementById('report-appointments-list');
-
-  if (reportCompletedElement) {
-    reportCompletedElement.textContent = String(completedCount);
-  }
-
-  if (reportTotalElement) {
-    reportTotalElement.textContent = formatCurrencyBRL(totalValue);
-  }
-
-  const billingStatusText = buildBillingStatusText(billingRecord);
-
-  if (reportStatusElement) {
-    reportStatusElement.textContent = billingStatusText.title;
-  }
-
-  if (reportStatusHelpElement) {
-    reportStatusHelpElement.textContent = billingStatusText.help;
-  }
+  updateReportsSummaryIntoPage(summary);
 
   if (!reportAppointmentsListElement) {
     return;
@@ -85,70 +190,43 @@ export async function loadTenantReportsIntoPage(options = {}) {
 
   clearElement(reportAppointmentsListElement);
 
-  if (!completedAppointments.length) {
+  if (!appointments.length) {
     const emptyItem = document.createElement('li');
-    emptyItem.className = 'entity-card empty-state-item';
+
+    emptyItem.className = 'entity-card appointment-card-item empty-state-item';
     emptyItem.innerHTML = `
-      <div class="entity-card-body">
-        <strong>Nenhum atendimento concluído encontrado</strong>
-        <p>Não há atendimentos concluídos para o período filtrado.</p>
-      </div>
+      <h3>Nenhum agendamento encontrado</h3>
+      <p>Não há registros para o filtro selecionado.</p>
     `;
+
     reportAppointmentsListElement.appendChild(emptyItem);
     return;
   }
 
-  completedAppointments.forEach((appointment) => {
+  appointments.forEach((appointment) => {
     const listItem = document.createElement('li');
-    listItem.className = 'entity-card';
+    const statusClassName = getAppointmentStatusClassName(appointment.status);
 
-    listItem.innerHTML = `
-      <div class="entity-card-header">
-        <div class="entity-title-group">
-          <strong>${appointment.customerName || '-'}</strong>
-          <span class="status-badge completed">${formatAppointmentStatus(appointment.status)}</span>
-        </div>
-      </div>
-
-      <div class="entity-card-body">
-        <div class="entity-grid-details">
-          <div>
-            <span class="detail-label">Serviço</span>
-            <span>${appointment.serviceName || '-'}</span>
-          </div>
-          <div>
-            <span class="detail-label">Valor</span>
-            <span>${formatCurrencyBRL(appointment.price || 0)}</span>
-          </div>
-          <div>
-            <span class="detail-label">Início</span>
-            <span>${formatDateTimeForDisplay(appointment.startAt)}</span>
-          </div>
-          <div>
-            <span class="detail-label">Fim</span>
-            <span>${formatDateTimeForDisplay(appointment.endAt)}</span>
-          </div>
-        </div>
-      </div>
-    `;
+    listItem.className = `entity-card appointment-card-item appointment-status-${statusClassName}`;
+    listItem.innerHTML = buildReportAppointmentCardHtml(appointment);
 
     reportAppointmentsListElement.appendChild(listItem);
   });
 }
 
-export function bindReportFilters() {
-  const filterButton = document.getElementById('report-filter-button');
-  const resetButton = document.getElementById('report-filter-reset-button');
-  const startInput = document.getElementById('report-filter-start');
-  const endInput = document.getElementById('report-filter-end');
+export function bindReportFilters(options = {}) {
+  const {
+    reportAppointmentsListElementId = 'report-appointments-list'
+  } = options;
 
-  filterButton?.addEventListener('click', async () => {
-    const startIso = buildStartOfDayIsoFromDateInput(startInput?.value || '');
-    const endIso = buildEndOfDayIsoFromDateInput(endInput?.value || '');
+  const applyButton = document.getElementById('reports-filter-button');
+  const resetButton = document.getElementById('reports-filter-reset-button');
+  const startInput = document.getElementById('reports-filter-start');
+  const endInput = document.getElementById('reports-filter-end');
 
+  applyButton?.addEventListener('click', async () => {
     await loadTenantReportsIntoPage({
-      startIso,
-      endIso
+      reportAppointmentsListElementId
     });
   });
 
@@ -161,6 +239,8 @@ export function bindReportFilters() {
       endInput.value = '';
     }
 
-    await loadTenantReportsIntoPage();
+    await loadTenantReportsIntoPage({
+      reportAppointmentsListElementId
+    });
   });
 }
