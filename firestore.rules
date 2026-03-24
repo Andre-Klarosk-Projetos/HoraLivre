@@ -8,13 +8,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return signedIn() &&
-        exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
+      return signedIn()
+        && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
     }
 
     function hasTenantUserDoc() {
-      return signedIn() &&
-        exists(/databases/$(database)/documents/tenantUsers/$(request.auth.uid));
+      return signedIn()
+        && exists(/databases/$(database)/documents/tenantUsers/$(request.auth.uid));
     }
 
     function tenantUserDoc() {
@@ -42,60 +42,103 @@ service cloud.firestore {
     }
 
     function isTenantPublicAndActive(tenantId) {
-      return tenantExists(tenantId) &&
-        tenantDoc(tenantId).data.publicPageEnabled == true &&
-        tenantDoc(tenantId).data.isBlocked == false;
+      return tenantExists(tenantId)
+        && tenantDoc(tenantId).data.publicPageEnabled == true
+        && tenantDoc(tenantId).data.isBlocked == false;
     }
 
     function unchanged(field) {
       return request.resource.data[field] == resource.data[field];
     }
 
-    function tenantSafeUpdate() {
-      return unchanged("id") &&
-        unchanged("ownerUid") &&
-        unchanged("email") &&
-        unchanged("status") &&
-        unchanged("planId") &&
-        unchanged("billingMode") &&
-        unchanged("fixedPrice") &&
-        unchanged("annualPrice") &&
-        unchanged("annualBillingMonth") &&
-        unchanged("pricePerService") &&
-        unchanged("trialEndsAt") &&
-        unchanged("createdAt") &&
-        unchanged("updatedAt") &&
-        unchanged("isBlocked");
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0;
     }
 
-    function tenantUserSelfFieldsOnly() {
-      return request.resource.data.uid == request.auth.uid &&
-        request.resource.data.role == "tenant" &&
-        request.resource.data.tenantId == resource.data.tenantId &&
-        request.resource.data.uid == resource.data.uid &&
-        request.resource.data.email == resource.data.email &&
-        request.resource.data.createdAt == resource.data.createdAt;
+    function validIsoString(value) {
+      return value is string && value.size() >= 20;
+    }
+
+    function tenantUserOwnDocumentIsValid() {
+      return request.resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.tenantId == resource.data.tenantId
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          request.resource.data.role == resource.data.role
+          || request.resource.data.role == "owner"
+          || request.resource.data.role == "tenant"
+        );
+    }
+
+    function tenantSafeUpdate() {
+      return
+        // campos administrativos travados
+        unchanged("planId") &&
+        unchanged("billingMode") &&
+        unchanged("fixedMonthlyPrice") &&
+        unchanged("annualPrice") &&
+        unchanged("annualBillingMonth") &&
+        unchanged("pricePerExecutedService") &&
+        unchanged("subscriptionStatus") &&
+        unchanged("trialEndsAt") &&
+        unchanged("isBlocked") &&
+        unchanged("createdAt") &&
+
+        // tenant pode editar a própria vitrine/operação
+        request.resource.data.updatedAt is string &&
+        request.resource.data.businessName is string &&
+        request.resource.data.slug is string &&
+        request.resource.data.whatsapp is string &&
+        request.resource.data.description is string &&
+        request.resource.data.logoUrl is string &&
+        request.resource.data.instagram is string &&
+        request.resource.data.address is string &&
+        request.resource.data.publicPageEnabled is bool &&
+        request.resource.data.reportsEnabled is bool;
+    }
+
+    function publicTenantReadAllowed() {
+      return resource.data.publicPageEnabled == true
+        && resource.data.isBlocked == false;
     }
 
     function validPublicCustomerCreate() {
-      return request.auth == null &&
-        request.resource.data.tenantId is string &&
-        request.resource.data.name is string &&
-        request.resource.data.phone is string &&
-        request.resource.data.email is string &&
-        isTenantPublicAndActive(request.resource.data.tenantId);
+      return request.auth == null
+        && request.resource.data.tenantId is string
+        && isTenantPublicAndActive(request.resource.data.tenantId)
+        && isNonEmptyString(request.resource.data.name)
+        && isNonEmptyString(request.resource.data.phone)
+        && (!("email" in request.resource.data) || request.resource.data.email is string)
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string;
+    }
+
+    function targetServiceExistsAndIsPublic(serviceId, tenantId) {
+      return serviceId is string
+        && exists(/databases/$(database)/documents/services/$(serviceId))
+        && get(/databases/$(database)/documents/services/$(serviceId)).data.tenantId == tenantId
+        && get(/databases/$(database)/documents/services/$(serviceId)).data.isActive == true;
     }
 
     function validPublicAppointmentCreate() {
-      return request.auth == null &&
-        request.resource.data.tenantId is string &&
-        request.resource.data.customerName is string &&
-        request.resource.data.serviceName is string &&
-        request.resource.data.startAt is string &&
-        request.resource.data.endAt is string &&
-        request.resource.data.status == "scheduled" &&
-        request.resource.data.source == "public_page" &&
-        isTenantPublicAndActive(request.resource.data.tenantId);
+      return request.auth == null
+        && request.resource.data.tenantId is string
+        && isTenantPublicAndActive(request.resource.data.tenantId)
+        && isNonEmptyString(request.resource.data.customerName)
+        && isNonEmptyString(request.resource.data.serviceName)
+        && targetServiceExistsAndIsPublic(
+          request.resource.data.serviceId,
+          request.resource.data.tenantId
+        )
+        && validIsoString(request.resource.data.startAt)
+        && validIsoString(request.resource.data.endAt)
+        && request.resource.data.status == "scheduled"
+        && request.resource.data.source == "public_page"
+        && request.resource.data.price is number
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string;
     }
 
     match /platformAdmins/{adminId} {
@@ -115,97 +158,93 @@ service cloud.firestore {
     match /tenants/{tenantId} {
       allow read: if isAdmin()
         || belongsToCurrentTenant(tenantId)
-        || (resource.data.publicPageEnabled == true && resource.data.isBlocked == false);
+        || publicTenantReadAllowed();
 
       allow create: if isAdmin();
 
-      allow update: if isAdmin() ||
-        (belongsToCurrentTenant(tenantId) && tenantSafeUpdate());
+      allow update: if isAdmin()
+        || (belongsToCurrentTenant(tenantId) && tenantSafeUpdate());
 
       allow delete: if isAdmin();
     }
 
     match /tenantUsers/{tenantUserId} {
-      allow read: if isAdmin() ||
-        (signedIn() && request.auth.uid == tenantUserId);
+      allow read: if isAdmin()
+        || (signedIn() && request.auth.uid == tenantUserId);
 
       allow create: if isAdmin();
 
-      allow update: if isAdmin() ||
-        (signedIn() &&
-          request.auth.uid == tenantUserId &&
-          tenantUserSelfFieldsOnly());
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == tenantUserId
+          && tenantUserOwnDocumentIsValid());
 
       allow delete: if isAdmin();
     }
 
     match /billingSettings/{billingSettingsId} {
-      allow read: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow read: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
 
       allow create, update, delete: if isAdmin();
     }
 
     match /billingRecords/{billingRecordId} {
-      allow read: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow read: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
 
       allow create, update, delete: if isAdmin();
     }
 
     match /services/{serviceId} {
-      allow read: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId()) ||
-        (resource.data.isActive == true &&
-          isTenantPublicAndActive(resource.data.tenantId));
+      allow read: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId())
+        || (resource.data.isActive == true && isTenantPublicAndActive(resource.data.tenantId));
 
-      allow create: if isAdmin() ||
-        (isTenantUser() &&
-          request.resource.data.tenantId == currentTenantId());
+      allow create: if isAdmin()
+        || (isTenantUser() && request.resource.data.tenantId == currentTenantId());
 
-      allow update: if isAdmin() ||
-        (isTenantUser() &&
-          resource.data.tenantId == currentTenantId() &&
-          request.resource.data.tenantId == currentTenantId());
+      allow update: if isAdmin()
+        || (isTenantUser()
+          && resource.data.tenantId == currentTenantId()
+          && request.resource.data.tenantId == currentTenantId());
 
-      allow delete: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow delete: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
     }
 
     match /customers/{customerId} {
-      allow read: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow read: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
 
-      allow create: if isAdmin() ||
-        (isTenantUser() &&
-          request.resource.data.tenantId == currentTenantId()) ||
-        validPublicCustomerCreate();
+      allow create: if isAdmin()
+        || (isTenantUser() && request.resource.data.tenantId == currentTenantId())
+        || validPublicCustomerCreate();
 
-      allow update: if isAdmin() ||
-        (isTenantUser() &&
-          resource.data.tenantId == currentTenantId() &&
-          request.resource.data.tenantId == currentTenantId());
+      allow update: if isAdmin()
+        || (isTenantUser()
+          && resource.data.tenantId == currentTenantId()
+          && request.resource.data.tenantId == currentTenantId());
 
-      allow delete: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow delete: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
     }
 
     match /appointments/{appointmentId} {
-      allow read: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow read: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
 
-      allow create: if isAdmin() ||
-        (isTenantUser() &&
-          request.resource.data.tenantId == currentTenantId()) ||
-        validPublicAppointmentCreate();
+      allow create: if isAdmin()
+        || (isTenantUser() && request.resource.data.tenantId == currentTenantId())
+        || validPublicAppointmentCreate();
 
-      allow update: if isAdmin() ||
-        (isTenantUser() &&
-          resource.data.tenantId == currentTenantId() &&
-          request.resource.data.tenantId == currentTenantId());
+      allow update: if isAdmin()
+        || (isTenantUser()
+          && resource.data.tenantId == currentTenantId()
+          && request.resource.data.tenantId == currentTenantId());
 
-      allow delete: if isAdmin() ||
-        (isTenantUser() && resource.data.tenantId == currentTenantId());
+      allow delete: if isAdmin()
+        || (isTenantUser() && resource.data.tenantId == currentTenantId());
     }
   }
 }
