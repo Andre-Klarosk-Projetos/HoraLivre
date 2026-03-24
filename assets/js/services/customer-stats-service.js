@@ -1,79 +1,109 @@
-import { listAppointmentsByTenant } from './appointment-service.js';
 import {
   getCustomerById,
-  listCustomersByTenant,
   updateCustomerStats
 } from './customer-service.js';
 
-function getLatestAppointmentDate(appointments = []) {
-  if (!appointments.length) {
-    return null;
+import {
+  listAppointmentsByCustomer
+} from './appointment-service.js';
+
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function isCompletedStatus(status) {
+  return status === 'completed';
+}
+
+function buildEmptyCustomerStats() {
+  return {
+    totalAppointments: 0,
+    completedAppointments: 0,
+    totalSpent: 0,
+    lastAppointmentAt: null
+  };
+}
+
+function calculateCustomerStatsFromAppointments(appointments = []) {
+  if (!Array.isArray(appointments) || !appointments.length) {
+    return buildEmptyCustomerStats();
   }
 
-  const sortedAppointments = [...appointments].sort((firstItem, secondItem) => {
-    const firstTime = new Date(firstItem.startAt || 0).getTime();
-    const secondTime = new Date(secondItem.startAt || 0).getTime();
-
-    return secondTime - firstTime;
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    const first = String(a?.startAt || '');
+    const second = String(b?.startAt || '');
+    return first.localeCompare(second);
   });
 
-  return sortedAppointments[0]?.startAt || null;
+  const completedAppointments = sortedAppointments.filter((appointment) =>
+    isCompletedStatus(appointment?.status)
+  );
+
+  const totalAppointments = sortedAppointments.length;
+  const completedAppointmentsCount = completedAppointments.length;
+  const totalSpent = completedAppointments.reduce(
+    (total, appointment) => total + normalizeNumber(appointment?.price, 0),
+    0
+  );
+
+  const lastAppointmentAt = sortedAppointments.length
+    ? sortedAppointments[sortedAppointments.length - 1].startAt || null
+    : null;
+
+  return {
+    totalAppointments,
+    completedAppointments: completedAppointmentsCount,
+    totalSpent,
+    lastAppointmentAt
+  };
+}
+
+export async function getCustomerStats(customerId) {
+  if (!customerId) {
+    return buildEmptyCustomerStats();
+  }
+
+  const appointments = await listAppointmentsByCustomer(customerId);
+  return calculateCustomerStatsFromAppointments(appointments);
 }
 
 export async function syncCustomerStats(customerId) {
   if (!customerId) {
-    return;
+    return null;
   }
 
   const customer = await getCustomerById(customerId);
 
-  if (!customer?.tenantId) {
-    return;
+  if (!customer) {
+    return null;
   }
 
-  const appointments = await listAppointmentsByTenant(customer.tenantId);
-  const customerAppointments = appointments.filter((appointment) => appointment.customerId === customerId);
+  const stats = await getCustomerStats(customerId);
 
-  const totalAppointments = customerAppointments.length;
-  const completedAppointments = customerAppointments.filter(
-    (appointment) => appointment.status === 'completed'
-  ).length;
+  await updateCustomerStats(customerId, stats);
 
-  const lastAppointmentAt = getLatestAppointmentDate(customerAppointments);
-
-  await updateCustomerStats(customerId, {
-    totalAppointments,
-    completedAppointments,
-    lastAppointmentAt
-  });
+  return {
+    customerId,
+    ...stats
+  };
 }
 
-export async function syncAllTenantCustomersStats(tenantId) {
-  if (!tenantId) {
-    return;
+export async function syncManyCustomersStats(customerIds = []) {
+  if (!Array.isArray(customerIds) || !customerIds.length) {
+    return [];
   }
 
-  const [customers, appointments] = await Promise.all([
-    listCustomersByTenant(tenantId),
-    listAppointmentsByTenant(tenantId)
-  ]);
+  const uniqueCustomerIds = [...new Set(customerIds.filter(Boolean))];
+  const results = [];
 
-  for (const customer of customers) {
-    const customerAppointments = appointments.filter(
-      (appointment) => appointment.customerId === customer.id
-    );
+  for (const customerId of uniqueCustomerIds) {
+    const result = await syncCustomerStats(customerId);
 
-    const totalAppointments = customerAppointments.length;
-    const completedAppointments = customerAppointments.filter(
-      (appointment) => appointment.status === 'completed'
-    ).length;
-
-    const lastAppointmentAt = getLatestAppointmentDate(customerAppointments);
-
-    await updateCustomerStats(customer.id, {
-      totalAppointments,
-      completedAppointments,
-      lastAppointmentAt
-    });
+    if (result) {
+      results.push(result);
+    }
   }
+
+  return results;
 }
