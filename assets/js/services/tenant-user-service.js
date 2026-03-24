@@ -7,6 +7,7 @@ import {
   setDoc,
   where
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
 import { db } from '../config/firebase-init.js';
 
 export async function listTenantUsersByTenant(tenantId) {
