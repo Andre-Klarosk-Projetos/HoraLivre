@@ -55,7 +55,9 @@ export function formatPhone(value) {
 
   if (digits.length > 11) {
     const countryCode = digits.slice(0, digits.length - 11);
-    const local = digits.slice(-11).replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    const local = digits
+      .slice(-11)
+      .replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
 
     return `+${countryCode} ${local}`;
   }
@@ -143,6 +145,25 @@ export function formatAppointmentStatus(value) {
   }
 
   return normalized || '-';
+}
+
+export function formatMonthNumberToName(value) {
+  const monthNumber = normalizeNumber(value, 0);
+
+  if (monthNumber === 1) return 'Janeiro';
+  if (monthNumber === 2) return 'Fevereiro';
+  if (monthNumber === 3) return 'Março';
+  if (monthNumber === 4) return 'Abril';
+  if (monthNumber === 5) return 'Maio';
+  if (monthNumber === 6) return 'Junho';
+  if (monthNumber === 7) return 'Julho';
+  if (monthNumber === 8) return 'Agosto';
+  if (monthNumber === 9) return 'Setembro';
+  if (monthNumber === 10) return 'Outubro';
+  if (monthNumber === 11) return 'Novembro';
+  if (monthNumber === 12) return 'Dezembro';
+
+  return '-';
 }
 
 export function formatDateBR(value) {
