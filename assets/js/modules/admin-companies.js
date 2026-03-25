@@ -61,6 +61,16 @@ function getEditCompanyFeedbackElement() {
   return getElementByIds('edit-company-feedback');
 }
 
+function getEditCompanyCardElement() {
+  const form = getEditCompanyFormElement();
+
+  if (!form) {
+    return null;
+  }
+
+  return form.closest('.admin-panel-card');
+}
+
 function getCompanyFilterState() {
   return {
     search: getElementByIds('companies-search-input', 'company-search-input')?.value?.trim()?.toLowerCase() || '',
@@ -98,6 +108,19 @@ function setFieldValue(value, ...ids) {
 
 function getFieldValue(...ids) {
   return getElementByIds(...ids)?.value ?? '';
+}
+
+function scrollToEditCompanyForm() {
+  const card = getEditCompanyCardElement();
+
+  if (!card) {
+    return;
+  }
+
+  card.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
 }
 
 function resetEditCompanyForm() {
@@ -303,7 +326,10 @@ function fillCompanyEditForm(company) {
     normalizeBooleanString(String(company.reportsEnabled !== false), 'true'),
     'reportsEnabled'
   );
-  setFieldValue(company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '', 'trialEndsAt');
+  setFieldValue(
+    company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '',
+    'trialEndsAt'
+  );
 
   const whatsappLink = getElementByIds('edit-company-whatsapp-link');
 
@@ -315,9 +341,20 @@ function fillCompanyEditForm(company) {
   }
 }
 
+function openCompanyForEdit(companyId) {
+  const company = cachedCompanies.find((item) => item.id === companyId);
+
+  if (!company) {
+    return;
+  }
+
+  fillCompanyEditForm(company);
+  showFeedback(getEditCompanyFeedbackElement(), 'Empresa carregada para edição.', 'success');
+  scrollToEditCompanyForm();
+}
+
 function bindCompanyActions(elementId = 'companies-list') {
   const container = getCompaniesListElement(elementId);
-  const feedbackElement = getEditCompanyFeedbackElement();
 
   if (!container) {
     return;
@@ -328,15 +365,12 @@ function bindCompanyActions(elementId = 'companies-list') {
     .forEach((button) => {
       button.addEventListener('click', () => {
         const companyId = button.getAttribute('data-company-id');
-        const company = cachedCompanies.find((item) => item.id === companyId);
 
-        if (!company) {
+        if (!companyId) {
           return;
         }
 
-        fillCompanyEditForm(company);
-        showFeedback(feedbackElement, 'Empresa carregada para edição.', 'success');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        openCompanyForEdit(companyId);
       });
     });
 }
@@ -436,12 +470,29 @@ function bindNewCompanyFormPlaceholder() {
   });
 }
 
+function bindOpenCompanyFromDashboardEvent() {
+  window.addEventListener('horalivre:open-admin-company', async (event) => {
+    const tenantId = event?.detail?.tenantId;
+
+    if (!tenantId) {
+      return;
+    }
+
+    if (!cachedCompanies.length) {
+      await renderAdminCompaniesList();
+    }
+
+    openCompanyForEdit(tenantId);
+  });
+}
+
 async function initAdminCompanies() {
   try {
     await populateCompanyPlanFilters();
     bindCompanyFilters();
     bindCompanyEditForm();
     bindNewCompanyFormPlaceholder();
+    bindOpenCompanyFromDashboardEvent();
     resetNewCompanyForm();
     resetEditCompanyForm();
     await renderAdminCompaniesList();
