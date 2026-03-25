@@ -140,6 +140,20 @@ function bindHashChange() {
   });
 }
 
+export function openAdminCompanyDetails(tenantId) {
+  if (!tenantId) {
+    return;
+  }
+
+  activateAdminTab('companies-tab');
+
+  window.dispatchEvent(
+    new CustomEvent('horalivre:open-admin-company', {
+      detail: { tenantId }
+    })
+  );
+}
+
 export function bindAdminTabs() {
   bindTabButtons();
   bindMobileToggle();
