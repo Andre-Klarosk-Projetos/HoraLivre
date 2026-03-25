@@ -62,13 +62,13 @@ function getEditCompanyFeedbackElement() {
 }
 
 function getEditCompanyCardElement() {
-  const form = getEditCompanyFormElement();
+  const panel = getElementByIds('company-edit-panel');
 
-  if (!form) {
+  if (!panel) {
     return null;
   }
 
-  return form.closest('.admin-panel-card');
+  return panel.closest('.admin-panel-card');
 }
 
 function getEditFormField(name) {
@@ -126,6 +126,29 @@ function setNewFieldValue(name, value) {
   }
 
   field.value = value ?? '';
+}
+
+function setCompanyMode(mode) {
+  const createButton = getElementByIds('company-mode-create-button');
+  const editButton = getElementByIds('company-mode-edit-button');
+  const createPanel = getElementByIds('company-create-panel');
+  const editPanel = getElementByIds('company-edit-panel');
+
+  const isCreate = mode === 'create';
+  const isEdit = mode === 'edit';
+
+  createButton?.classList.toggle('active', isCreate);
+  editButton?.classList.toggle('active', isEdit);
+
+  if (createPanel) {
+    createPanel.classList.toggle('active', isCreate);
+    createPanel.hidden = !isCreate;
+  }
+
+  if (editPanel) {
+    editPanel.classList.toggle('active', isEdit);
+    editPanel.hidden = !isEdit;
+  }
 }
 
 function scrollToEditCompanyForm() {
@@ -376,6 +399,7 @@ function openCompanyForEdit(companyId) {
   }
 
   fillCompanyEditForm(company);
+  setCompanyMode('edit');
   showFeedback(getEditCompanyFeedbackElement(), 'Empresa carregada para edição.', 'success');
   scrollToEditCompanyForm();
 }
@@ -474,7 +498,21 @@ function bindCompanyEditForm() {
 
   cancelButton?.addEventListener('click', () => {
     resetEditCompanyForm();
+    setCompanyMode('create');
     showFeedback(feedbackElement, 'Edição cancelada.', 'success');
+  });
+}
+
+function bindCompanyModeSwitcher() {
+  const createButton = getElementByIds('company-mode-create-button');
+  const editButton = getElementByIds('company-mode-edit-button');
+
+  createButton?.addEventListener('click', () => {
+    setCompanyMode('create');
+  });
+
+  editButton?.addEventListener('click', () => {
+    setCompanyMode('edit');
   });
 }
 
@@ -518,10 +556,12 @@ async function initAdminCompanies() {
     await populateCompanyPlanFilters();
     bindCompanyFilters();
     bindCompanyEditForm();
+    bindCompanyModeSwitcher();
     bindNewCompanyFormPlaceholder();
     bindOpenCompanyFromDashboardEvent();
     resetNewCompanyForm();
     resetEditCompanyForm();
+    setCompanyMode('create');
     await renderAdminCompaniesList();
   } catch (error) {
     console.error('Erro ao inicializar empresas do admin.', error);
