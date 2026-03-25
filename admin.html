@@ -135,7 +135,7 @@
             <h3>Visão rápida da operação</h3>
           </div>
           <p class="admin-section-support-text">
-            Indicadores principais, atalhos e visão consolidada dos tenants.
+            Indicadores principais, alertas operacionais e visão consolidada dos tenants.
           </p>
         </div>
 
@@ -202,7 +202,7 @@
             data-admin-tab-target="billing-tab"
           >
             <strong>Gerenciar cobrança</strong>
-            <span>Consultar pendências e gerar cobrança.</span>
+            <span>Consultar pendências, cobranças do dia e gerar ciclo.</span>
           </button>
 
           <button
@@ -213,6 +213,52 @@
             <strong>Configurações</strong>
             <span>Ajustar parâmetros gerais da plataforma.</span>
           </button>
+        </section>
+
+        <section class="admin-dashboard-grid">
+          <section class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <div>
+                <p class="admin-eyebrow">Painel de alertas</p>
+                <h4>Notificações operacionais</h4>
+              </div>
+            </div>
+
+            <div id="dashboard-notifications-list" class="admin-notifications-list">
+              <article class="admin-notification-card empty">
+                <strong>Nenhuma notificação carregada</strong>
+                <span>Os alertas operacionais aparecerão aqui.</span>
+              </article>
+            </div>
+          </section>
+
+          <section class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <div>
+                <p class="admin-eyebrow">Resumo de movimento</p>
+                <h4>Leitura rápida da base</h4>
+              </div>
+            </div>
+
+            <div class="admin-inline-stats admin-inline-stats-vertical">
+              <div>
+                <span>Novos clientes em 7 dias</span>
+                <strong id="dashboard-stat-new-customers-7d">0</strong>
+              </div>
+              <div>
+                <span>Empresas sem agendamentos recentes</span>
+                <strong id="dashboard-stat-no-appointments">0</strong>
+              </div>
+              <div>
+                <span>Cobranças pendentes no mês</span>
+                <strong id="dashboard-stat-pending-billing">0</strong>
+              </div>
+              <div>
+                <span>Cobranças com vencimento hoje</span>
+                <strong id="dashboard-stat-billing-today">0</strong>
+              </div>
+            </div>
+          </section>
         </section>
 
         <section class="admin-panel-card">
