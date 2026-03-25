@@ -663,108 +663,218 @@
             <section class="admin-panel-card admin-sticky-card">
               <div class="admin-panel-card-header">
                 <div>
-                  <p class="admin-eyebrow">Formulário</p>
-                  <h4>Cadastro e edição de planos</h4>
+                  <p class="admin-eyebrow">Workspace do plano</p>
+                  <h4>Cadastro e edição</h4>
                 </div>
               </div>
 
-              <form id="plan-form" class="admin-form-grid">
-                <input type="hidden" id="plan-edit-id" name="planId" />
+              <div class="admin-form-switcher">
+                <button
+                  type="button"
+                  id="plan-mode-create-button"
+                  class="admin-form-switcher-button active"
+                >
+                  Novo plano
+                </button>
+                <button
+                  type="button"
+                  id="plan-mode-edit-button"
+                  class="admin-form-switcher-button"
+                >
+                  Editar plano
+                </button>
+              </div>
 
-                <label>
-                  <span>Nome do plano</span>
-                  <input type="text" name="name" required />
-                </label>
+              <div id="plan-create-panel" class="admin-company-mode-panel active">
+                <form id="plan-create-form" class="admin-form-grid">
+                  <label>
+                    <span>Nome do plano</span>
+                    <input type="text" name="name" required />
+                  </label>
 
-                <label class="admin-form-span-2">
-                  <span>Descrição curta para a home</span>
-                  <input type="text" name="description" />
-                </label>
+                  <label class="admin-form-span-2">
+                    <span>Descrição curta para a home</span>
+                    <input type="text" name="description" />
+                  </label>
 
-                <label>
-                  <span>Destaque visual na home?</span>
-                  <select name="highlighted">
-                    <option value="false">Não</option>
-                    <option value="true">Sim</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Destaque visual na home?</span>
+                    <select name="highlighted">
+                      <option value="false">Não</option>
+                      <option value="true">Sim</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Ordem na home</span>
-                  <input type="number" name="displayOrder" />
-                </label>
+                  <label>
+                    <span>Ordem na home</span>
+                    <input type="number" name="displayOrder" />
+                  </label>
 
-                <label>
-                  <span>Modo de cobrança</span>
-                  <select name="billingMode">
-                    <option value="free">Gratuito</option>
-                    <option value="fixed">Plano mensal</option>
-                    <option value="annual">Plano anual</option>
-                    <option value="per_service">Por serviço concluído</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Modo de cobrança</span>
+                    <select name="billingMode">
+                      <option value="free">Gratuito</option>
+                      <option value="fixed">Plano mensal</option>
+                      <option value="annual">Plano anual</option>
+                      <option value="per_service">Por serviço concluído</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Preço mensal</span>
-                  <input type="number" step="0.01" name="price" />
-                </label>
+                  <label>
+                    <span>Preço mensal</span>
+                    <input type="number" step="0.01" name="price" />
+                  </label>
 
-                <label>
-                  <span>Preço anual</span>
-                  <input type="number" step="0.01" name="annualPrice" />
-                </label>
+                  <label>
+                    <span>Preço anual</span>
+                    <input type="number" step="0.01" name="annualPrice" />
+                  </label>
 
-                <label>
-                  <span>Preço por serviço concluído</span>
-                  <input type="number" step="0.01" name="pricePerExecutedService" />
-                </label>
+                  <label>
+                    <span>Preço por serviço concluído</span>
+                    <input type="number" step="0.01" name="pricePerExecutedService" />
+                  </label>
 
-                <label>
-                  <span>Página pública habilitada?</span>
-                  <select name="publicPageEnabled">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Página pública habilitada?</span>
+                    <select name="publicPageEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Relatórios habilitados?</span>
-                  <select name="reportsEnabled">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Relatórios habilitados?</span>
+                    <select name="reportsEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Quantidade máxima de serviços</span>
-                  <input type="number" name="maxServices" />
-                </label>
+                  <label>
+                    <span>Quantidade máxima de serviços</span>
+                    <input type="number" name="maxServices" />
+                  </label>
 
-                <label>
-                  <span>Quantidade máxima de clientes finais</span>
-                  <input type="number" name="maxCustomers" />
-                </label>
+                  <label>
+                    <span>Quantidade máxima de clientes finais</span>
+                    <input type="number" name="maxCustomers" />
+                  </label>
 
-                <label>
-                  <span>Quantidade máxima de agendamentos por mês</span>
-                  <input type="number" name="maxAppointmentsPerMonth" />
-                </label>
+                  <label>
+                    <span>Quantidade máxima de agendamentos por mês</span>
+                    <input type="number" name="maxAppointmentsPerMonth" />
+                  </label>
 
-                <div class="admin-form-actions admin-form-actions-full">
-                  <button type="submit" class="admin-primary-button">
-                    Salvar plano
-                  </button>
-                  <button
-                    type="button"
-                    id="plan-cancel-edit-button"
-                    class="admin-secondary-button"
-                  >
-                    Cancelar edição
-                  </button>
-                </div>
-              </form>
+                  <div class="admin-form-actions admin-form-actions-full">
+                    <button type="submit" class="admin-primary-button">
+                      Criar plano
+                    </button>
+                  </div>
+                </form>
 
-              <div id="plan-feedback" class="admin-feedback-slot"></div>
+                <div id="plan-create-feedback" class="admin-feedback-slot"></div>
+              </div>
+
+              <div id="plan-edit-panel" class="admin-company-mode-panel" hidden>
+                <form id="plan-edit-form" class="admin-form-grid">
+                  <input type="hidden" id="plan-edit-id" name="planId" />
+
+                  <label>
+                    <span>Nome do plano</span>
+                    <input type="text" name="name" required />
+                  </label>
+
+                  <label class="admin-form-span-2">
+                    <span>Descrição curta para a home</span>
+                    <input type="text" name="description" />
+                  </label>
+
+                  <label>
+                    <span>Destaque visual na home?</span>
+                    <select name="highlighted">
+                      <option value="false">Não</option>
+                      <option value="true">Sim</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Ordem na home</span>
+                    <input type="number" name="displayOrder" />
+                  </label>
+
+                  <label>
+                    <span>Modo de cobrança</span>
+                    <select name="billingMode">
+                      <option value="free">Gratuito</option>
+                      <option value="fixed">Plano mensal</option>
+                      <option value="annual">Plano anual</option>
+                      <option value="per_service">Por serviço concluído</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Preço mensal</span>
+                    <input type="number" step="0.01" name="price" />
+                  </label>
+
+                  <label>
+                    <span>Preço anual</span>
+                    <input type="number" step="0.01" name="annualPrice" />
+                  </label>
+
+                  <label>
+                    <span>Preço por serviço concluído</span>
+                    <input type="number" step="0.01" name="pricePerExecutedService" />
+                  </label>
+
+                  <label>
+                    <span>Página pública habilitada?</span>
+                    <select name="publicPageEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Relatórios habilitados?</span>
+                    <select name="reportsEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Quantidade máxima de serviços</span>
+                    <input type="number" name="maxServices" />
+                  </label>
+
+                  <label>
+                    <span>Quantidade máxima de clientes finais</span>
+                    <input type="number" name="maxCustomers" />
+                  </label>
+
+                  <label>
+                    <span>Quantidade máxima de agendamentos por mês</span>
+                    <input type="number" name="maxAppointmentsPerMonth" />
+                  </label>
+
+                  <div class="admin-form-actions admin-form-actions-full">
+                    <button type="submit" class="admin-primary-button">
+                      Salvar plano
+                    </button>
+                    <button
+                      type="button"
+                      id="plan-cancel-edit-button"
+                      class="admin-secondary-button"
+                    >
+                      Cancelar edição
+                    </button>
+                  </div>
+                </form>
+
+                <div id="plan-feedback" class="admin-feedback-slot"></div>
+              </div>
             </section>
           </div>
 
