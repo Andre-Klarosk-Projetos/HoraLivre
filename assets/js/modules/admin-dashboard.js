@@ -1,488 +1,200 @@
 import { requireAdmin } from '../utils/guards.js';
-import { logoutUser } from '../services/auth-service.js';
-import {
-  getAdminDashboardMetrics,
-  getPlatformSettings,
-  savePlatformSettings
-} from '../services/admin-service.js';
-import { getPlanById } from '../services/plan-service.js';
-import {
-  formatBillingMode,
-  formatCurrencyBRL,
-  formatSubscriptionStatus
-} from '../utils/formatters.js';
-import {
-  setText,
-  clearElement,
-  showFeedback
-} from '../utils/dom-utils.js';
-import { countCompletedAppointments } from '../services/appointment-service.js';
-import { getStartAndEndOfCurrentMonth } from '../utils/date-utils.js';
-import {
-  generateCurrentMonthBillingForAllTenants,
-  renderAdminBillingList,
-  bindBillingFilters
-} from './admin-billing.js';
-import {
-  getBillingSettingsByTenant,
-  calculateBillingForPeriod
-} from '../services/billing-service.js';
-import { bindAdminTabs, activateAdminTab } from './admin-tabs.js';
-import {
-  renderAdminPlansList,
-  submitSavePlan,
-  resetPlanForm
-} from './admin-plans.js';
-import {
-  populateCompanyPlanFilters,
-  renderAdminCompaniesList,
-  submitSaveCompanyAdmin,
-  resetCompanyAdminForm,
-  bindCompanyFilters
-} from './admin-companies.js';
-import {
-  populateNewCompanyPlans,
-  submitNewCompany,
-  refreshNewCompanyBillingModeUI
-} from './admin-new-company.js';
 import { listTenants } from '../services/tenant-service.js';
-import {
-  bindBillingModeVisibility,
-  refreshBillingModeVisibility
-} from './admin-billing-mode-ui.js';
+import { listBillingRecords } from '../services/billing-service.js';
+import { formatBillingMode, formatCurrencyBRL, formatSubscriptionStatus } from '../utils/formatters.js';
+import { activateAdminTab } from './admin-tabs.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
 }
 
-const logoutButton = document.getElementById('logout-button');
-const tenantsTableBody = document.getElementById('tenants-table-body');
+function setText(id, value) {
+  const element = document.getElementById(id);
 
-const generateMonthBillingButton = document.getElementById('generate-month-billing-button');
-const reloadBillingButton = document.getElementById('reload-billing-button');
-const billingFeedback = document.getElementById('billing-feedback');
-
-const platformSettingsForm = document.getElementById('platform-settings-form');
-const settingsFeedback = document.getElementById('settings-feedback');
-
-const planForm = document.getElementById('plan-form');
-const planFeedback = document.getElementById('plan-feedback');
-const planCancelEditButton = document.getElementById('plan-cancel-edit-button');
-
-const companyAdminForm = document.getElementById('company-admin-form');
-const companyAdminFeedback = document.getElementById('company-admin-feedback');
-const companyAdminCancelEditButton = document.getElementById('company-admin-cancel-edit-button');
-
-const newCompanyForm = document.getElementById('new-company-form');
-const newCompanyFeedback = document.getElementById('new-company-feedback');
-
-const PLAN_BILLING_FIELDS = {
-  monthlyPriceId: 'plan-form-price',
-  annualPriceId: 'plan-form-annual-price',
-  annualBillingMonthId: 'plan-form-annual-billing-month',
-  perServicePriceId: 'plan-form-price-per-service'
-};
-
-const COMPANY_BILLING_FIELDS = {
-  monthlyPriceId: 'company-admin-fixed-price',
-  annualPriceId: 'company-admin-annual-price',
-  annualBillingMonthId: 'company-admin-annual-billing-month',
-  perServicePriceId: 'company-admin-price-per-service'
-};
-
-const NEW_COMPANY_BILLING_FIELDS = {
-  monthlyPriceId: 'new-company-fixed-price',
-  annualPriceId: 'new-company-annual-price',
-  annualBillingMonthId: 'new-company-annual-billing-month',
-  perServicePriceId: 'new-company-price-per-service'
-};
-
-function resolveEffectiveBillingMode(company, billingSettings, plan) {
-  return (
-    billingSettings?.billingMode ||
-    company?.billingMode ||
-    plan?.billingMode ||
-    'free'
-  );
-}
-
-function resolveEffectiveFixedPrice(company, billingSettings, plan) {
-  return Number(
-    billingSettings?.fixedMonthlyPrice ??
-    plan?.price ??
-    company?.fixedMonthlyPrice ??
-    0
-  );
-}
-
-function resolveEffectiveAnnualPrice(company, billingSettings, plan) {
-  return Number(
-    billingSettings?.annualPrice ??
-    plan?.annualPrice ??
-    company?.annualPrice ??
-    0
-  );
-}
-
-function resolveEffectiveAnnualBillingMonth(company, billingSettings) {
-  return Number(
-    billingSettings?.annualBillingMonth ??
-    company?.annualBillingMonth ??
-    0
-  ) || null;
-}
-
-function resolveEffectiveUnitPrice(company, billingSettings, plan) {
-  return Number(
-    billingSettings?.pricePerExecutedService ??
-    plan?.pricePerExecutedService ??
-    company?.pricePerExecutedService ??
-    0
-  );
-}
-
-logoutButton?.addEventListener('click', async () => {
-  await logoutUser();
-  window.location.href = './login.html';
-});
-
-generateMonthBillingButton?.addEventListener('click', async () => {
-  try {
-    showFeedback(billingFeedback, 'Gerando cobrança do mês atual...', 'success');
-
-    await generateCurrentMonthBillingForAllTenants();
-    await loadMetrics();
-    await loadCompaniesTable();
-    await renderAdminBillingList();
-
-    showFeedback(billingFeedback, 'Cobrança do mês atual gerada com sucesso.', 'success');
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      billingFeedback,
-      error.message || 'Não foi possível gerar a cobrança do mês atual.',
-      'error'
-    );
+  if (!element) {
+    return;
   }
-});
 
-reloadBillingButton?.addEventListener('click', async () => {
-  try {
-    await loadMetrics();
-    await loadCompaniesTable();
-    await renderAdminBillingList();
+  element.textContent = value;
+}
 
-    showFeedback(billingFeedback, 'Cobrança recarregada com sucesso.', 'success');
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      billingFeedback,
-      error.message || 'Não foi possível recarregar a cobrança.',
-      'error'
-    );
-  }
-});
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
 
-planCancelEditButton?.addEventListener('click', () => {
-  resetPlanForm();
-  showFeedback(planFeedback, 'Edição de plano cancelada.', 'success');
-});
+function getCurrentMonthReference() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
 
-companyAdminCancelEditButton?.addEventListener('click', () => {
-  resetCompanyAdminForm();
-  showFeedback(companyAdminFeedback, 'Edição da empresa cancelada.', 'success');
-});
+function filterCurrentMonthBilling(records = []) {
+  const monthReference = getCurrentMonthReference();
 
-planForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
+  return records.filter((record) => String(record.referenceMonth || '') === monthReference);
+}
 
-  try {
-    const success = await submitSavePlan(planFeedback);
+function countByStatus(tenants = [], status) {
+  return tenants.filter(
+    (tenant) => String(tenant.subscriptionStatus || '').toLowerCase() === status
+  ).length;
+}
 
-    if (success) {
-      await renderAdminPlansList();
-      await populateCompanyPlanFilters();
-      await populateNewCompanyPlans();
-      await renderAdminCompaniesList();
-      await loadCompaniesTable();
-      await loadMetrics();
+function buildTopTenantRows(tenants = [], currentMonthBilling = []) {
+  const billingMap = new Map();
+
+  currentMonthBilling.forEach((record) => {
+    const tenantId = record.tenantId || record.companyId || record.customerId;
+
+    if (!tenantId) {
+      return;
     }
-  } catch (error) {
-    console.error(error);
-    showFeedback(planFeedback, error.message || 'Não foi possível salvar o plano.', 'error');
+
+    billingMap.set(tenantId, record);
+  });
+
+  return tenants
+    .map((tenant) => {
+      const billingRecord = billingMap.get(tenant.id);
+
+      return {
+        id: tenant.id,
+        businessName: tenant.businessName || '-',
+        planId: tenant.planId || '-',
+        billingMode: tenant.billingMode || '-',
+        subscriptionStatus: tenant.subscriptionStatus || '-',
+        completedThisMonth: normalizeNumber(
+          billingRecord?.completedAppointments
+            ?? billingRecord?.completedServices
+            ?? 0,
+          0
+        ),
+        amountThisMonth: normalizeNumber(
+          billingRecord?.amount
+            ?? billingRecord?.expectedAmount
+            ?? billingRecord?.totalAmount
+            ?? 0,
+          0
+        )
+      };
+    })
+    .sort((a, b) => b.amountThisMonth - a.amountThisMonth)
+    .slice(0, 8);
+}
+
+function renderTopTenantsTable(rows = []) {
+  const tbody = document.getElementById('dashboard-top-tenants-table-body');
+
+  if (!tbody) {
+    return;
   }
-});
 
-companyAdminForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  try {
-    const success = await submitSaveCompanyAdmin(companyAdminFeedback);
-
-    if (success) {
-      await renderAdminCompaniesList();
-      await loadCompaniesTable();
-      await loadMetrics();
-      await renderAdminBillingList();
-    }
-  } catch (error) {
-    console.error(error);
-    showFeedback(companyAdminFeedback, error.message || 'Não foi possível salvar a empresa.', 'error');
+  if (!rows.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="admin-table-empty">
+          Nenhum dado disponível no momento.
+        </td>
+      </tr>
+    `;
+    return;
   }
-});
 
-newCompanyForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
+  tbody.innerHTML = rows
+    .map((row) => `
+      <tr>
+        <td>${row.businessName}</td>
+        <td>${row.planId}</td>
+        <td>${formatBillingMode(row.billingMode)}</td>
+        <td>${formatSubscriptionStatus(row.subscriptionStatus)}</td>
+        <td>${row.completedThisMonth}</td>
+        <td>${formatCurrencyBRL(row.amountThisMonth)}</td>
+      </tr>
+    `)
+    .join('');
+}
 
-  try {
-    const success = await submitNewCompany(newCompanyFeedback);
+function updateKpis({ tenants, billingRecords }) {
+  const currentMonthBilling = filterCurrentMonthBilling(billingRecords);
 
-    if (success) {
-      newCompanyForm.reset();
-      refreshNewCompanyBillingModeUI();
-      await populateNewCompanyPlans();
-      await populateCompanyPlanFilters();
-      await renderAdminCompaniesList();
-      await loadCompaniesTable();
-      await loadMetrics();
-    }
-  } catch (error) {
-    console.error(error);
-    showFeedback(
-      newCompanyFeedback,
-      error.message || 'Não foi possível criar a empresa cliente.',
-      'error'
-    );
-  }
-});
+  const expectedRevenue = currentMonthBilling.reduce(
+    (total, record) =>
+      total + normalizeNumber(
+        record.amount ?? record.expectedAmount ?? record.totalAmount ?? 0,
+        0
+      ),
+    0
+  );
 
-platformSettingsForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
+  const completedThisMonth = currentMonthBilling.reduce(
+    (total, record) =>
+      total + normalizeNumber(
+        record.completedAppointments ?? record.completedServices ?? 0,
+        0
+      ),
+    0
+  );
 
-  try {
-    const platformName = document.getElementById('settings-platform-name')?.value?.trim() || '';
-    const platformLogoUrl = document.getElementById('settings-platform-logo-url')?.value?.trim() || '';
-    const publicDescription = document.getElementById('settings-public-description')?.value?.trim() || '';
-    const supportWhatsapp = document.getElementById('settings-support-whatsapp')?.value?.trim() || '';
-    const supportWhatsappMessage = document.getElementById('settings-support-message')?.value?.trim() || '';
-    const whatsappBaseUrl = document.getElementById('settings-whatsapp-base-url')?.value?.trim() || '';
-    const billingMessageTemplate = document.getElementById('settings-billing-message-template')?.value?.trim() || '';
+  setText('dashboard-stat-tenants', String(tenants.length));
+  setText('dashboard-stat-trial', String(countByStatus(tenants, 'trial')));
+  setText('dashboard-stat-active', String(countByStatus(tenants, 'active')));
+  setText('dashboard-stat-blocked', String(countByStatus(tenants, 'blocked')));
+  setText('dashboard-stat-completed', String(completedThisMonth));
+  setText('dashboard-stat-revenue', formatCurrencyBRL(expectedRevenue));
 
-    await savePlatformSettings({
-      platformName,
-      platformLogoUrl,
-      publicDescription,
-      supportWhatsapp,
-      supportWhatsappMessage,
-      whatsappBaseUrl,
-      billingMessageTemplate
-    });
-
-    await loadSettings();
-    showFeedback(settingsFeedback, 'Configurações salvas com sucesso.', 'success');
-  } catch (error) {
-    console.error(error);
-    showFeedback(settingsFeedback, error.message || 'Não foi possível salvar as configurações.', 'error');
-  }
-});
+  renderTopTenantsTable(buildTopTenantRows(tenants, currentMonthBilling));
+}
 
 function bindQuickActions() {
-  document.getElementById('quick-open-companies')?.addEventListener('click', () => {
-    activateAdminTab('companies-tab');
-  });
+  document
+    .querySelectorAll('[data-admin-tab-target]')
+    .forEach((button) => {
+      button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-admin-tab-target');
 
-  document.getElementById('quick-open-plans')?.addEventListener('click', () => {
-    activateAdminTab('plans-tab');
-  });
+        if (!tabId) {
+          return;
+        }
 
-  document.getElementById('quick-open-billing')?.addEventListener('click', () => {
-    activateAdminTab('billing-tab');
-  });
-
-  document.getElementById('quick-generate-billing')?.addEventListener('click', () => {
-    generateMonthBillingButton?.click();
-    activateAdminTab('billing-tab');
-  });
-}
-
-function bindAdminBillingModeUI() {
-  bindBillingModeVisibility('plan-form-billing-mode', PLAN_BILLING_FIELDS);
-  bindBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
-  bindBillingModeVisibility('new-company-billing-mode', NEW_COMPANY_BILLING_FIELDS);
-
-  refreshBillingModeVisibility('plan-form-billing-mode', PLAN_BILLING_FIELDS);
-  refreshBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
-  refreshBillingModeVisibility('new-company-billing-mode', NEW_COMPANY_BILLING_FIELDS);
-}
-
-async function loadMetrics() {
-  const metrics = await getAdminDashboardMetrics();
-
-  setText('stat-tenants', String(metrics.tenants));
-  setText('stat-trial', String(metrics.trial));
-  setText('stat-active', String(metrics.active));
-  setText('stat-blocked', String(metrics.blocked));
-  setText('stat-completed', String(metrics.completed));
-  setText('stat-revenue', formatCurrencyBRL(metrics.revenue));
-}
-
-async function loadSettings() {
-  const settings = await getPlatformSettings();
-
-  setText('support-whatsapp', settings?.supportWhatsapp || '-');
-  setText('support-message', settings?.supportWhatsappMessage || '-');
-  setText('platform-name-view', settings?.platformName || '-');
-  setText('platform-logo-url-view', settings?.platformLogoUrl || '-');
-  setText('platform-public-description-view', settings?.publicDescription || '-');
-  setText('platform-whatsapp-base-url-view', settings?.whatsappBaseUrl || '-');
-  setText('platform-billing-template-view', settings?.billingMessageTemplate || '-');
-
-  const platformNameInput = document.getElementById('settings-platform-name');
-  const platformLogoUrlInput = document.getElementById('settings-platform-logo-url');
-  const publicDescriptionInput = document.getElementById('settings-public-description');
-  const supportWhatsappInput = document.getElementById('settings-support-whatsapp');
-  const supportMessageInput = document.getElementById('settings-support-message');
-  const whatsappBaseUrlInput = document.getElementById('settings-whatsapp-base-url');
-  const billingMessageTemplateInput = document.getElementById('settings-billing-message-template');
-
-  if (platformNameInput) {
-    platformNameInput.value = settings?.platformName || '';
-  }
-
-  if (platformLogoUrlInput) {
-    platformLogoUrlInput.value = settings?.platformLogoUrl || '';
-  }
-
-  if (publicDescriptionInput) {
-    publicDescriptionInput.value = settings?.publicDescription || '';
-  }
-
-  if (supportWhatsappInput) {
-    supportWhatsappInput.value = settings?.supportWhatsapp || '';
-  }
-
-  if (supportMessageInput) {
-    supportMessageInput.value = settings?.supportWhatsappMessage || '';
-  }
-
-  if (whatsappBaseUrlInput) {
-    whatsappBaseUrlInput.value = settings?.whatsappBaseUrl || '';
-  }
-
-  if (billingMessageTemplateInput) {
-    billingMessageTemplateInput.value = settings?.billingMessageTemplate || '';
-  }
-}
-
-async function loadCompaniesTable() {
-  if (!tenantsTableBody) {
-    return;
-  }
-
-  const companies = await listTenants();
-  const { startIso, endIso } = getStartAndEndOfCurrentMonth();
-
-  clearElement(tenantsTableBody);
-
-  if (companies.length === 0) {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td colspan="6">Nenhuma empresa cliente cadastrada ainda.</td>
-    `;
-    tenantsTableBody.appendChild(row);
-    return;
-  }
-
-  for (const company of companies) {
-    const plan = company.planId ? await getPlanById(company.planId) : null;
-    const billingSettings = await getBillingSettingsByTenant(company.id);
-    const completedAppointments = await countCompletedAppointments(
-      company.id,
-      startIso,
-      endIso
-    );
-
-    const effectiveBillingMode = resolveEffectiveBillingMode(
-      company,
-      billingSettings,
-      plan
-    );
-
-    const effectiveFixedPrice = resolveEffectiveFixedPrice(
-      company,
-      billingSettings,
-      plan
-    );
-
-    const effectiveAnnualPrice = resolveEffectiveAnnualPrice(
-      company,
-      billingSettings,
-      plan
-    );
-
-    const effectiveAnnualBillingMonth = resolveEffectiveAnnualBillingMonth(
-      company,
-      billingSettings
-    );
-
-    const effectiveUnitPrice = resolveEffectiveUnitPrice(
-      company,
-      billingSettings,
-      plan
-    );
-
-    const currentMonthNumber = new Date().getMonth() + 1;
-
-    const totalAmount = calculateBillingForPeriod({
-      billingMode: effectiveBillingMode,
-      completedAppointments,
-      fixedMonthlyPrice: effectiveFixedPrice,
-      annualPrice: effectiveAnnualPrice,
-      annualBillingMonth: effectiveAnnualBillingMonth,
-      currentMonthNumber,
-      pricePerExecutedService: effectiveUnitPrice
+        activateAdminTab(tabId);
+      });
     });
 
-    const row = document.createElement('tr');
+  const generateBillingButton = document.getElementById('dashboard-generate-billing-button');
 
-    row.innerHTML = `
-      <td>${company.businessName || '-'}</td>
-      <td>${plan?.name || company.planId || '-'}</td>
-      <td>${formatBillingMode(effectiveBillingMode)}</td>
-      <td>${formatSubscriptionStatus(company.subscriptionStatus)}</td>
-      <td>${completedAppointments}</td>
-      <td>${formatCurrencyBRL(totalAmount)}</td>
-    `;
-
-    tenantsTableBody.appendChild(row);
-  }
+  generateBillingButton?.addEventListener('click', () => {
+    activateAdminTab('billing-tab');
+    const targetButton = document.getElementById('generate-billing-button');
+    targetButton?.focus();
+  });
 }
 
-async function init() {
+async function loadDashboard() {
   try {
-    bindAdminTabs();
-    bindQuickActions();
-    bindBillingFilters();
-    bindAdminBillingModeUI();
-
-    bindCompanyFilters(() => {
-      renderAdminCompaniesList();
-    });
-
-    await Promise.all([
-      loadMetrics(),
-      loadSettings(),
-      populateCompanyPlanFilters(),
-      populateNewCompanyPlans()
+    const [tenants, billingRecords] = await Promise.all([
+      listTenants(),
+      listBillingRecords ? listBillingRecords() : Promise.resolve([])
     ]);
 
-    await loadCompaniesTable();
-    await renderAdminCompaniesList();
-    await renderAdminPlansList();
-    await renderAdminBillingList();
+    updateKpis({
+      tenants: Array.isArray(tenants) ? tenants : [],
+      billingRecords: Array.isArray(billingRecords) ? billingRecords : []
+    });
   } catch (error) {
-    console.error('Erro ao carregar o painel admin do HoraLivre:', error);
+    console.error('Erro ao carregar o dashboard administrativo.', error);
+
+    setText('dashboard-stat-tenants', '0');
+    setText('dashboard-stat-trial', '0');
+    setText('dashboard-stat-active', '0');
+    setText('dashboard-stat-blocked', '0');
+    setText('dashboard-stat-completed', '0');
+    setText('dashboard-stat-revenue', formatCurrencyBRL(0));
+
+    renderTopTenantsTable([]);
   }
 }
 
-init();
+bindQuickActions();
+loadDashboard();
