@@ -1,8 +1,16 @@
 import { requireAdmin } from '../utils/guards.js';
 import { listTenants } from '../services/tenant-service.js';
+import { listPlans } from '../services/plan-service.js';
 import { listBillingRecords } from '../services/billing-service.js';
-import { formatBillingMode, formatCurrencyBRL, formatSubscriptionStatus } from '../utils/formatters.js';
-import { activateAdminTab } from './admin-tabs.js';
+import {
+  formatBillingMode,
+  formatCurrencyBRL,
+  formatSubscriptionStatus
+} from '../utils/formatters.js';
+import {
+  activateAdminTab,
+  openAdminCompanyDetails
+} from './admin-tabs.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -42,8 +50,23 @@ function countByStatus(tenants = [], status) {
   ).length;
 }
 
-function buildTopTenantRows(tenants = [], currentMonthBilling = []) {
+function buildPlansMap(plans = []) {
+  return new Map(
+    plans.map((plan) => [plan.id, plan])
+  );
+}
+
+function resolvePlanName(planId, plansMap) {
+  if (!planId) {
+    return 'Sem plano';
+  }
+
+  return plansMap.get(planId)?.name || 'Plano não encontrado';
+}
+
+function buildTopTenantRows(tenants = [], currentMonthBilling = [], plans = []) {
   const billingMap = new Map();
+  const plansMap = buildPlansMap(plans);
 
   currentMonthBilling.forEach((record) => {
     const tenantId = record.tenantId || record.companyId || record.customerId;
@@ -62,8 +85,8 @@ function buildTopTenantRows(tenants = [], currentMonthBilling = []) {
       return {
         id: tenant.id,
         businessName: tenant.businessName || '-',
-        planId: tenant.planId || '-',
-        billingMode: tenant.billingMode || '-',
+        planName: resolvePlanName(tenant.planId, plansMap),
+        billingMode: tenant.billingMode || billingRecord?.billingMode || '-',
         subscriptionStatus: tenant.subscriptionStatus || '-',
         completedThisMonth: normalizeNumber(
           billingRecord?.completedAppointments
@@ -105,8 +128,17 @@ function renderTopTenantsTable(rows = []) {
   tbody.innerHTML = rows
     .map((row) => `
       <tr>
-        <td>${row.businessName}</td>
-        <td>${row.planId}</td>
+        <td>
+          <button
+            type="button"
+            class="admin-inline-link-button"
+            data-dashboard-company-id="${row.id}"
+            title="Abrir dados da empresa"
+          >
+            ${row.businessName}
+          </button>
+        </td>
+        <td>${row.planName}</td>
         <td>${formatBillingMode(row.billingMode)}</td>
         <td>${formatSubscriptionStatus(row.subscriptionStatus)}</td>
         <td>${row.completedThisMonth}</td>
@@ -114,9 +146,21 @@ function renderTopTenantsTable(rows = []) {
       </tr>
     `)
     .join('');
+
+  tbody.querySelectorAll('[data-dashboard-company-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const tenantId = button.getAttribute('data-dashboard-company-id');
+
+      if (!tenantId) {
+        return;
+      }
+
+      openAdminCompanyDetails(tenantId);
+    });
+  });
 }
 
-function updateKpis({ tenants, billingRecords }) {
+function updateKpis({ tenants, billingRecords, plans }) {
   const currentMonthBilling = filterCurrentMonthBilling(billingRecords);
 
   const expectedRevenue = currentMonthBilling.reduce(
@@ -144,7 +188,7 @@ function updateKpis({ tenants, billingRecords }) {
   setText('dashboard-stat-completed', String(completedThisMonth));
   setText('dashboard-stat-revenue', formatCurrencyBRL(expectedRevenue));
 
-  renderTopTenantsTable(buildTopTenantRows(tenants, currentMonthBilling));
+  renderTopTenantsTable(buildTopTenantRows(tenants, currentMonthBilling, plans));
 }
 
 function bindQuickActions() {
@@ -173,14 +217,16 @@ function bindQuickActions() {
 
 async function loadDashboard() {
   try {
-    const [tenants, billingRecords] = await Promise.all([
+    const [tenants, billingRecords, plans] = await Promise.all([
       listTenants(),
-      listBillingRecords ? listBillingRecords() : Promise.resolve([])
+      listBillingRecords ? listBillingRecords() : Promise.resolve([]),
+      listPlans ? listPlans() : Promise.resolve([])
     ]);
 
     updateKpis({
       tenants: Array.isArray(tenants) ? tenants : [],
-      billingRecords: Array.isArray(billingRecords) ? billingRecords : []
+      billingRecords: Array.isArray(billingRecords) ? billingRecords : [],
+      plans: Array.isArray(plans) ? plans : []
     });
   } catch (error) {
     console.error('Erro ao carregar o dashboard administrativo.', error);
