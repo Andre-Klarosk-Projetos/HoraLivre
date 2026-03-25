@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -10,6 +11,70 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 import { db } from '../config/firebase-init.js';
+
+function normalizeString(value, fallback = '') {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeBoolean(value, fallback = false) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  return fallback;
+}
+
+function normalizeNullableNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildPlanPayload(data = {}, { isCreate = false } = {}) {
+  const payload = {
+    name: normalizeString(data.name),
+    description: normalizeString(data.description),
+    featured: normalizeBoolean(data.featured, false),
+    highlighted: normalizeBoolean(data.highlighted, false),
+    displayOrder: normalizeNumber(data.displayOrder, 0),
+    billingMode: normalizeString(data.billingMode, 'free') || 'free',
+    price: normalizeNumber(data.price, 0),
+    annualPrice: normalizeNumber(data.annualPrice, 0),
+    annualBillingMonth: normalizeNullableNumber(data.annualBillingMonth),
+    pricePerExecutedService: normalizeNumber(data.pricePerExecutedService, 0),
+    publicPageEnabled: normalizeBoolean(data.publicPageEnabled, true),
+    reportsEnabled: normalizeBoolean(data.reportsEnabled, true),
+    maxServices: normalizeNumber(data.maxServices, 0),
+    maxCustomers: normalizeNumber(data.maxCustomers, 0),
+    maxAppointmentsMonth: normalizeNumber(
+      data.maxAppointmentsMonth ?? data.maxAppointmentsPerMonth,
+      0
+    ),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (isCreate) {
+    payload.createdAt = new Date().toISOString();
+  }
+
+  return payload;
+}
 
 export async function listPlans() {
   const plansQuery = query(
@@ -44,42 +109,25 @@ export async function getPlanById(planId) {
 }
 
 export async function createPlan(data) {
-  return addDoc(collection(db, 'plans'), {
-    name: data.name || '',
-    description: data.description || '',
-    featured: data.featured === true,
-    displayOrder: Number(data.displayOrder || 0),
-    billingMode: data.billingMode || 'free',
-    price: Number(data.price || 0),
-    annualPrice: Number(data.annualPrice || 0),
-    pricePerExecutedService: Number(data.pricePerExecutedService || 0),
-    publicPageEnabled: data.publicPageEnabled !== false,
-    reportsEnabled: data.reportsEnabled !== false,
-    maxServices: Number(data.maxServices || 0),
-    maxCustomers: Number(data.maxCustomers || 0),
-    maxAppointmentsMonth: Number(data.maxAppointmentsMonth || 0),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
+  const payload = buildPlanPayload(data, { isCreate: true });
+  return addDoc(collection(db, 'plans'), payload);
 }
 
 export async function updatePlan(planId, data) {
-  const reference = doc(db, 'plans', planId);
+  if (!planId) {
+    throw new Error('Plano inválido para atualização.');
+  }
 
-  await updateDoc(reference, {
-    name: data.name || '',
-    description: data.description || '',
-    featured: data.featured === true,
-    displayOrder: Number(data.displayOrder || 0),
-    billingMode: data.billingMode || 'free',
-    price: Number(data.price || 0),
-    annualPrice: Number(data.annualPrice || 0),
-    pricePerExecutedService: Number(data.pricePerExecutedService || 0),
-    publicPageEnabled: data.publicPageEnabled !== false,
-    reportsEnabled: data.reportsEnabled !== false,
-    maxServices: Number(data.maxServices || 0),
-    maxCustomers: Number(data.maxCustomers || 0),
-    maxAppointmentsMonth: Number(data.maxAppointmentsMonth || 0),
-    updatedAt: new Date().toISOString()
-  });
+  const reference = doc(db, 'plans', planId);
+  const payload = buildPlanPayload(data);
+
+  await updateDoc(reference, payload);
+}
+
+export async function deletePlan(planId) {
+  if (!planId) {
+    throw new Error('Plano inválido para exclusão.');
+  }
+
+  await deleteDoc(doc(db, 'plans', planId));
 }
