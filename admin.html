@@ -321,260 +321,272 @@
             <section class="admin-panel-card admin-sticky-card">
               <div class="admin-panel-card-header">
                 <div>
-                  <p class="admin-eyebrow">Novo tenant</p>
-                  <h4>Criar empresa cliente</h4>
+                  <p class="admin-eyebrow">Workspace da empresa</p>
+                  <h4>Cadastro e edição</h4>
                 </div>
               </div>
 
-              <form id="new-company-form" class="admin-form-grid">
-                <label>
-                  <span>Nome da empresa</span>
-                  <input type="text" name="businessName" required />
-                </label>
-
-                <label>
-                  <span>Nome do responsável</span>
-                  <input type="text" name="contactName" />
-                </label>
-
-                <label>
-                  <span>E-mail de acesso</span>
-                  <input type="email" name="email" required />
-                </label>
-
-                <label>
-                  <span>Senha inicial</span>
-                  <input type="password" name="password" required />
-                </label>
-
-                <label>
-                  <span>WhatsApp</span>
-                  <input type="text" name="whatsapp" />
-                </label>
-
-                <label>
-                  <span>Slug público</span>
-                  <input type="text" name="slug" />
-                </label>
-
-                <label>
-                  <span>Plano</span>
-                  <select name="planId" id="new-company-plan-select"></select>
-                </label>
-
-                <label>
-                  <span>Status</span>
-                  <select name="subscriptionStatus">
-                    <option value="trial">Trial</option>
-                    <option value="active">Ativo</option>
-                    <option value="blocked">Bloqueado</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Modo de cobrança</span>
-                  <select name="billingMode">
-                    <option value="free">Gratuito</option>
-                    <option value="fixed">Plano mensal</option>
-                    <option value="annual">Plano anual</option>
-                    <option value="per_service">Por serviço</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Preço mensal</span>
-                  <input type="number" step="0.01" name="fixedMonthlyPrice" />
-                </label>
-
-                <label>
-                  <span>Preço anual</span>
-                  <input type="number" step="0.01" name="annualPrice" />
-                </label>
-
-                <label>
-                  <span>Mês da cobrança anual</span>
-                  <select name="annualBillingMonth">
-                    <option value="">Selecione</option>
-                    <option value="1">Janeiro</option>
-                    <option value="2">Fevereiro</option>
-                    <option value="3">Março</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Maio</option>
-                    <option value="6">Junho</option>
-                    <option value="7">Julho</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Preço por serviço concluído</span>
-                  <input type="number" step="0.01" name="pricePerExecutedService" />
-                </label>
-
-                <label>
-                  <span>Página pública habilitada?</span>
-                  <select name="publicPageEnabled">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Relatórios habilitados?</span>
-                  <select name="reportsEnabled">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Data final do trial</span>
-                  <input type="date" name="trialEndsAt" />
-                </label>
-
-                <div class="admin-form-actions admin-form-actions-full">
-                  <button type="submit" class="admin-primary-button">
-                    Criar empresa cliente
-                  </button>
-                </div>
-              </form>
-
-              <div id="new-company-feedback" class="admin-feedback-slot"></div>
-            </section>
-
-            <section class="admin-panel-card">
-              <div class="admin-panel-card-header">
-                <div>
-                  <p class="admin-eyebrow">Editar tenant</p>
-                  <h4>Atualizar empresa cliente</h4>
-                </div>
+              <div class="admin-form-switcher">
+                <button
+                  type="button"
+                  id="company-mode-create-button"
+                  class="admin-form-switcher-button active"
+                >
+                  Novo tenant
+                </button>
+                <button
+                  type="button"
+                  id="company-mode-edit-button"
+                  class="admin-form-switcher-button"
+                >
+                  Editar empresa
+                </button>
               </div>
 
-              <form id="edit-company-form" class="admin-form-grid">
-                <input type="hidden" name="tenantId" id="edit-company-tenant-id" />
+              <div id="company-create-panel" class="admin-company-mode-panel active">
+                <form id="new-company-form" class="admin-form-grid">
+                  <label>
+                    <span>Nome da empresa</span>
+                    <input type="text" name="businessName" required />
+                  </label>
 
-                <label>
-                  <span>Nome da empresa</span>
-                  <input type="text" name="businessName" required />
-                </label>
+                  <label>
+                    <span>Nome do responsável</span>
+                    <input type="text" name="contactName" />
+                  </label>
 
-                <label>
-                  <span>Slug público</span>
-                  <input type="text" name="slug" />
-                </label>
+                  <label>
+                    <span>E-mail de acesso</span>
+                    <input type="email" name="email" required />
+                  </label>
 
-                <label>
-                  <span>WhatsApp</span>
-                  <input type="text" name="whatsapp" />
-                </label>
+                  <label>
+                    <span>Senha inicial</span>
+                    <input type="password" name="password" required />
+                  </label>
 
-                <label>
-                  <span>Status</span>
-                  <select name="subscriptionStatus">
-                    <option value="trial">Trial</option>
-                    <option value="active">Ativo</option>
-                    <option value="blocked">Bloqueado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>WhatsApp</span>
+                    <input type="text" name="whatsapp" />
+                  </label>
 
-                <label>
-                  <span>Plano</span>
-                  <select name="planId" id="edit-company-plan-select"></select>
-                </label>
+                  <label>
+                    <span>Slug público</span>
+                    <input type="text" name="slug" />
+                  </label>
 
-                <label>
-                  <span>Modo de cobrança</span>
-                  <select name="billingMode">
-                    <option value="free">Gratuito</option>
-                    <option value="fixed">Plano mensal</option>
-                    <option value="annual">Plano anual</option>
-                    <option value="per_service">Por serviço</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Plano</span>
+                    <select name="planId" id="new-company-plan-select"></select>
+                  </label>
 
-                <label>
-                  <span>Preço mensal</span>
-                  <input type="number" step="0.01" name="fixedMonthlyPrice" />
-                </label>
+                  <label>
+                    <span>Status</span>
+                    <select name="subscriptionStatus">
+                      <option value="trial">Trial</option>
+                      <option value="active">Ativo</option>
+                      <option value="blocked">Bloqueado</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Preço anual</span>
-                  <input type="number" step="0.01" name="annualPrice" />
-                </label>
+                  <label>
+                    <span>Modo de cobrança</span>
+                    <select name="billingMode">
+                      <option value="free">Gratuito</option>
+                      <option value="fixed">Plano mensal</option>
+                      <option value="annual">Plano anual</option>
+                      <option value="per_service">Por serviço</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Mês da cobrança anual</span>
-                  <select name="annualBillingMonth">
-                    <option value="">Selecione</option>
-                    <option value="1">Janeiro</option>
-                    <option value="2">Fevereiro</option>
-                    <option value="3">Março</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Maio</option>
-                    <option value="6">Junho</option>
-                    <option value="7">Julho</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Preço mensal</span>
+                    <input type="number" step="0.01" name="fixedMonthlyPrice" />
+                  </label>
 
-                <label>
-                  <span>Preço por serviço concluído</span>
-                  <input type="number" step="0.01" name="pricePerExecutedService" />
-                </label>
+                  <label>
+                    <span>Preço anual</span>
+                    <input type="number" step="0.01" name="annualPrice" />
+                  </label>
 
-                <label>
-                  <span>Página pública habilitada?</span>
-                  <select name="publicPageEnabled">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Mês da cobrança anual</span>
+                    <select name="annualBillingMonth">
+                      <option value="">Selecione</option>
+                      <option value="1">Janeiro</option>
+                      <option value="2">Fevereiro</option>
+                      <option value="3">Março</option>
+                      <option value="4">Abril</option>
+                      <option value="5">Maio</option>
+                      <option value="6">Junho</option>
+                      <option value="7">Julho</option>
+                      <option value="8">Agosto</option>
+                      <option value="9">Setembro</option>
+                      <option value="10">Outubro</option>
+                      <option value="11">Novembro</option>
+                      <option value="12">Dezembro</option>
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Relatórios habilitados?</span>
-                  <select name="reportsEnabled">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Preço por serviço concluído</span>
+                    <input type="number" step="0.01" name="pricePerExecutedService" />
+                  </label>
 
-                <label>
-                  <span>Data final do trial</span>
-                  <input type="date" name="trialEndsAt" />
-                </label>
+                  <label>
+                    <span>Página pública habilitada?</span>
+                    <select name="publicPageEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
 
-                <div class="admin-form-actions admin-form-actions-full">
-                  <button type="submit" class="admin-primary-button">
-                    Salvar empresa cliente
-                  </button>
-                  <button
-                    type="button"
-                    id="cancel-company-edit-button"
-                    class="admin-secondary-button"
-                  >
-                    Cancelar edição
-                  </button>
-                  <a
-                    href="#"
-                    id="edit-company-whatsapp-link"
-                    class="admin-secondary-link-button"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Falar no WhatsApp
-                  </a>
-                </div>
-              </form>
+                  <label>
+                    <span>Relatórios habilitados?</span>
+                    <select name="reportsEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
 
-              <div id="edit-company-feedback" class="admin-feedback-slot"></div>
+                  <label>
+                    <span>Data final do trial</span>
+                    <input type="date" name="trialEndsAt" />
+                  </label>
+
+                  <div class="admin-form-actions admin-form-actions-full">
+                    <button type="submit" class="admin-primary-button">
+                      Criar empresa cliente
+                    </button>
+                  </div>
+                </form>
+
+                <div id="new-company-feedback" class="admin-feedback-slot"></div>
+              </div>
+
+              <div id="company-edit-panel" class="admin-company-mode-panel" hidden>
+                <form id="edit-company-form" class="admin-form-grid">
+                  <input type="hidden" name="tenantId" id="edit-company-tenant-id" />
+
+                  <label>
+                    <span>Nome da empresa</span>
+                    <input type="text" name="businessName" required />
+                  </label>
+
+                  <label>
+                    <span>Slug público</span>
+                    <input type="text" name="slug" />
+                  </label>
+
+                  <label>
+                    <span>WhatsApp</span>
+                    <input type="text" name="whatsapp" />
+                  </label>
+
+                  <label>
+                    <span>Status</span>
+                    <select name="subscriptionStatus">
+                      <option value="trial">Trial</option>
+                      <option value="active">Ativo</option>
+                      <option value="blocked">Bloqueado</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Plano</span>
+                    <select name="planId" id="edit-company-plan-select"></select>
+                  </label>
+
+                  <label>
+                    <span>Modo de cobrança</span>
+                    <select name="billingMode">
+                      <option value="free">Gratuito</option>
+                      <option value="fixed">Plano mensal</option>
+                      <option value="annual">Plano anual</option>
+                      <option value="per_service">Por serviço</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Preço mensal</span>
+                    <input type="number" step="0.01" name="fixedMonthlyPrice" />
+                  </label>
+
+                  <label>
+                    <span>Preço anual</span>
+                    <input type="number" step="0.01" name="annualPrice" />
+                  </label>
+
+                  <label>
+                    <span>Mês da cobrança anual</span>
+                    <select name="annualBillingMonth">
+                      <option value="">Selecione</option>
+                      <option value="1">Janeiro</option>
+                      <option value="2">Fevereiro</option>
+                      <option value="3">Março</option>
+                      <option value="4">Abril</option>
+                      <option value="5">Maio</option>
+                      <option value="6">Junho</option>
+                      <option value="7">Julho</option>
+                      <option value="8">Agosto</option>
+                      <option value="9">Setembro</option>
+                      <option value="10">Outubro</option>
+                      <option value="11">Novembro</option>
+                      <option value="12">Dezembro</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Preço por serviço concluído</span>
+                    <input type="number" step="0.01" name="pricePerExecutedService" />
+                  </label>
+
+                  <label>
+                    <span>Página pública habilitada?</span>
+                    <select name="publicPageEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Relatórios habilitados?</span>
+                    <select name="reportsEnabled">
+                      <option value="true">Sim</option>
+                      <option value="false">Não</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Data final do trial</span>
+                    <input type="date" name="trialEndsAt" />
+                  </label>
+
+                  <div class="admin-form-actions admin-form-actions-full">
+                    <button type="submit" class="admin-primary-button">
+                      Salvar empresa cliente
+                    </button>
+                    <button
+                      type="button"
+                      id="cancel-company-edit-button"
+                      class="admin-secondary-button"
+                    >
+                      Cancelar edição
+                    </button>
+                    <a
+                      href="#"
+                      id="edit-company-whatsapp-link"
+                      class="admin-secondary-link-button"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Falar no WhatsApp
+                    </a>
+                  </div>
+                </form>
+
+                <div id="edit-company-feedback" class="admin-feedback-slot"></div>
+              </div>
             </section>
           </div>
 
