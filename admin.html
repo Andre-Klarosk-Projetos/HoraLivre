@@ -64,7 +64,7 @@
           aria-selected="false"
         >
           <span>Planos</span>
-          <small>Ofertas e limites</small>
+          <small>Criar, editar e excluir</small>
         </button>
 
         <button
@@ -74,7 +74,7 @@
           aria-selected="false"
         >
           <span>Cobrança</span>
-          <small>Recebimentos</small>
+          <small>Recebimentos e pendências</small>
         </button>
 
         <button
@@ -84,7 +84,7 @@
           aria-selected="false"
         >
           <span>Configurações</span>
-          <small>Parâmetros gerais</small>
+          <small>Parâmetros da plataforma</small>
         </button>
       </nav>
 
@@ -117,9 +117,9 @@
           <button
             type="button"
             class="admin-secondary-button"
-            id="dashboard-generate-billing-button"
+            data-admin-tab-target="plans-tab"
           >
-            Gerar cobrança do mês
+            Novo plano
           </button>
         </div>
       </header>
@@ -132,7 +132,7 @@
         <div class="admin-section-heading">
           <div>
             <p class="admin-eyebrow">Resumo da plataforma</p>
-            <h3>Visão rápida da operação do mês</h3>
+            <h3>Visão rápida da operação</h3>
           </div>
           <p class="admin-section-support-text">
             Indicadores principais, atalhos e visão consolidada dos tenants.
@@ -183,8 +183,8 @@
             class="admin-quick-action-card"
             data-admin-tab-target="companies-tab"
           >
-            <strong>Abrir empresas</strong>
-            <span>Gerenciar tenants, planos e status.</span>
+            <strong>Gerenciar empresas</strong>
+            <span>Editar tenants, planos, status e links públicos.</span>
           </button>
 
           <button
@@ -192,8 +192,8 @@
             class="admin-quick-action-card"
             data-admin-tab-target="plans-tab"
           >
-            <strong>Abrir planos</strong>
-            <span>Revisar regras, limites e preços.</span>
+            <strong>Gerenciar planos</strong>
+            <span>Criar, editar e excluir planos existentes.</span>
           </button>
 
           <button
@@ -201,18 +201,17 @@
             class="admin-quick-action-card"
             data-admin-tab-target="billing-tab"
           >
-            <strong>Abrir cobrança</strong>
-            <span>Consultar pendências e mensagens.</span>
+            <strong>Gerenciar cobrança</strong>
+            <span>Consultar pendências e gerar cobrança.</span>
           </button>
 
           <button
             type="button"
             class="admin-quick-action-card"
-            id="dashboard-go-settings-button"
             data-admin-tab-target="settings-tab"
           >
-            <strong>Abrir configurações</strong>
-            <span>Ajustar parâmetros gerais do sistema.</span>
+            <strong>Configurações</strong>
+            <span>Ajustar parâmetros gerais da plataforma.</span>
           </button>
         </section>
 
@@ -264,10 +263,10 @@
         <div class="admin-section-heading">
           <div>
             <p class="admin-eyebrow">Empresas clientes</p>
-            <h3>Gerencie plano, status, cobrança e contato</h3>
+            <h3>Cadastre, edite e acompanhe os tenants</h3>
           </div>
           <p class="admin-section-support-text">
-            Cadastro, edição operacional, filtros e visão da base.
+            Gestão operacional completa da base de clientes.
           </p>
         </div>
 
@@ -275,8 +274,8 @@
           <section class="admin-panel-card">
             <div class="admin-panel-card-header">
               <div>
-                <p class="admin-eyebrow">Nova empresa cliente</p>
-                <h4>Criar tenant</h4>
+                <p class="admin-eyebrow">Novo tenant</p>
+                <h4>Criar empresa cliente</h4>
               </div>
             </div>
 
@@ -403,8 +402,8 @@
           <section class="admin-panel-card">
             <div class="admin-panel-card-header">
               <div>
-                <p class="admin-eyebrow">Editar empresa cliente</p>
-                <h4>Atualizar tenant</h4>
+                <p class="admin-eyebrow">Editar tenant</p>
+                <h4>Atualizar empresa cliente</h4>
               </div>
             </div>
 
@@ -493,6 +492,14 @@
               </label>
 
               <label>
+                <span>Relatórios habilitados?</span>
+                <select name="reportsEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </label>
+
+              <label>
                 <span>Data final do trial</span>
                 <input type="date" name="trialEndsAt" />
               </label>
@@ -528,7 +535,7 @@
           <div class="admin-panel-card-header">
             <div>
               <p class="admin-eyebrow">Base de empresas</p>
-              <h4>Buscar e filtrar tenants</h4>
+              <h4>Empresas cadastradas</h4>
             </div>
           </div>
 
@@ -580,11 +587,21 @@
         <div class="admin-section-heading">
           <div>
             <p class="admin-eyebrow">Planos</p>
-            <h3>Crie e edite os planos usados pelas empresas</h3>
+            <h3>Crie, edite e exclua planos</h3>
           </div>
+          <p class="admin-section-support-text">
+            Toda a gestão de planos permanece ativa aqui.
+          </p>
         </div>
 
         <section class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <div>
+              <p class="admin-eyebrow">Formulário</p>
+              <h4>Cadastro e edição de planos</h4>
+            </div>
+          </div>
+
           <form id="plan-form" class="admin-form-grid">
             <input type="hidden" id="plan-edit-id" name="planId" />
 
@@ -685,6 +702,13 @@
         </section>
 
         <section class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <div>
+              <p class="admin-eyebrow">Lista de planos</p>
+              <h4>Planos já cadastrados</h4>
+            </div>
+          </div>
+
           <ul id="plans-list" class="admin-entity-grid"></ul>
         </section>
       </section>
@@ -698,7 +722,7 @@
         <div class="admin-section-heading">
           <div>
             <p class="admin-eyebrow">Cobrança</p>
-            <h3>Gere cobrança, filtre por mês/status e envie mensagem pronta</h3>
+            <h3>Gerencie a cobrança da base inteira</h3>
           </div>
         </div>
 
@@ -772,7 +796,7 @@
         <div class="admin-section-heading">
           <div>
             <p class="admin-eyebrow">Configurações da plataforma</p>
-            <h3>Edite parâmetros funcionais usados no restante do app</h3>
+            <h3>Parâmetros gerais do sistema</h3>
           </div>
         </div>
 
@@ -861,6 +885,7 @@
 
   <script type="module" src="./assets/js/modules/admin-dashboard.js"></script>
   <script type="module" src="./assets/js/modules/admin-companies.js"></script>
+  <script type="module" src="./assets/js/modules/admin-plans.js"></script>
   <script type="module" src="./assets/js/modules/admin-billing.js"></script>
   <script type="module" src="./assets/js/modules/admin-tabs.js"></script>
 </body>
