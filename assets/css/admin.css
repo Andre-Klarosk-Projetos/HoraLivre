@@ -296,7 +296,7 @@ body {
 }
 
 .admin-workspace-grid-plans {
-  grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+  grid-template-columns: minmax(380px, 460px) minmax(0, 1fr);
 }
 
 .admin-workspace-sidebar,
