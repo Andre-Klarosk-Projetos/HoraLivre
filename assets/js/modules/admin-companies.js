@@ -3,8 +3,12 @@ import {
   listTenants,
   updateTenant
 } from '../services/tenant-service.js';
-import { listPlans } from '../services/plan-service.js';
-import { saveBillingSettingsForTenant } from '../services/billing-service.js';
+import {
+  listPlans
+} from '../services/plan-service.js';
+import {
+  saveBillingSettingsForTenant
+} from '../services/billing-service.js';
 import {
   clearElement,
   showFeedback
@@ -37,6 +41,26 @@ function getElementByIds(...ids) {
   return null;
 }
 
+function getCompaniesListElement(elementId = 'companies-list') {
+  return document.getElementById(elementId);
+}
+
+function getNewCompanyFormElement() {
+  return getElementByIds('new-company-form');
+}
+
+function getEditCompanyFormElement() {
+  return getElementByIds('edit-company-form');
+}
+
+function getNewCompanyFeedbackElement() {
+  return getElementByIds('new-company-feedback');
+}
+
+function getEditCompanyFeedbackElement() {
+  return getElementByIds('edit-company-feedback');
+}
+
 function getCompanyFilterState() {
   return {
     search: getElementByIds('companies-search-input', 'company-search-input')?.value?.trim()?.toLowerCase() || '',
@@ -46,19 +70,20 @@ function getCompanyFilterState() {
   };
 }
 
-function applyCompanyFilters(companies, filters) {
-  return companies.filter((company) => {
-    const matchesSearch = !filters.search
-      || String(company.businessName || '').toLowerCase().includes(filters.search)
-      || String(company.slug || '').toLowerCase().includes(filters.search)
-      || String(company.whatsapp || '').toLowerCase().includes(filters.search);
+function getPlanName(planId) {
+  return cachedPlans.find((plan) => plan.id === planId)?.name || planId || '-';
+}
 
-    const matchesPlan = !filters.planId || String(company.planId || '') === filters.planId;
-    const matchesStatus = !filters.status || String(company.subscriptionStatus || '') === filters.status;
-    const matchesBilling = !filters.billingMode || String(company.billingMode || '') === filters.billingMode;
+function normalizeBooleanString(value, fallback = 'false') {
+  if (value === 'true') {
+    return 'true';
+  }
 
-    return matchesSearch && matchesPlan && matchesStatus && matchesBilling;
-  });
+  if (value === 'false') {
+    return 'false';
+  }
+
+  return fallback;
 }
 
 function setFieldValue(value, ...ids) {
@@ -75,12 +100,54 @@ function getFieldValue(...ids) {
   return getElementByIds(...ids)?.value ?? '';
 }
 
+function resetEditCompanyForm() {
+  const form = getEditCompanyFormElement();
+
+  form?.reset();
+  setFieldValue('', 'edit-company-tenant-id');
+
+  const whatsappLink = getElementByIds('edit-company-whatsapp-link');
+
+  if (whatsappLink) {
+    whatsappLink.href = '#';
+  }
+}
+
+function resetNewCompanyForm() {
+  const form = getNewCompanyFormElement();
+
+  form?.reset();
+
+  setFieldValue('trial', 'new-company-form-subscription-status', 'subscriptionStatus');
+  setFieldValue('free', 'new-company-form-billing-mode', 'billingMode');
+  setFieldValue('true', 'new-company-form-public-page-enabled', 'publicPageEnabled');
+  setFieldValue('true', 'new-company-form-reports-enabled', 'reportsEnabled');
+}
+
+function populatePlanSelect(selectElement, includePlaceholder = true) {
+  if (!selectElement) {
+    return;
+  }
+
+  selectElement.innerHTML = includePlaceholder
+    ? '<option value="">Selecione um plano</option>'
+    : '';
+
+  cachedPlans.forEach((plan) => {
+    const option = document.createElement('option');
+    option.value = plan.id;
+    option.textContent = plan.name || '-';
+    selectElement.appendChild(option);
+  });
+}
+
 export async function populateCompanyPlanFilters() {
   cachedPlans = await listPlans();
 
+  populatePlanSelect(getElementByIds('new-company-plan-select'));
+  populatePlanSelect(getElementByIds('edit-company-plan-select', 'company-admin-plan-id'));
+
   const planFilter = getElementByIds('companies-plan-filter', 'company-plan-filter');
-  const newCompanyPlanSelect = getElementByIds('new-company-plan-select');
-  const editCompanyPlanSelect = getElementByIds('edit-company-plan-select', 'company-admin-plan-id');
 
   if (planFilter) {
     planFilter.innerHTML = '<option value="">Todos</option>';
@@ -92,21 +159,35 @@ export async function populateCompanyPlanFilters() {
       planFilter.appendChild(option);
     });
   }
+}
 
-  [newCompanyPlanSelect, editCompanyPlanSelect].forEach((select) => {
-    if (!select) {
-      return;
-    }
+function applyCompanyFilters(companies, filters) {
+  return companies.filter((company) => {
+    const searchableText = [
+      company.businessName || '',
+      company.slug || '',
+      company.whatsapp || '',
+      company.planId || ''
+    ]
+      .join(' ')
+      .toLowerCase();
 
-    select.innerHTML = '<option value="">Selecione um plano</option>';
+    const matchesSearch = !filters.search || searchableText.includes(filters.search);
+    const matchesPlan = !filters.planId || String(company.planId || '') === filters.planId;
+    const matchesStatus = !filters.status || String(company.subscriptionStatus || '') === filters.status;
+    const matchesBillingMode = !filters.billingMode || String(company.billingMode || '') === filters.billingMode;
 
-    cachedPlans.forEach((plan) => {
-      const option = document.createElement('option');
-      option.value = plan.id;
-      option.textContent = plan.name || '-';
-      select.appendChild(option);
-    });
+    return matchesSearch && matchesPlan && matchesStatus && matchesBillingMode;
   });
+}
+
+function buildCompactMetric(label, value) {
+  return `
+    <div class="admin-compact-metric">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
 }
 
 function buildCompanyCardHtml(company) {
@@ -114,25 +195,45 @@ function buildCompanyCardHtml(company) {
     ? `./agendar.html?slug=${company.slug}`
     : '#';
 
+  const whatsappLink = buildWhatsAppLink(
+    company.whatsapp || '',
+    `Olá ${company.businessName || ''}, estou entrando em contato pelo HoraLivre.`
+  );
+
   return `
     <div class="entity-card-header">
       <div>
         <h3>${company.businessName || '-'}</h3>
-        <span class="entity-badge">${formatSubscriptionStatus(company.subscriptionStatus)}</span>
+        <span class="entity-badge">
+          ${formatSubscriptionStatus(company.subscriptionStatus)}
+        </span>
       </div>
     </div>
 
-    <div class="entity-card-body">
-      <p><strong>WhatsApp</strong><br>${formatPhone(company.whatsapp || '-')}</p>
-      <p><strong>Slug</strong><br>${company.slug || '-'}</p>
-      <p><strong>Plano</strong><br>${company.planId || '-'}</p>
-      <p><strong>Cobrança</strong><br>${formatBillingMode(company.billingMode)}</p>
-      <p><strong>Preço mensal</strong><br>${formatCurrencyBRL(company.fixedMonthlyPrice || 0)}</p>
-      <p><strong>Preço anual</strong><br>${formatCurrencyBRL(company.annualPrice || 0)}</p>
-      <p><strong>Mês anual</strong><br>${company.annualBillingMonth ? formatMonthNumberToName(company.annualBillingMonth) : '-'}</p>
-      <p><strong>Por serviço</strong><br>${formatCurrencyBRL(company.pricePerExecutedService || 0)}</p>
-      <p><strong>Página pública</strong><br>${company.publicPageEnabled === false ? 'Não' : 'Sim'}</p>
-      <p><strong>Trial até</strong><br>${company.trialEndsAt || '-'}</p>
+    <div class="admin-company-card-meta">
+      <span><strong>Plano:</strong> ${getPlanName(company.planId)}</span>
+      <span><strong>Cobrança:</strong> ${formatBillingMode(company.billingMode)}</span>
+      <span><strong>Slug:</strong> ${company.slug || '-'}</span>
+      <span><strong>WhatsApp:</strong> ${formatPhone(company.whatsapp || '-')}</span>
+    </div>
+
+    <div class="admin-compact-metrics-grid">
+      ${buildCompactMetric('Mensal', formatCurrencyBRL(company.fixedMonthlyPrice || 0))}
+      ${buildCompactMetric('Anual', formatCurrencyBRL(company.annualPrice || 0))}
+      ${buildCompactMetric('Por serviço', formatCurrencyBRL(company.pricePerExecutedService || 0))}
+      ${buildCompactMetric('Mês anual', company.annualBillingMonth ? formatMonthNumberToName(company.annualBillingMonth) : '-')}
+    </div>
+
+    <div class="admin-company-card-flags">
+      <span class="admin-flag ${company.publicPageEnabled === false ? 'off' : 'on'}">
+        Página pública: ${company.publicPageEnabled === false ? 'Não' : 'Sim'}
+      </span>
+      <span class="admin-flag ${company.reportsEnabled === false ? 'off' : 'on'}">
+        Relatórios: ${company.reportsEnabled === false ? 'Não' : 'Sim'}
+      </span>
+      <span class="admin-flag ${company.isBlocked === true ? 'off' : 'on'}">
+        Bloqueado: ${company.isBlocked === true ? 'Sim' : 'Não'}
+      </span>
     </div>
 
     <div class="entity-card-actions">
@@ -142,23 +243,26 @@ function buildCompanyCardHtml(company) {
       <a href="${publicLink}" target="_blank" rel="noopener noreferrer">
         Página pública
       </a>
+      <a href="${whatsappLink}" target="_blank" rel="noopener noreferrer">
+        WhatsApp
+      </a>
     </div>
   `;
 }
 
 export async function renderAdminCompaniesList(elementId = 'companies-list') {
-  const element = document.getElementById(elementId);
+  const element = getCompaniesListElement(elementId);
 
   if (!element) {
     return;
   }
 
   cachedCompanies = await listTenants();
-  const companies = applyCompanyFilters(cachedCompanies, getCompanyFilterState());
+  const filteredCompanies = applyCompanyFilters(cachedCompanies, getCompanyFilterState());
 
   clearElement(element);
 
-  if (!companies.length) {
+  if (!filteredCompanies.length) {
     const listItem = document.createElement('li');
     listItem.className = 'entity-card empty-state-item';
     listItem.innerHTML = `
@@ -169,9 +273,9 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
     return;
   }
 
-  companies.forEach((company) => {
+  filteredCompanies.forEach((company) => {
     const listItem = document.createElement('li');
-    listItem.className = 'entity-card';
+    listItem.className = 'entity-card admin-compact-entity-card';
     listItem.innerHTML = buildCompanyCardHtml(company);
     element.appendChild(listItem);
   });
@@ -181,19 +285,25 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
 
 function fillCompanyEditForm(company) {
   setFieldValue(company.id || '', 'edit-company-tenant-id');
-  setFieldValue(company.businessName || '', 'edit-company-form-business-name', 'businessName');
-  setFieldValue(company.slug || '', 'edit-company-form-slug', 'slug');
-  setFieldValue(company.whatsapp || '', 'edit-company-form-whatsapp', 'whatsapp');
-  setFieldValue(company.subscriptionStatus || 'trial', 'edit-company-form-subscription-status', 'subscriptionStatus');
+  setFieldValue(company.businessName || '', 'businessName');
+  setFieldValue(company.slug || '', 'slug');
+  setFieldValue(company.whatsapp || '', 'whatsapp');
+  setFieldValue(company.subscriptionStatus || 'trial', 'subscriptionStatus');
   setFieldValue(company.planId || '', 'edit-company-plan-select', 'company-admin-plan-id');
-  setFieldValue(company.billingMode || 'free', 'edit-company-form-billing-mode', 'billingMode');
-  setFieldValue(company.fixedMonthlyPrice || 0, 'edit-company-form-fixed-price', 'fixedMonthlyPrice');
-  setFieldValue(company.annualPrice || 0, 'edit-company-form-annual-price', 'annualPrice');
-  setFieldValue(company.annualBillingMonth || '', 'edit-company-form-annual-billing-month', 'annualBillingMonth');
-  setFieldValue(company.pricePerExecutedService || 0, 'edit-company-form-price-per-service', 'pricePerExecutedService');
-  setFieldValue(String(company.publicPageEnabled !== false), 'edit-company-form-public-page-enabled', 'publicPageEnabled');
-  setFieldValue(String(company.reportsEnabled !== false), 'edit-company-form-reports-enabled', 'reportsEnabled');
-  setFieldValue(company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '', 'edit-company-form-trial-ends-at', 'trialEndsAt');
+  setFieldValue(company.billingMode || 'free', 'billingMode');
+  setFieldValue(company.fixedMonthlyPrice || 0, 'fixedMonthlyPrice');
+  setFieldValue(company.annualPrice || 0, 'annualPrice');
+  setFieldValue(company.annualBillingMonth || '', 'annualBillingMonth');
+  setFieldValue(company.pricePerExecutedService || 0, 'pricePerExecutedService');
+  setFieldValue(
+    normalizeBooleanString(String(company.publicPageEnabled !== false), 'true'),
+    'publicPageEnabled'
+  );
+  setFieldValue(
+    normalizeBooleanString(String(company.reportsEnabled !== false), 'true'),
+    'reportsEnabled'
+  );
+  setFieldValue(company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '', 'trialEndsAt');
 
   const whatsappLink = getElementByIds('edit-company-whatsapp-link');
 
@@ -206,33 +316,35 @@ function fillCompanyEditForm(company) {
 }
 
 function bindCompanyActions(elementId = 'companies-list') {
-  const container = document.getElementById(elementId);
-  const feedbackElement = getElementByIds('edit-company-feedback');
+  const container = getCompaniesListElement(elementId);
+  const feedbackElement = getEditCompanyFeedbackElement();
 
   if (!container) {
     return;
   }
 
-  container.querySelectorAll('[data-company-action="edit"][data-company-id]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const companyId = button.getAttribute('data-company-id');
-      const company = cachedCompanies.find((item) => item.id === companyId);
+  container
+    .querySelectorAll('[data-company-action="edit"][data-company-id]')
+    .forEach((button) => {
+      button.addEventListener('click', () => {
+        const companyId = button.getAttribute('data-company-id');
+        const company = cachedCompanies.find((item) => item.id === companyId);
 
-      if (!company) {
-        return;
-      }
+        if (!company) {
+          return;
+        }
 
-      fillCompanyEditForm(company);
-      showFeedback(feedbackElement, 'Empresa carregada para edição.', 'success');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+        fillCompanyEditForm(company);
+        showFeedback(feedbackElement, 'Empresa carregada para edição.', 'success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
-  });
 }
 
 async function submitEditCompanyForm(event) {
   event.preventDefault();
 
-  const feedbackElement = getElementByIds('edit-company-feedback');
+  const feedbackElement = getEditCompanyFeedbackElement();
   const tenantId = getFieldValue('edit-company-tenant-id').trim();
 
   if (!tenantId) {
@@ -241,19 +353,19 @@ async function submitEditCompanyForm(event) {
   }
 
   const payload = {
-    businessName: getFieldValue('edit-company-form-business-name', 'businessName').trim(),
-    slug: getFieldValue('edit-company-form-slug', 'slug').trim(),
-    whatsapp: getFieldValue('edit-company-form-whatsapp', 'whatsapp').trim(),
-    subscriptionStatus: getFieldValue('edit-company-form-subscription-status', 'subscriptionStatus') || 'trial',
+    businessName: getFieldValue('businessName').trim(),
+    slug: getFieldValue('slug').trim(),
+    whatsapp: getFieldValue('whatsapp').trim(),
+    subscriptionStatus: getFieldValue('subscriptionStatus') || 'trial',
     planId: getFieldValue('edit-company-plan-select', 'company-admin-plan-id'),
-    billingMode: getFieldValue('edit-company-form-billing-mode', 'billingMode') || 'free',
-    fixedMonthlyPrice: Number(getFieldValue('edit-company-form-fixed-price', 'fixedMonthlyPrice') || 0),
-    annualPrice: Number(getFieldValue('edit-company-form-annual-price', 'annualPrice') || 0),
-    annualBillingMonth: Number(getFieldValue('edit-company-form-annual-billing-month', 'annualBillingMonth') || 0) || null,
-    pricePerExecutedService: Number(getFieldValue('edit-company-form-price-per-service', 'pricePerExecutedService') || 0),
-    publicPageEnabled: getFieldValue('edit-company-form-public-page-enabled', 'publicPageEnabled') === 'true',
-    reportsEnabled: getFieldValue('edit-company-form-reports-enabled', 'reportsEnabled') === 'true',
-    trialEndsAt: getFieldValue('edit-company-form-trial-ends-at', 'trialEndsAt') || null
+    billingMode: getFieldValue('billingMode') || 'free',
+    fixedMonthlyPrice: Number(getFieldValue('fixedMonthlyPrice') || 0),
+    annualPrice: Number(getFieldValue('annualPrice') || 0),
+    annualBillingMonth: Number(getFieldValue('annualBillingMonth') || 0) || null,
+    pricePerExecutedService: Number(getFieldValue('pricePerExecutedService') || 0),
+    publicPageEnabled: getFieldValue('publicPageEnabled') === 'true',
+    reportsEnabled: getFieldValue('reportsEnabled') === 'true',
+    trialEndsAt: getFieldValue('trialEndsAt') || null
   };
 
   try {
@@ -280,12 +392,6 @@ async function submitEditCompanyForm(event) {
   }
 }
 
-function resetEditCompanyForm() {
-  const form = getElementByIds('edit-company-form');
-  form?.reset();
-  setFieldValue('', 'edit-company-tenant-id');
-}
-
 function bindCompanyFilters() {
   [
     getElementByIds('companies-search-input', 'company-search-input'),
@@ -299,9 +405,9 @@ function bindCompanyFilters() {
 }
 
 function bindCompanyEditForm() {
-  const form = getElementByIds('edit-company-form');
+  const form = getEditCompanyFormElement();
   const cancelButton = getElementByIds('cancel-company-edit-button');
-  const feedbackElement = getElementByIds('edit-company-feedback');
+  const feedbackElement = getEditCompanyFeedbackElement();
 
   form?.addEventListener('submit', submitEditCompanyForm);
 
@@ -311,11 +417,37 @@ function bindCompanyEditForm() {
   });
 }
 
+function bindNewCompanyFormPlaceholder() {
+  const form = getNewCompanyFormElement();
+  const feedbackElement = getNewCompanyFeedbackElement();
+
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener('submit', () => {
+    if (feedbackElement && !feedbackElement.textContent?.trim()) {
+      showFeedback(
+        feedbackElement,
+        'O formulário de criação está pronto para integração com o fluxo de cadastro completo.',
+        'success'
+      );
+    }
+  });
+}
+
 async function initAdminCompanies() {
-  await populateCompanyPlanFilters();
-  bindCompanyFilters();
-  bindCompanyEditForm();
-  await renderAdminCompaniesList();
+  try {
+    await populateCompanyPlanFilters();
+    bindCompanyFilters();
+    bindCompanyEditForm();
+    bindNewCompanyFormPlaceholder();
+    resetNewCompanyForm();
+    resetEditCompanyForm();
+    await renderAdminCompaniesList();
+  } catch (error) {
+    console.error('Erro ao inicializar empresas do admin.', error);
+  }
 }
 
 initAdminCompanies();
