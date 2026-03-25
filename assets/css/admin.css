@@ -639,3 +639,82 @@ body {
     grid-template-columns: 1fr;
   }
 }
+.admin-compact-entity-card {
+  padding: 14px;
+}
+
+.admin-company-card-meta,
+.admin-plan-card-meta {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--admin-text-soft);
+  font-size: 0.94rem;
+}
+
+.admin-compact-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-compact-metric {
+  border: 1px solid var(--admin-border);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.admin-compact-metric span {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--admin-text-soft);
+  margin-bottom: 4px;
+}
+
+.admin-compact-metric strong {
+  display: block;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.admin-company-card-flags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.admin-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.admin-flag.on {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-flag.off {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 1200px) {
+  .admin-compact-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-compact-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
