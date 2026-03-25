@@ -71,6 +71,14 @@ function getEditCompanyCardElement() {
   return form.closest('.admin-panel-card');
 }
 
+function getEditFormField(name) {
+  return getEditCompanyFormElement()?.querySelector(`[name="${name}"]`) || null;
+}
+
+function getNewFormField(name) {
+  return getNewCompanyFormElement()?.querySelector(`[name="${name}"]`) || null;
+}
+
 function getCompanyFilterState() {
   return {
     search: getElementByIds('companies-search-input', 'company-search-input')?.value?.trim()?.toLowerCase() || '',
@@ -96,18 +104,28 @@ function normalizeBooleanString(value, fallback = 'false') {
   return fallback;
 }
 
-function setFieldValue(value, ...ids) {
-  const element = getElementByIds(...ids);
+function setEditFieldValue(name, value) {
+  const field = getEditFormField(name);
 
-  if (!element) {
+  if (!field) {
     return;
   }
 
-  element.value = value ?? '';
+  field.value = value ?? '';
 }
 
-function getFieldValue(...ids) {
-  return getElementByIds(...ids)?.value ?? '';
+function getEditFieldValue(name) {
+  return getEditFormField(name)?.value ?? '';
+}
+
+function setNewFieldValue(name, value) {
+  const field = getNewFormField(name);
+
+  if (!field) {
+    return;
+  }
+
+  field.value = value ?? '';
 }
 
 function scrollToEditCompanyForm() {
@@ -127,7 +145,12 @@ function resetEditCompanyForm() {
   const form = getEditCompanyFormElement();
 
   form?.reset();
-  setFieldValue('', 'edit-company-tenant-id');
+
+  const hiddenId = getElementByIds('edit-company-tenant-id');
+
+  if (hiddenId) {
+    hiddenId.value = '';
+  }
 
   const whatsappLink = getElementByIds('edit-company-whatsapp-link');
 
@@ -140,11 +163,10 @@ function resetNewCompanyForm() {
   const form = getNewCompanyFormElement();
 
   form?.reset();
-
-  setFieldValue('trial', 'new-company-form-subscription-status', 'subscriptionStatus');
-  setFieldValue('free', 'new-company-form-billing-mode', 'billingMode');
-  setFieldValue('true', 'new-company-form-public-page-enabled', 'publicPageEnabled');
-  setFieldValue('true', 'new-company-form-reports-enabled', 'reportsEnabled');
+  setNewFieldValue('subscriptionStatus', 'trial');
+  setNewFieldValue('billingMode', 'free');
+  setNewFieldValue('publicPageEnabled', 'true');
+  setNewFieldValue('reportsEnabled', 'true');
 }
 
 function populatePlanSelect(selectElement, includePlaceholder = true) {
@@ -307,28 +329,33 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
 }
 
 function fillCompanyEditForm(company) {
-  setFieldValue(company.id || '', 'edit-company-tenant-id');
-  setFieldValue(company.businessName || '', 'businessName');
-  setFieldValue(company.slug || '', 'slug');
-  setFieldValue(company.whatsapp || '', 'whatsapp');
-  setFieldValue(company.subscriptionStatus || 'trial', 'subscriptionStatus');
-  setFieldValue(company.planId || '', 'edit-company-plan-select', 'company-admin-plan-id');
-  setFieldValue(company.billingMode || 'free', 'billingMode');
-  setFieldValue(company.fixedMonthlyPrice || 0, 'fixedMonthlyPrice');
-  setFieldValue(company.annualPrice || 0, 'annualPrice');
-  setFieldValue(company.annualBillingMonth || '', 'annualBillingMonth');
-  setFieldValue(company.pricePerExecutedService || 0, 'pricePerExecutedService');
-  setFieldValue(
-    normalizeBooleanString(String(company.publicPageEnabled !== false), 'true'),
-    'publicPageEnabled'
+  const hiddenId = getElementByIds('edit-company-tenant-id');
+
+  if (hiddenId) {
+    hiddenId.value = company.id || '';
+  }
+
+  setEditFieldValue('businessName', company.businessName || '');
+  setEditFieldValue('slug', company.slug || '');
+  setEditFieldValue('whatsapp', company.whatsapp || '');
+  setEditFieldValue('subscriptionStatus', company.subscriptionStatus || 'trial');
+  setEditFieldValue('planId', company.planId || '');
+  setEditFieldValue('billingMode', company.billingMode || 'free');
+  setEditFieldValue('fixedMonthlyPrice', company.fixedMonthlyPrice || 0);
+  setEditFieldValue('annualPrice', company.annualPrice || 0);
+  setEditFieldValue('annualBillingMonth', company.annualBillingMonth || '');
+  setEditFieldValue('pricePerExecutedService', company.pricePerExecutedService || 0);
+  setEditFieldValue(
+    'publicPageEnabled',
+    normalizeBooleanString(String(company.publicPageEnabled !== false), 'true')
   );
-  setFieldValue(
-    normalizeBooleanString(String(company.reportsEnabled !== false), 'true'),
-    'reportsEnabled'
+  setEditFieldValue(
+    'reportsEnabled',
+    normalizeBooleanString(String(company.reportsEnabled !== false), 'true')
   );
-  setFieldValue(
-    company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '',
-    'trialEndsAt'
+  setEditFieldValue(
+    'trialEndsAt',
+    company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : ''
   );
 
   const whatsappLink = getElementByIds('edit-company-whatsapp-link');
@@ -379,7 +406,7 @@ async function submitEditCompanyForm(event) {
   event.preventDefault();
 
   const feedbackElement = getEditCompanyFeedbackElement();
-  const tenantId = getFieldValue('edit-company-tenant-id').trim();
+  const tenantId = getElementByIds('edit-company-tenant-id')?.value?.trim() || '';
 
   if (!tenantId) {
     showFeedback(feedbackElement, 'Selecione uma empresa para editar.', 'error');
@@ -387,19 +414,19 @@ async function submitEditCompanyForm(event) {
   }
 
   const payload = {
-    businessName: getFieldValue('businessName').trim(),
-    slug: getFieldValue('slug').trim(),
-    whatsapp: getFieldValue('whatsapp').trim(),
-    subscriptionStatus: getFieldValue('subscriptionStatus') || 'trial',
-    planId: getFieldValue('edit-company-plan-select', 'company-admin-plan-id'),
-    billingMode: getFieldValue('billingMode') || 'free',
-    fixedMonthlyPrice: Number(getFieldValue('fixedMonthlyPrice') || 0),
-    annualPrice: Number(getFieldValue('annualPrice') || 0),
-    annualBillingMonth: Number(getFieldValue('annualBillingMonth') || 0) || null,
-    pricePerExecutedService: Number(getFieldValue('pricePerExecutedService') || 0),
-    publicPageEnabled: getFieldValue('publicPageEnabled') === 'true',
-    reportsEnabled: getFieldValue('reportsEnabled') === 'true',
-    trialEndsAt: getFieldValue('trialEndsAt') || null
+    businessName: getEditFieldValue('businessName').trim(),
+    slug: getEditFieldValue('slug').trim(),
+    whatsapp: getEditFieldValue('whatsapp').trim(),
+    subscriptionStatus: getEditFieldValue('subscriptionStatus') || 'trial',
+    planId: getEditFieldValue('planId'),
+    billingMode: getEditFieldValue('billingMode') || 'free',
+    fixedMonthlyPrice: Number(getEditFieldValue('fixedMonthlyPrice') || 0),
+    annualPrice: Number(getEditFieldValue('annualPrice') || 0),
+    annualBillingMonth: Number(getEditFieldValue('annualBillingMonth') || 0) || null,
+    pricePerExecutedService: Number(getEditFieldValue('pricePerExecutedService') || 0),
+    publicPageEnabled: getEditFieldValue('publicPageEnabled') === 'true',
+    reportsEnabled: getEditFieldValue('reportsEnabled') === 'true',
+    trialEndsAt: getEditFieldValue('trialEndsAt') || null
   };
 
   try {
