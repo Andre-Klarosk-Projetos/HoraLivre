@@ -33,11 +33,19 @@ function getElementByIds(...ids) {
   return null;
 }
 
-function getPlanForm() {
-  return getElementByIds('plan-form');
+function getPlanCreateForm() {
+  return getElementByIds('plan-create-form');
 }
 
-function getPlanFeedbackElement() {
+function getPlanEditForm() {
+  return getElementByIds('plan-edit-form');
+}
+
+function getPlanCreateFeedbackElement() {
+  return getElementByIds('plan-create-feedback');
+}
+
+function getPlanEditFeedbackElement() {
   return getElementByIds('plan-feedback');
 }
 
@@ -49,31 +57,79 @@ function getPlanEditIdElement() {
   return getElementByIds('plan-edit-id');
 }
 
-function getFieldValue(...ids) {
-  return getElementByIds(...ids)?.value ?? '';
+function getPlanCreateField(name) {
+  return getPlanCreateForm()?.querySelector(`[name="${name}"]`) || null;
 }
 
-function setFieldValue(value, ...ids) {
-  const element = getElementByIds(...ids);
+function getPlanEditField(name) {
+  return getPlanEditForm()?.querySelector(`[name="${name}"]`) || null;
+}
 
-  if (!element) {
+function setPlanMode(mode) {
+  const createButton = getElementByIds('plan-mode-create-button');
+  const editButton = getElementByIds('plan-mode-edit-button');
+  const createPanel = getElementByIds('plan-create-panel');
+  const editPanel = getElementByIds('plan-edit-panel');
+
+  const isCreate = mode === 'create';
+  const isEdit = mode === 'edit';
+
+  createButton?.classList.toggle('active', isCreate);
+  editButton?.classList.toggle('active', isEdit);
+
+  if (createPanel) {
+    createPanel.classList.toggle('active', isCreate);
+    createPanel.hidden = !isCreate;
+  }
+
+  if (editPanel) {
+    editPanel.classList.toggle('active', isEdit);
+    editPanel.hidden = !isEdit;
+  }
+}
+
+function getCreateFieldValue(name) {
+  return getPlanCreateField(name)?.value ?? '';
+}
+
+function getEditFieldValue(name) {
+  return getPlanEditField(name)?.value ?? '';
+}
+
+function setCreateFieldValue(name, value) {
+  const field = getPlanCreateField(name);
+
+  if (!field) {
     return;
   }
 
-  element.value = value ?? '';
+  field.value = value ?? '';
+}
+
+function setEditFieldValue(name, value) {
+  const field = getPlanEditField(name);
+
+  if (!field) {
+    return;
+  }
+
+  field.value = value ?? '';
 }
 
 function toBooleanString(value, fallback = 'false') {
   return value === 'true' ? 'true' : value === 'false' ? 'false' : fallback;
 }
 
-function refreshPlanBillingModeVisibility() {
-  const billingMode = getFieldValue('plan-form-billing-mode', 'billingMode');
+function refreshPlanBillingModeVisibility(formElement) {
+  if (!formElement) {
+    return;
+  }
 
-  const monthlyField = getElementByIds('plan-form-price', 'price')?.closest('label');
-  const annualPriceField = getElementByIds('plan-form-annual-price', 'annualPrice')?.closest('label');
-  const annualMonthField = getElementByIds('plan-form-annual-billing-month', 'annualBillingMonth')?.closest('label');
-  const perServiceField = getElementByIds('plan-form-price-per-service', 'pricePerExecutedService')?.closest('label');
+  const billingMode = formElement.querySelector('[name="billingMode"]')?.value || 'free';
+
+  const monthlyField = formElement.querySelector('[name="price"]')?.closest('label');
+  const annualPriceField = formElement.querySelector('[name="annualPrice"]')?.closest('label');
+  const perServiceField = formElement.querySelector('[name="pricePerExecutedService"]')?.closest('label');
 
   const showMonthly = ['fixed', 'fixed_plus_per_service'].includes(billingMode);
   const showAnnual = billingMode === 'annual';
@@ -85,10 +141,6 @@ function refreshPlanBillingModeVisibility() {
 
   if (annualPriceField) {
     annualPriceField.style.display = showAnnual ? '' : 'none';
-  }
-
-  if (annualMonthField) {
-    annualMonthField.style.display = showAnnual ? '' : 'none';
   }
 
   if (perServiceField) {
@@ -192,7 +244,7 @@ export async function renderAdminPlansList(elementId = 'plans-list') {
 
 function bindPlanActions(elementId = 'plans-list') {
   const container = getPlanListElement(elementId);
-  const feedbackElement = getPlanFeedbackElement();
+  const feedbackElement = getPlanEditFeedbackElement();
 
   if (!container) {
     return;
@@ -212,9 +264,9 @@ function bindPlanActions(elementId = 'plans-list') {
 
         try {
           if (action === 'edit') {
-            fillPlanForm(plan);
+            fillPlanEditForm(plan);
+            setPlanMode('edit');
             showFeedback(feedbackElement, 'Plano carregado para edição.', 'success');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
           }
 
@@ -228,7 +280,7 @@ function bindPlanActions(elementId = 'plans-list') {
             }
 
             await deletePlan(planId);
-            resetPlanForm();
+            resetPlanEditForm();
             await renderAdminPlansList(elementId);
 
             showFeedback(feedbackElement, 'Plano excluído com sucesso.', 'success');
@@ -245,74 +297,85 @@ function bindPlanActions(elementId = 'plans-list') {
     });
 }
 
-export function fillPlanForm(plan) {
-  setFieldValue(plan.id || '', 'plan-edit-id');
-  setFieldValue(plan.name || '', 'name');
-  setFieldValue(plan.description || '', 'description');
-  setFieldValue(
-    String((plan.featured || plan.highlighted) === true),
-    'highlighted'
-  );
-  setFieldValue(plan.displayOrder || 0, 'displayOrder');
-  setFieldValue(plan.billingMode || 'free', 'billingMode');
-  setFieldValue(plan.price || 0, 'price');
-  setFieldValue(plan.annualPrice || 0, 'annualPrice');
-  setFieldValue(plan.annualBillingMonth || '', 'annualBillingMonth');
-  setFieldValue(plan.pricePerExecutedService || 0, 'pricePerExecutedService');
-  setFieldValue(String(plan.publicPageEnabled !== false), 'publicPageEnabled');
-  setFieldValue(String(plan.reportsEnabled !== false), 'reportsEnabled');
-  setFieldValue(plan.maxServices || 0, 'maxServices');
-  setFieldValue(plan.maxCustomers || 0, 'maxCustomers');
-  setFieldValue(
-    plan.maxAppointmentsMonth || plan.maxAppointmentsPerMonth || 0,
-    'maxAppointmentsPerMonth'
+function fillPlanEditForm(plan) {
+  const editIdElement = getPlanEditIdElement();
+
+  if (editIdElement) {
+    editIdElement.value = plan.id || '';
+  }
+
+  setEditFieldValue('name', plan.name || '');
+  setEditFieldValue('description', plan.description || '');
+  setEditFieldValue('highlighted', String((plan.featured || plan.highlighted) === true));
+  setEditFieldValue('displayOrder', plan.displayOrder || 0);
+  setEditFieldValue('billingMode', plan.billingMode || 'free');
+  setEditFieldValue('price', plan.price || 0);
+  setEditFieldValue('annualPrice', plan.annualPrice || 0);
+  setEditFieldValue('pricePerExecutedService', plan.pricePerExecutedService || 0);
+  setEditFieldValue('publicPageEnabled', String(plan.publicPageEnabled !== false));
+  setEditFieldValue('reportsEnabled', String(plan.reportsEnabled !== false));
+  setEditFieldValue('maxServices', plan.maxServices || 0);
+  setEditFieldValue('maxCustomers', plan.maxCustomers || 0);
+  setEditFieldValue(
+    'maxAppointmentsPerMonth',
+    plan.maxAppointmentsMonth || plan.maxAppointmentsPerMonth || 0
   );
 
-  refreshPlanBillingModeVisibility();
+  refreshPlanBillingModeVisibility(getPlanEditForm());
 }
 
-export function resetPlanForm() {
-  const form = getPlanForm();
+function resetPlanCreateForm() {
+  const form = getPlanCreateForm();
 
   form?.reset();
-  setFieldValue('', 'plan-edit-id');
-  setFieldValue('false', 'highlighted');
-  setFieldValue('free', 'billingMode');
-  setFieldValue('true', 'publicPageEnabled');
-  setFieldValue('true', 'reportsEnabled');
-  setFieldValue('', 'annualBillingMonth');
+  setCreateFieldValue('highlighted', 'false');
+  setCreateFieldValue('billingMode', 'free');
+  setCreateFieldValue('publicPageEnabled', 'true');
+  setCreateFieldValue('reportsEnabled', 'true');
 
-  refreshPlanBillingModeVisibility();
+  refreshPlanBillingModeVisibility(form);
 }
 
-export async function submitSavePlan(feedbackElement = getPlanFeedbackElement()) {
-  const editId = getFieldValue('plan-edit-id').trim();
-  const name = getFieldValue('name').trim();
-  const description = getFieldValue('description').trim();
-  const highlighted = toBooleanString(getFieldValue('highlighted'), 'false') === 'true';
-  const displayOrder = Number(getFieldValue('displayOrder') || 0);
-  const billingMode = getFieldValue('billingMode') || 'free';
-  const price = Number(getFieldValue('price') || 0);
-  const annualPrice = Number(getFieldValue('annualPrice') || 0);
-  const annualBillingMonth = Number(getFieldValue('annualBillingMonth') || 0) || null;
-  const pricePerExecutedService = Number(getFieldValue('pricePerExecutedService') || 0);
-  const publicPageEnabled = toBooleanString(getFieldValue('publicPageEnabled'), 'true') === 'true';
-  const reportsEnabled = toBooleanString(getFieldValue('reportsEnabled'), 'true') === 'true';
-  const maxServices = Number(getFieldValue('maxServices') || 0);
-  const maxCustomers = Number(getFieldValue('maxCustomers') || 0);
-  const maxAppointmentsMonth = Number(getFieldValue('maxAppointmentsPerMonth') || 0);
+function resetPlanEditForm() {
+  const form = getPlanEditForm();
+
+  form?.reset();
+
+  const editIdElement = getPlanEditIdElement();
+
+  if (editIdElement) {
+    editIdElement.value = '';
+  }
+
+  setEditFieldValue('highlighted', 'false');
+  setEditFieldValue('billingMode', 'free');
+  setEditFieldValue('publicPageEnabled', 'true');
+  setEditFieldValue('reportsEnabled', 'true');
+
+  refreshPlanBillingModeVisibility(form);
+}
+
+async function submitCreatePlan(feedbackElement = getPlanCreateFeedbackElement()) {
+  const name = getCreateFieldValue('name').trim();
+  const description = getCreateFieldValue('description').trim();
+  const highlighted = toBooleanString(getCreateFieldValue('highlighted'), 'false') === 'true';
+  const displayOrder = Number(getCreateFieldValue('displayOrder') || 0);
+  const billingMode = getCreateFieldValue('billingMode') || 'free';
+  const price = Number(getCreateFieldValue('price') || 0);
+  const annualPrice = Number(getCreateFieldValue('annualPrice') || 0);
+  const pricePerExecutedService = Number(getCreateFieldValue('pricePerExecutedService') || 0);
+  const publicPageEnabled = toBooleanString(getCreateFieldValue('publicPageEnabled'), 'true') === 'true';
+  const reportsEnabled = toBooleanString(getCreateFieldValue('reportsEnabled'), 'true') === 'true';
+  const maxServices = Number(getCreateFieldValue('maxServices') || 0);
+  const maxCustomers = Number(getCreateFieldValue('maxCustomers') || 0);
+  const maxAppointmentsMonth = Number(getCreateFieldValue('maxAppointmentsPerMonth') || 0);
 
   if (!name) {
     showFeedback(feedbackElement, 'Nome do plano é obrigatório.', 'error');
     return false;
   }
 
-  if (billingMode === 'annual' && !annualBillingMonth) {
-    showFeedback(feedbackElement, 'Selecione o mês da cobrança anual.', 'error');
-    return false;
-  }
-
-  const payload = {
+  await createPlan({
     name,
     description,
     featured: highlighted,
@@ -321,44 +384,116 @@ export async function submitSavePlan(feedbackElement = getPlanFeedbackElement())
     billingMode,
     price,
     annualPrice,
-    annualBillingMonth,
     pricePerExecutedService,
     publicPageEnabled,
     reportsEnabled,
     maxServices,
     maxCustomers,
     maxAppointmentsMonth
-  };
+  });
 
-  if (editId) {
-    await updatePlan(editId, payload);
-    showFeedback(feedbackElement, 'Plano atualizado com sucesso.', 'success');
-  } else {
-    await createPlan(payload);
-    showFeedback(feedbackElement, 'Plano criado com sucesso.', 'success');
-  }
-
-  resetPlanForm();
+  showFeedback(feedbackElement, 'Plano criado com sucesso.', 'success');
+  resetPlanCreateForm();
   await renderAdminPlansList();
 
   return true;
 }
 
-function bindPlanForm() {
-  const form = getPlanForm();
-  const feedbackElement = getPlanFeedbackElement();
-  const cancelButton = getElementByIds('plan-cancel-edit-button');
-  const billingModeElement = getElementByIds('billingMode');
+async function submitEditPlan(feedbackElement = getPlanEditFeedbackElement()) {
+  const editId = getPlanEditIdElement()?.value?.trim() || '';
+  const name = getEditFieldValue('name').trim();
+  const description = getEditFieldValue('description').trim();
+  const highlighted = toBooleanString(getEditFieldValue('highlighted'), 'false') === 'true';
+  const displayOrder = Number(getEditFieldValue('displayOrder') || 0);
+  const billingMode = getEditFieldValue('billingMode') || 'free';
+  const price = Number(getEditFieldValue('price') || 0);
+  const annualPrice = Number(getEditFieldValue('annualPrice') || 0);
+  const pricePerExecutedService = Number(getEditFieldValue('pricePerExecutedService') || 0);
+  const publicPageEnabled = toBooleanString(getEditFieldValue('publicPageEnabled'), 'true') === 'true';
+  const reportsEnabled = toBooleanString(getEditFieldValue('reportsEnabled'), 'true') === 'true';
+  const maxServices = Number(getEditFieldValue('maxServices') || 0);
+  const maxCustomers = Number(getEditFieldValue('maxCustomers') || 0);
+  const maxAppointmentsMonth = Number(getEditFieldValue('maxAppointmentsPerMonth') || 0);
 
-  form?.addEventListener('submit', async (event) => {
+  if (!editId) {
+    showFeedback(feedbackElement, 'Selecione um plano para editar.', 'error');
+    return false;
+  }
+
+  if (!name) {
+    showFeedback(feedbackElement, 'Nome do plano é obrigatório.', 'error');
+    return false;
+  }
+
+  await updatePlan(editId, {
+    name,
+    description,
+    featured: highlighted,
+    highlighted,
+    displayOrder,
+    billingMode,
+    price,
+    annualPrice,
+    pricePerExecutedService,
+    publicPageEnabled,
+    reportsEnabled,
+    maxServices,
+    maxCustomers,
+    maxAppointmentsMonth
+  });
+
+  showFeedback(feedbackElement, 'Plano atualizado com sucesso.', 'success');
+  resetPlanEditForm();
+  setPlanMode('create');
+  await renderAdminPlansList();
+
+  return true;
+}
+
+function bindPlanModeSwitcher() {
+  const createButton = getElementByIds('plan-mode-create-button');
+  const editButton = getElementByIds('plan-mode-edit-button');
+
+  createButton?.addEventListener('click', () => {
+    setPlanMode('create');
+  });
+
+  editButton?.addEventListener('click', () => {
+    setPlanMode('edit');
+  });
+}
+
+function bindPlanForms() {
+  const createForm = getPlanCreateForm();
+  const editForm = getPlanEditForm();
+  const cancelButton = getElementByIds('plan-cancel-edit-button');
+  const createFeedback = getPlanCreateFeedbackElement();
+  const editFeedback = getPlanEditFeedbackElement();
+
+  createForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     try {
-      await submitSavePlan(feedbackElement);
+      await submitCreatePlan(createFeedback);
     } catch (error) {
       console.error(error);
       showFeedback(
-        feedbackElement,
+        createFeedback,
+        error.message || 'Não foi possível criar o plano.',
+        'error'
+      );
+    }
+  });
+
+  editForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    try {
+      await submitEditPlan(editFeedback);
+    } catch (error) {
+      console.error(error);
+      showFeedback(
+        editFeedback,
         error.message || 'Não foi possível salvar o plano.',
         'error'
       );
@@ -366,16 +501,24 @@ function bindPlanForm() {
   });
 
   cancelButton?.addEventListener('click', () => {
-    resetPlanForm();
-    showFeedback(feedbackElement, 'Edição de plano cancelada.', 'success');
+    resetPlanEditForm();
+    setPlanMode('create');
+    showFeedback(editFeedback, 'Edição de plano cancelada.', 'success');
   });
 
-  billingModeElement?.addEventListener('change', refreshPlanBillingModeVisibility);
+  getPlanCreateForm()?.querySelector('[name="billingMode"]')
+    ?.addEventListener('change', () => refreshPlanBillingModeVisibility(getPlanCreateForm()));
+
+  getPlanEditForm()?.querySelector('[name="billingMode"]')
+    ?.addEventListener('change', () => refreshPlanBillingModeVisibility(getPlanEditForm()));
 }
 
 function initAdminPlans() {
-  bindPlanForm();
-  resetPlanForm();
+  bindPlanModeSwitcher();
+  bindPlanForms();
+  resetPlanCreateForm();
+  resetPlanEditForm();
+  setPlanMode('create');
   renderAdminPlansList();
 }
 
