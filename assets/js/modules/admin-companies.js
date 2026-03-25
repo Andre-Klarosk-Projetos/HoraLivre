@@ -1,10 +1,12 @@
 import { requireAdmin } from '../utils/guards.js';
-import { listTenants, updateTenant } from '../services/tenant-service.js';
+import {
+  listTenants,
+  updateTenant
+} from '../services/tenant-service.js';
 import { listPlans } from '../services/plan-service.js';
 import { saveBillingSettingsForTenant } from '../services/billing-service.js';
 import {
   clearElement,
-  createListItem,
   showFeedback
 } from '../utils/dom-utils.js';
 import {
@@ -15,37 +17,41 @@ import {
   formatCurrencyBRL,
   formatMonthNumberToName
 } from '../utils/formatters.js';
-import {
-  refreshBillingModeVisibility
-} from './admin-billing-mode-ui.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
 }
 
-const COMPANY_BILLING_FIELDS = {
-  monthlyPriceId: 'company-admin-fixed-price',
-  annualPriceId: 'company-admin-annual-price',
-  annualBillingMonthId: 'company-admin-annual-billing-month',
-  perServicePriceId: 'company-admin-price-per-service'
-};
-
 let cachedCompanies = [];
+let cachedPlans = [];
+
+function getElementByIds(...ids) {
+  for (const id of ids) {
+    const element = document.getElementById(id);
+
+    if (element) {
+      return element;
+    }
+  }
+
+  return null;
+}
 
 function getCompanyFilterState() {
   return {
-    search: document.getElementById('company-search-input')?.value?.trim()?.toLowerCase() || '',
-    planId: document.getElementById('company-plan-filter')?.value || '',
-    status: document.getElementById('company-status-filter')?.value || '',
-    billingMode: document.getElementById('company-billing-filter')?.value || ''
+    search: getElementByIds('companies-search-input', 'company-search-input')?.value?.trim()?.toLowerCase() || '',
+    planId: getElementByIds('companies-plan-filter', 'company-plan-filter')?.value || '',
+    status: getElementByIds('companies-status-filter', 'company-status-filter')?.value || '',
+    billingMode: getElementByIds('companies-billing-filter', 'company-billing-filter')?.value || ''
   };
 }
 
 function applyCompanyFilters(companies, filters) {
   return companies.filter((company) => {
-    const matchesSearch =
-      !filters.search ||
-      String(company.businessName || '').toLowerCase().includes(filters.search);
+    const matchesSearch = !filters.search
+      || String(company.businessName || '').toLowerCase().includes(filters.search)
+      || String(company.slug || '').toLowerCase().includes(filters.search)
+      || String(company.whatsapp || '').toLowerCase().includes(filters.search);
 
     const matchesPlan = !filters.planId || String(company.planId || '') === filters.planId;
     const matchesStatus = !filters.status || String(company.subscriptionStatus || '') === filters.status;
@@ -55,32 +61,89 @@ function applyCompanyFilters(companies, filters) {
   });
 }
 
+function setFieldValue(value, ...ids) {
+  const element = getElementByIds(...ids);
+
+  if (!element) {
+    return;
+  }
+
+  element.value = value ?? '';
+}
+
+function getFieldValue(...ids) {
+  return getElementByIds(...ids)?.value ?? '';
+}
+
 export async function populateCompanyPlanFilters() {
-  const plans = await listPlans();
-  const planFilter = document.getElementById('company-plan-filter');
-  const planSelect = document.getElementById('company-admin-plan-id');
+  cachedPlans = await listPlans();
+
+  const planFilter = getElementByIds('companies-plan-filter', 'company-plan-filter');
+  const newCompanyPlanSelect = getElementByIds('new-company-plan-select');
+  const editCompanyPlanSelect = getElementByIds('edit-company-plan-select', 'company-admin-plan-id');
 
   if (planFilter) {
     planFilter.innerHTML = '<option value="">Todos</option>';
 
-    plans.forEach((plan) => {
+    cachedPlans.forEach((plan) => {
       const option = document.createElement('option');
       option.value = plan.id;
-      option.textContent = plan.name;
+      option.textContent = plan.name || '-';
       planFilter.appendChild(option);
     });
   }
 
-  if (planSelect) {
-    planSelect.innerHTML = '<option value="">Selecione um plano</option>';
+  [newCompanyPlanSelect, editCompanyPlanSelect].forEach((select) => {
+    if (!select) {
+      return;
+    }
 
-    plans.forEach((plan) => {
+    select.innerHTML = '<option value="">Selecione um plano</option>';
+
+    cachedPlans.forEach((plan) => {
       const option = document.createElement('option');
       option.value = plan.id;
-      option.textContent = plan.name;
-      planSelect.appendChild(option);
+      option.textContent = plan.name || '-';
+      select.appendChild(option);
     });
-  }
+  });
+}
+
+function buildCompanyCardHtml(company) {
+  const publicLink = company.slug
+    ? `./agendar.html?slug=${company.slug}`
+    : '#';
+
+  return `
+    <div class="entity-card-header">
+      <div>
+        <h3>${company.businessName || '-'}</h3>
+        <span class="entity-badge">${formatSubscriptionStatus(company.subscriptionStatus)}</span>
+      </div>
+    </div>
+
+    <div class="entity-card-body">
+      <p><strong>WhatsApp</strong><br>${formatPhone(company.whatsapp || '-')}</p>
+      <p><strong>Slug</strong><br>${company.slug || '-'}</p>
+      <p><strong>Plano</strong><br>${company.planId || '-'}</p>
+      <p><strong>Cobrança</strong><br>${formatBillingMode(company.billingMode)}</p>
+      <p><strong>Preço mensal</strong><br>${formatCurrencyBRL(company.fixedMonthlyPrice || 0)}</p>
+      <p><strong>Preço anual</strong><br>${formatCurrencyBRL(company.annualPrice || 0)}</p>
+      <p><strong>Mês anual</strong><br>${company.annualBillingMonth ? formatMonthNumberToName(company.annualBillingMonth) : '-'}</p>
+      <p><strong>Por serviço</strong><br>${formatCurrencyBRL(company.pricePerExecutedService || 0)}</p>
+      <p><strong>Página pública</strong><br>${company.publicPageEnabled === false ? 'Não' : 'Sim'}</p>
+      <p><strong>Trial até</strong><br>${company.trialEndsAt || '-'}</p>
+    </div>
+
+    <div class="entity-card-actions">
+      <button type="button" data-company-action="edit" data-company-id="${company.id}">
+        Editar
+      </button>
+      <a href="${publicLink}" target="_blank" rel="noopener noreferrer">
+        Página pública
+      </a>
+    </div>
+  `;
 }
 
 export async function renderAdminCompaniesList(elementId = 'companies-list') {
@@ -91,185 +154,168 @@ export async function renderAdminCompaniesList(elementId = 'companies-list') {
   }
 
   cachedCompanies = await listTenants();
-  const filters = getCompanyFilterState();
-  const companies = applyCompanyFilters(cachedCompanies, filters);
+  const companies = applyCompanyFilters(cachedCompanies, getCompanyFilterState());
 
   clearElement(element);
 
   if (!companies.length) {
-    element.appendChild(createListItem(`
-      <strong>Nenhuma empresa encontrada</strong><br>
-      Ajuste a busca ou os filtros para localizar uma empresa cliente.
-    `));
+    const listItem = document.createElement('li');
+    listItem.className = 'entity-card empty-state-item';
+    listItem.innerHTML = `
+      <h3>Nenhuma empresa encontrada</h3>
+      <p>Ajuste a busca ou os filtros para localizar uma empresa cliente.</p>
+    `;
+    element.appendChild(listItem);
     return;
   }
 
   companies.forEach((company) => {
-    const annualBillingMonthText = company.annualBillingMonth
-      ? formatMonthNumberToName(company.annualBillingMonth)
-      : '-';
-
-    element.appendChild(createListItem(`
-      <strong>${company.businessName || '-'}</strong><br>
-      WhatsApp: ${formatPhone(company.whatsapp || '-')}<br>
-      Plano: ${company.planId || '-'}<br>
-      Cobrança: ${formatBillingMode(company.billingMode)}<br>
-      Status: ${formatSubscriptionStatus(company.subscriptionStatus)}<br>
-      Preço mensal: ${formatCurrencyBRL(company.fixedMonthlyPrice || 0)}<br>
-      Preço anual: ${formatCurrencyBRL(company.annualPrice || 0)}<br>
-      Mês anual: ${annualBillingMonthText}<br>
-      Preço por serviço: ${formatCurrencyBRL(company.pricePerExecutedService || 0)}<br>
-      Página pública: ${company.publicPageEnabled === false ? 'Não' : 'Sim'}<br>
-      Trial até: ${company.trialEndsAt || '-'}<br><br>
-      <button class="button" type="button" data-company-action="edit" data-company-id="${company.id}">
-        Editar
-      </button>
-    `));
+    const listItem = document.createElement('li');
+    listItem.className = 'entity-card';
+    listItem.innerHTML = buildCompanyCardHtml(company);
+    element.appendChild(listItem);
   });
 
-  bindCompanyActions(companies);
+  bindCompanyActions(elementId);
 }
 
-function bindCompanyActions(companies) {
-  const container = document.getElementById('companies-list');
-  const feedbackElement = document.getElementById('company-admin-feedback');
+function fillCompanyEditForm(company) {
+  setFieldValue(company.id || '', 'edit-company-tenant-id');
+  setFieldValue(company.businessName || '', 'edit-company-form-business-name', 'businessName');
+  setFieldValue(company.slug || '', 'edit-company-form-slug', 'slug');
+  setFieldValue(company.whatsapp || '', 'edit-company-form-whatsapp', 'whatsapp');
+  setFieldValue(company.subscriptionStatus || 'trial', 'edit-company-form-subscription-status', 'subscriptionStatus');
+  setFieldValue(company.planId || '', 'edit-company-plan-select', 'company-admin-plan-id');
+  setFieldValue(company.billingMode || 'free', 'edit-company-form-billing-mode', 'billingMode');
+  setFieldValue(company.fixedMonthlyPrice || 0, 'edit-company-form-fixed-price', 'fixedMonthlyPrice');
+  setFieldValue(company.annualPrice || 0, 'edit-company-form-annual-price', 'annualPrice');
+  setFieldValue(company.annualBillingMonth || '', 'edit-company-form-annual-billing-month', 'annualBillingMonth');
+  setFieldValue(company.pricePerExecutedService || 0, 'edit-company-form-price-per-service', 'pricePerExecutedService');
+  setFieldValue(String(company.publicPageEnabled !== false), 'edit-company-form-public-page-enabled', 'publicPageEnabled');
+  setFieldValue(String(company.reportsEnabled !== false), 'edit-company-form-reports-enabled', 'reportsEnabled');
+  setFieldValue(company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '', 'edit-company-form-trial-ends-at', 'trialEndsAt');
+
+  const whatsappLink = getElementByIds('edit-company-whatsapp-link');
+
+  if (whatsappLink) {
+    whatsappLink.href = buildWhatsAppLink(
+      company.whatsapp || '',
+      `Olá ${company.businessName || ''}, estou entrando em contato pelo HoraLivre.`
+    );
+  }
+}
+
+function bindCompanyActions(elementId = 'companies-list') {
+  const container = document.getElementById(elementId);
+  const feedbackElement = getElementByIds('edit-company-feedback');
 
   if (!container) {
     return;
   }
 
-  const buttons = container.querySelectorAll('[data-company-action="edit"][data-company-id]');
-
-  buttons.forEach((button) => {
+  container.querySelectorAll('[data-company-action="edit"][data-company-id]').forEach((button) => {
     button.addEventListener('click', () => {
       const companyId = button.getAttribute('data-company-id');
-      const company = companies.find((item) => item.id === companyId);
+      const company = cachedCompanies.find((item) => item.id === companyId);
 
       if (!company) {
         return;
       }
 
-      fillCompanyAdminForm(company);
+      fillCompanyEditForm(company);
       showFeedback(feedbackElement, 'Empresa carregada para edição.', 'success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
 }
 
-export function fillCompanyAdminForm(company) {
-  document.getElementById('company-admin-edit-id').value = company.id || '';
-  document.getElementById('company-admin-business-name').value = company.businessName || '';
-  document.getElementById('company-admin-slug').value = company.slug || '';
-  document.getElementById('company-admin-whatsapp').value = company.whatsapp || '';
-  document.getElementById('company-admin-status').value = company.subscriptionStatus || 'trial';
-  document.getElementById('company-admin-plan-id').value = company.planId || '';
-  document.getElementById('company-admin-billing-mode').value = company.billingMode || 'free';
-  document.getElementById('company-admin-fixed-price').value = company.fixedMonthlyPrice || 0;
-  document.getElementById('company-admin-annual-price').value = company.annualPrice || 0;
-  document.getElementById('company-admin-annual-billing-month').value = company.annualBillingMonth || '';
-  document.getElementById('company-admin-price-per-service').value = company.pricePerExecutedService || 0;
-  document.getElementById('company-admin-public-page-enabled').value = String(company.publicPageEnabled !== false);
-  document.getElementById('company-admin-trial-ends-at').value = company.trialEndsAt ? String(company.trialEndsAt).slice(0, 10) : '';
+async function submitEditCompanyForm(event) {
+  event.preventDefault();
 
-  const whatsappButton = document.getElementById('company-admin-whatsapp-button');
+  const feedbackElement = getElementByIds('edit-company-feedback');
+  const tenantId = getFieldValue('edit-company-tenant-id').trim();
 
-  if (whatsappButton) {
-    whatsappButton.href = buildWhatsAppLink(
-      company.whatsapp || '',
-      'Olá, estou entrando em contato sobre a sua empresa no HoraLivre.'
+  if (!tenantId) {
+    showFeedback(feedbackElement, 'Selecione uma empresa para editar.', 'error');
+    return;
+  }
+
+  const payload = {
+    businessName: getFieldValue('edit-company-form-business-name', 'businessName').trim(),
+    slug: getFieldValue('edit-company-form-slug', 'slug').trim(),
+    whatsapp: getFieldValue('edit-company-form-whatsapp', 'whatsapp').trim(),
+    subscriptionStatus: getFieldValue('edit-company-form-subscription-status', 'subscriptionStatus') || 'trial',
+    planId: getFieldValue('edit-company-plan-select', 'company-admin-plan-id'),
+    billingMode: getFieldValue('edit-company-form-billing-mode', 'billingMode') || 'free',
+    fixedMonthlyPrice: Number(getFieldValue('edit-company-form-fixed-price', 'fixedMonthlyPrice') || 0),
+    annualPrice: Number(getFieldValue('edit-company-form-annual-price', 'annualPrice') || 0),
+    annualBillingMonth: Number(getFieldValue('edit-company-form-annual-billing-month', 'annualBillingMonth') || 0) || null,
+    pricePerExecutedService: Number(getFieldValue('edit-company-form-price-per-service', 'pricePerExecutedService') || 0),
+    publicPageEnabled: getFieldValue('edit-company-form-public-page-enabled', 'publicPageEnabled') === 'true',
+    reportsEnabled: getFieldValue('edit-company-form-reports-enabled', 'reportsEnabled') === 'true',
+    trialEndsAt: getFieldValue('edit-company-form-trial-ends-at', 'trialEndsAt') || null
+  };
+
+  try {
+    await updateTenant(tenantId, payload);
+
+    await saveBillingSettingsForTenant(tenantId, {
+      tenantId,
+      billingMode: payload.billingMode,
+      fixedMonthlyPrice: payload.fixedMonthlyPrice,
+      annualPrice: payload.annualPrice,
+      annualBillingMonth: payload.annualBillingMonth,
+      pricePerExecutedService: payload.pricePerExecutedService
+    });
+
+    await renderAdminCompaniesList();
+    showFeedback(feedbackElement, 'Empresa atualizada com sucesso.', 'success');
+  } catch (error) {
+    console.error(error);
+    showFeedback(
+      feedbackElement,
+      error.message || 'Não foi possível atualizar a empresa.',
+      'error'
     );
   }
-
-  refreshBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
 }
 
-export function resetCompanyAdminForm() {
-  const form = document.getElementById('company-admin-form');
-  const editId = document.getElementById('company-admin-edit-id');
-
+function resetEditCompanyForm() {
+  const form = getElementByIds('edit-company-form');
   form?.reset();
-
-  if (editId) {
-    editId.value = '';
-  }
-
-  const whatsappButton = document.getElementById('company-admin-whatsapp-button');
-
-  if (whatsappButton) {
-    whatsappButton.href = '#';
-  }
-
-  document.getElementById('company-admin-billing-mode').value = 'free';
-  refreshBillingModeVisibility('company-admin-billing-mode', COMPANY_BILLING_FIELDS);
+  setFieldValue('', 'edit-company-tenant-id');
 }
 
-export async function submitSaveCompanyAdmin(feedbackElement) {
-  const companyId = document.getElementById('company-admin-edit-id').value.trim();
-  const businessName = document.getElementById('company-admin-business-name').value.trim();
-  const slug = document.getElementById('company-admin-slug').value.trim();
-  const whatsapp = document.getElementById('company-admin-whatsapp').value.trim();
-  const subscriptionStatus = document.getElementById('company-admin-status').value;
-  const planId = document.getElementById('company-admin-plan-id').value;
-  const billingMode = document.getElementById('company-admin-billing-mode').value;
-  const fixedMonthlyPrice = Number(document.getElementById('company-admin-fixed-price').value || 0);
-  const annualPrice = Number(document.getElementById('company-admin-annual-price').value || 0);
-  const annualBillingMonth = Number(document.getElementById('company-admin-annual-billing-month').value || 0) || null;
-  const pricePerExecutedService = Number(document.getElementById('company-admin-price-per-service').value || 0);
-  const publicPageEnabled = document.getElementById('company-admin-public-page-enabled').value === 'true';
-  const trialEndsAt = document.getElementById('company-admin-trial-ends-at').value || null;
-
-  if (!companyId) {
-    showFeedback(feedbackElement, 'Selecione uma empresa para editar.', 'error');
-    return false;
-  }
-
-  if (!businessName) {
-    showFeedback(feedbackElement, 'Nome da empresa é obrigatório.', 'error');
-    return false;
-  }
-
-  if (billingMode === 'annual_plan' && !annualBillingMonth) {
-    showFeedback(feedbackElement, 'Selecione o mês da cobrança anual.', 'error');
-    return false;
-  }
-
-  await updateTenant(companyId, {
-    businessName,
-    slug,
-    whatsapp,
-    subscriptionStatus,
-    planId,
-    billingMode,
-    fixedMonthlyPrice,
-    annualPrice,
-    annualBillingMonth,
-    pricePerExecutedService,
-    publicPageEnabled,
-    isBlocked: subscriptionStatus === 'blocked',
-    trialEndsAt
-  });
-
-  await saveBillingSettingsForTenant(companyId, {
-    billingMode,
-    fixedMonthlyPrice,
-    annualPrice,
-    annualBillingMonth,
-    pricePerExecutedService
-  });
-
-  showFeedback(feedbackElement, 'Empresa cliente atualizada com sucesso.', 'success');
-  return true;
-}
-
-export function bindCompanyFilters(onChange) {
+function bindCompanyFilters() {
   [
-    'company-search-input',
-    'company-plan-filter',
-    'company-status-filter',
-    'company-billing-filter'
-  ].forEach((id) => {
-    const element = document.getElementById(id);
-
-    element?.addEventListener('input', onChange);
-    element?.addEventListener('change', onChange);
+    getElementByIds('companies-search-input', 'company-search-input'),
+    getElementByIds('companies-plan-filter', 'company-plan-filter'),
+    getElementByIds('companies-status-filter', 'company-status-filter'),
+    getElementByIds('companies-billing-filter', 'company-billing-filter')
+  ].forEach((element) => {
+    element?.addEventListener('input', () => renderAdminCompaniesList());
+    element?.addEventListener('change', () => renderAdminCompaniesList());
   });
 }
+
+function bindCompanyEditForm() {
+  const form = getElementByIds('edit-company-form');
+  const cancelButton = getElementByIds('cancel-company-edit-button');
+  const feedbackElement = getElementByIds('edit-company-feedback');
+
+  form?.addEventListener('submit', submitEditCompanyForm);
+
+  cancelButton?.addEventListener('click', () => {
+    resetEditCompanyForm();
+    showFeedback(feedbackElement, 'Edição cancelada.', 'success');
+  });
+}
+
+async function initAdminCompanies() {
+  await populateCompanyPlanFilters();
+  bindCompanyFilters();
+  bindCompanyEditForm();
+  await renderAdminCompaniesList();
+}
+
+initAdminCompanies();
