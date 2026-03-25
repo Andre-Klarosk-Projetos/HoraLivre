@@ -357,6 +357,38 @@ body {
   background: #aeb9c8;
 }
 
+.admin-form-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-form-switcher-button {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.admin-form-switcher-button.active {
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  color: #fff;
+}
+
+.admin-company-mode-panel {
+  display: none;
+}
+
+.admin-company-mode-panel.active {
+  display: block;
+}
+
 .admin-form-grid,
 .admin-filters-grid {
   display: grid;
@@ -853,6 +885,10 @@ body {
   .admin-quick-actions-grid,
   .entity-card-body,
   .admin-entity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-switcher {
     grid-template-columns: 1fr;
   }
 }
