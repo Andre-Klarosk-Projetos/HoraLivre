@@ -1,736 +1,867 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
   <title>Admin Master - HoraLivre</title>
 
-  <link rel="stylesheet" href="./assets/css/global.css">
-  <link rel="stylesheet" href="./assets/css/components.css">
-  <link rel="stylesheet" href="./assets/css/admin.css">
+  <link rel="stylesheet" href="./assets/css/global.css" />
+  <link rel="stylesheet" href="./assets/css/components.css" />
+  <link rel="stylesheet" href="./assets/css/admin.css" />
 </head>
 <body>
-  <div class="app-shell admin-shell">
-    <aside class="sidebar admin-sidebar">
-      <div class="sidebar-top">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <div class="admin-brand-badge">HL</div>
         <div>
-          <span class="badge">HoraLivre</span>
-          <h1 class="sidebar-title">Admin Master</h1>
-          <p class="sidebar-subtitle">Gestão da plataforma</p>
+          <p class="admin-eyebrow">Admin Master</p>
+          <h1>HoraLivre</h1>
         </div>
-
-        <button class="button sidebar-mobile-toggle" id="admin-sidebar-mobile-toggle" type="button">
-          Menu
-        </button>
       </div>
 
-      <nav class="nav-list admin-tab-nav" id="admin-tab-nav">
-        <button class="nav-link active" type="button" data-admin-tab-target="dashboard-tab">
-          Resumo
+      <button
+        type="button"
+        id="admin-sidebar-mobile-toggle"
+        class="admin-sidebar-mobile-toggle"
+        aria-label="Abrir menu do painel"
+      >
+        Menu
+      </button>
+
+      <nav
+        id="admin-tab-nav"
+        class="admin-tab-nav"
+        aria-label="Seções do painel administrativo"
+      >
+        <button
+          type="button"
+          class="admin-tab-button active"
+          data-admin-tab-target="dashboard-tab"
+          aria-selected="true"
+        >
+          <span>Resumo</span>
+          <small>Visão executiva</small>
         </button>
-        <button class="nav-link" type="button" data-admin-tab-target="companies-tab">
-          Empresas clientes
+
+        <button
+          type="button"
+          class="admin-tab-button"
+          data-admin-tab-target="companies-tab"
+          aria-selected="false"
+        >
+          <span>Empresas</span>
+          <small>Tenants e operação</small>
         </button>
-        <button class="nav-link" type="button" data-admin-tab-target="plans-tab">
-          Planos
+
+        <button
+          type="button"
+          class="admin-tab-button"
+          data-admin-tab-target="plans-tab"
+          aria-selected="false"
+        >
+          <span>Planos</span>
+          <small>Ofertas e limites</small>
         </button>
-        <button class="nav-link" type="button" data-admin-tab-target="billing-tab">
-          Cobrança
+
+        <button
+          type="button"
+          class="admin-tab-button"
+          data-admin-tab-target="billing-tab"
+          aria-selected="false"
+        >
+          <span>Cobrança</span>
+          <small>Recebimentos</small>
         </button>
-        <button class="nav-link" type="button" data-admin-tab-target="settings-tab">
-          Configurações
+
+        <button
+          type="button"
+          class="admin-tab-button"
+          data-admin-tab-target="settings-tab"
+          aria-selected="false"
+        >
+          <span>Configurações</span>
+          <small>Parâmetros gerais</small>
         </button>
       </nav>
 
-      <div class="sidebar-footer">
-        <a class="button" href="./index.html">Voltar ao início</a>
-        <button class="button danger" id="logout-button" type="button">Sair</button>
+      <div class="admin-sidebar-footer">
+        <a href="#top" class="admin-secondary-link">Voltar ao início</a>
+        <button type="button" id="logout-button" class="admin-logout-button">
+          Sair
+        </button>
       </div>
     </aside>
 
-    <main class="content admin-content">
-      <header class="page-header">
+    <main class="admin-main" id="top">
+      <header class="admin-page-header">
         <div>
-          <p class="eyebrow">Painel central</p>
+          <p class="admin-eyebrow">Gestão da plataforma</p>
           <h2>Controle do HoraLivre</h2>
-          <p class="muted">
+          <p class="admin-page-subtitle">
             Gestão de empresas clientes, planos, cobrança e configurações gerais da plataforma.
           </p>
         </div>
+
+        <div class="admin-header-actions">
+          <button
+            type="button"
+            class="admin-primary-button"
+            data-admin-tab-target="companies-tab"
+          >
+            Nova empresa
+          </button>
+          <button
+            type="button"
+            class="admin-secondary-button"
+            id="dashboard-generate-billing-button"
+          >
+            Gerar cobrança do mês
+          </button>
+        </div>
       </header>
 
-      <div class="mobile-tab-strip" id="admin-mobile-tab-strip">
-        <button class="mobile-tab-button active" type="button" data-admin-tab-target="dashboard-tab">
-          Resumo
-        </button>
-        <button class="mobile-tab-button" type="button" data-admin-tab-target="companies-tab">
-          Empresas
-        </button>
-        <button class="mobile-tab-button" type="button" data-admin-tab-target="plans-tab">
-          Planos
-        </button>
-        <button class="mobile-tab-button" type="button" data-admin-tab-target="billing-tab">
-          Cobrança
-        </button>
-        <button class="mobile-tab-button" type="button" data-admin-tab-target="settings-tab">
-          Configurações
-        </button>
-      </div>
+      <section
+        id="dashboard-tab"
+        class="tab-panel active"
+        data-admin-tab-panel
+      >
+        <div class="admin-section-heading">
+          <div>
+            <p class="admin-eyebrow">Resumo da plataforma</p>
+            <h3>Visão rápida da operação do mês</h3>
+          </div>
+          <p class="admin-section-support-text">
+            Indicadores principais, atalhos e visão consolidada dos tenants.
+          </p>
+        </div>
 
-      <div class="tab-panels">
-        <section id="dashboard-tab" class="section tab-panel active">
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Resumo da plataforma</h3>
-              <p class="muted">Visão rápida da operação do mês.</p>
+        <section class="admin-kpi-grid">
+          <article class="admin-kpi-card">
+            <p class="admin-kpi-label">Empresas clientes</p>
+            <strong id="dashboard-stat-tenants">0</strong>
+            <span>Total cadastrado</span>
+          </article>
+
+          <article class="admin-kpi-card">
+            <p class="admin-kpi-label">Em trial</p>
+            <strong id="dashboard-stat-trial">0</strong>
+            <span>Base em teste</span>
+          </article>
+
+          <article class="admin-kpi-card">
+            <p class="admin-kpi-label">Ativas</p>
+            <strong id="dashboard-stat-active">0</strong>
+            <span>Operando normalmente</span>
+          </article>
+
+          <article class="admin-kpi-card">
+            <p class="admin-kpi-label">Bloqueadas</p>
+            <strong id="dashboard-stat-blocked">0</strong>
+            <span>Demandam atenção</span>
+          </article>
+
+          <article class="admin-kpi-card">
+            <p class="admin-kpi-label">Concluídos no mês</p>
+            <strong id="dashboard-stat-completed">0</strong>
+            <span>Serviços executados</span>
+          </article>
+
+          <article class="admin-kpi-card admin-kpi-card-highlight">
+            <p class="admin-kpi-label">Previsto a receber</p>
+            <strong id="dashboard-stat-revenue">R$ 0,00</strong>
+            <span>Estimativa do mês atual</span>
+          </article>
+        </section>
+
+        <section class="admin-quick-actions-grid">
+          <button
+            type="button"
+            class="admin-quick-action-card"
+            data-admin-tab-target="companies-tab"
+          >
+            <strong>Abrir empresas</strong>
+            <span>Gerenciar tenants, planos e status.</span>
+          </button>
+
+          <button
+            type="button"
+            class="admin-quick-action-card"
+            data-admin-tab-target="plans-tab"
+          >
+            <strong>Abrir planos</strong>
+            <span>Revisar regras, limites e preços.</span>
+          </button>
+
+          <button
+            type="button"
+            class="admin-quick-action-card"
+            data-admin-tab-target="billing-tab"
+          >
+            <strong>Abrir cobrança</strong>
+            <span>Consultar pendências e mensagens.</span>
+          </button>
+
+          <button
+            type="button"
+            class="admin-quick-action-card"
+            id="dashboard-go-settings-button"
+            data-admin-tab-target="settings-tab"
+          >
+            <strong>Abrir configurações</strong>
+            <span>Ajustar parâmetros gerais do sistema.</span>
+          </button>
+        </section>
+
+        <section class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <div>
+              <p class="admin-eyebrow">Operação do mês</p>
+              <h4>Empresas com maior movimentação</h4>
+            </div>
+            <button
+              type="button"
+              class="admin-secondary-button"
+              data-admin-tab-target="billing-tab"
+            >
+              Ver cobrança
+            </button>
+          </div>
+
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Plano</th>
+                  <th>Cobrança</th>
+                  <th>Status</th>
+                  <th>Concluídos no mês</th>
+                  <th>Valor do mês</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-top-tenants-table-body">
+                <tr>
+                  <td colspan="6" class="admin-table-empty">
+                    Nenhum dado disponível no momento.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section
+        id="companies-tab"
+        class="tab-panel"
+        data-admin-tab-panel
+        hidden
+      >
+        <div class="admin-section-heading">
+          <div>
+            <p class="admin-eyebrow">Empresas clientes</p>
+            <h3>Gerencie plano, status, cobrança e contato</h3>
+          </div>
+          <p class="admin-section-support-text">
+            Cadastro, edição operacional, filtros e visão da base.
+          </p>
+        </div>
+
+        <div class="admin-split-grid">
+          <section class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <div>
+                <p class="admin-eyebrow">Nova empresa cliente</p>
+                <h4>Criar tenant</h4>
+              </div>
             </div>
 
-            <div class="stats-grid" id="admin-stats">
-              <article class="stat-card">
-                <span class="stat-label">Empresas clientes</span>
-                <strong class="stat-value" id="stat-tenants">0</strong>
-              </article>
+            <form id="new-company-form" class="admin-form-grid">
+              <label>
+                <span>Nome da empresa</span>
+                <input type="text" name="businessName" required />
+              </label>
 
-              <article class="stat-card">
-                <span class="stat-label">Em trial</span>
-                <strong class="stat-value" id="stat-trial">0</strong>
-              </article>
+              <label>
+                <span>Nome do responsável</span>
+                <input type="text" name="contactName" />
+              </label>
 
-              <article class="stat-card">
-                <span class="stat-label">Ativas</span>
-                <strong class="stat-value" id="stat-active">0</strong>
-              </article>
+              <label>
+                <span>E-mail de acesso</span>
+                <input type="email" name="email" required />
+              </label>
 
-              <article class="stat-card">
-                <span class="stat-label">Bloqueadas</span>
-                <strong class="stat-value" id="stat-blocked">0</strong>
-              </article>
+              <label>
+                <span>Senha inicial</span>
+                <input type="password" name="password" required />
+              </label>
 
-              <article class="stat-card">
-                <span class="stat-label">Concluídos no mês</span>
-                <strong class="stat-value" id="stat-completed">0</strong>
-              </article>
+              <label>
+                <span>WhatsApp</span>
+                <input type="text" name="whatsapp" />
+              </label>
 
-              <article class="stat-card">
-                <span class="stat-label">Previsto a receber</span>
-                <strong class="stat-value" id="stat-revenue">R$ 0,00</strong>
-              </article>
-            </div>
+              <label>
+                <span>Slug público</span>
+                <input type="text" name="slug" />
+              </label>
 
-            <div class="card">
-              <div class="quick-actions">
-                <button class="button primary" id="quick-open-companies" type="button">
-                  Abrir empresas clientes
+              <label>
+                <span>Plano</span>
+                <select name="planId" id="new-company-plan-select"></select>
+              </label>
+
+              <label>
+                <span>Status</span>
+                <select name="subscriptionStatus">
+                  <option value="trial">Trial</option>
+                  <option value="active">Ativo</option>
+                  <option value="blocked">Bloqueado</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Modo de cobrança</span>
+                <select name="billingMode">
+                  <option value="free">Gratuito</option>
+                  <option value="fixed">Plano mensal</option>
+                  <option value="annual">Plano anual</option>
+                  <option value="per_service">Por serviço</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Preço mensal</span>
+                <input type="number" step="0.01" name="fixedMonthlyPrice" />
+              </label>
+
+              <label>
+                <span>Preço anual</span>
+                <input type="number" step="0.01" name="annualPrice" />
+              </label>
+
+              <label>
+                <span>Mês da cobrança anual</span>
+                <select name="annualBillingMonth">
+                  <option value="">Selecione</option>
+                  <option value="1">Janeiro</option>
+                  <option value="2">Fevereiro</option>
+                  <option value="3">Março</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Maio</option>
+                  <option value="6">Junho</option>
+                  <option value="7">Julho</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Setembro</option>
+                  <option value="10">Outubro</option>
+                  <option value="11">Novembro</option>
+                  <option value="12">Dezembro</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Preço por serviço concluído</span>
+                <input type="number" step="0.01" name="pricePerExecutedService" />
+              </label>
+
+              <label>
+                <span>Página pública habilitada?</span>
+                <select name="publicPageEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Relatórios habilitados?</span>
+                <select name="reportsEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Data final do trial</span>
+                <input type="date" name="trialEndsAt" />
+              </label>
+
+              <div class="admin-form-actions admin-form-actions-full">
+                <button type="submit" class="admin-primary-button">
+                  Criar empresa cliente
                 </button>
-                <button class="button" id="quick-open-plans" type="button">
-                  Abrir planos
+              </div>
+            </form>
+
+            <div id="new-company-feedback" class="admin-feedback-slot"></div>
+          </section>
+
+          <section class="admin-panel-card">
+            <div class="admin-panel-card-header">
+              <div>
+                <p class="admin-eyebrow">Editar empresa cliente</p>
+                <h4>Atualizar tenant</h4>
+              </div>
+            </div>
+
+            <form id="edit-company-form" class="admin-form-grid">
+              <input type="hidden" name="tenantId" id="edit-company-tenant-id" />
+
+              <label>
+                <span>Nome da empresa</span>
+                <input type="text" name="businessName" required />
+              </label>
+
+              <label>
+                <span>Slug público</span>
+                <input type="text" name="slug" />
+              </label>
+
+              <label>
+                <span>WhatsApp</span>
+                <input type="text" name="whatsapp" />
+              </label>
+
+              <label>
+                <span>Status</span>
+                <select name="subscriptionStatus">
+                  <option value="trial">Trial</option>
+                  <option value="active">Ativo</option>
+                  <option value="blocked">Bloqueado</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Plano</span>
+                <select name="planId" id="edit-company-plan-select"></select>
+              </label>
+
+              <label>
+                <span>Modo de cobrança</span>
+                <select name="billingMode">
+                  <option value="free">Gratuito</option>
+                  <option value="fixed">Plano mensal</option>
+                  <option value="annual">Plano anual</option>
+                  <option value="per_service">Por serviço</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Preço mensal</span>
+                <input type="number" step="0.01" name="fixedMonthlyPrice" />
+              </label>
+
+              <label>
+                <span>Preço anual</span>
+                <input type="number" step="0.01" name="annualPrice" />
+              </label>
+
+              <label>
+                <span>Mês da cobrança anual</span>
+                <select name="annualBillingMonth">
+                  <option value="">Selecione</option>
+                  <option value="1">Janeiro</option>
+                  <option value="2">Fevereiro</option>
+                  <option value="3">Março</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Maio</option>
+                  <option value="6">Junho</option>
+                  <option value="7">Julho</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Setembro</option>
+                  <option value="10">Outubro</option>
+                  <option value="11">Novembro</option>
+                  <option value="12">Dezembro</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Preço por serviço concluído</span>
+                <input type="number" step="0.01" name="pricePerExecutedService" />
+              </label>
+
+              <label>
+                <span>Página pública habilitada?</span>
+                <select name="publicPageEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Data final do trial</span>
+                <input type="date" name="trialEndsAt" />
+              </label>
+
+              <div class="admin-form-actions admin-form-actions-full">
+                <button type="submit" class="admin-primary-button">
+                  Salvar empresa cliente
                 </button>
-                <button class="button" id="quick-open-billing" type="button">
-                  Abrir cobrança
+                <button
+                  type="button"
+                  id="cancel-company-edit-button"
+                  class="admin-secondary-button"
+                >
+                  Cancelar edição
                 </button>
-                <button class="button" id="quick-generate-billing" type="button">
-                  Gerar cobrança do mês
-                </button>
+                <a
+                  href="#"
+                  id="edit-company-whatsapp-link"
+                  class="admin-secondary-link-button"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Falar no WhatsApp
+                </a>
               </div>
+            </form>
+
+            <div id="edit-company-feedback" class="admin-feedback-slot"></div>
+          </section>
+        </div>
+
+        <section class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <div>
+              <p class="admin-eyebrow">Base de empresas</p>
+              <h4>Buscar e filtrar tenants</h4>
+            </div>
+          </div>
+
+          <div class="admin-filters-grid">
+            <label>
+              <span>Buscar empresa</span>
+              <input type="text" id="companies-search-input" />
+            </label>
+
+            <label>
+              <span>Filtrar por plano</span>
+              <select id="companies-plan-filter">
+                <option value="">Todos</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Filtrar por status</span>
+              <select id="companies-status-filter">
+                <option value="">Todos</option>
+                <option value="trial">Trial</option>
+                <option value="active">Ativo</option>
+                <option value="blocked">Bloqueado</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Filtrar cobrança</span>
+              <select id="companies-billing-filter">
+                <option value="">Todos</option>
+                <option value="free">Gratuito</option>
+                <option value="fixed">Plano mensal</option>
+                <option value="annual">Plano anual</option>
+                <option value="per_service">Por serviço</option>
+              </select>
+            </label>
+          </div>
+
+          <ul id="companies-list" class="admin-entity-grid"></ul>
+        </section>
+      </section>
+
+      <section
+        id="plans-tab"
+        class="tab-panel"
+        data-admin-tab-panel
+        hidden
+      >
+        <div class="admin-section-heading">
+          <div>
+            <p class="admin-eyebrow">Planos</p>
+            <h3>Crie e edite os planos usados pelas empresas</h3>
+          </div>
+        </div>
+
+        <section class="admin-panel-card">
+          <form id="plan-form" class="admin-form-grid">
+            <input type="hidden" id="plan-edit-id" name="planId" />
+
+            <label>
+              <span>Nome do plano</span>
+              <input type="text" name="name" required />
+            </label>
+
+            <label class="admin-form-span-2">
+              <span>Descrição curta para a home</span>
+              <input type="text" name="description" />
+            </label>
+
+            <label>
+              <span>Destaque visual na home?</span>
+              <select name="highlighted">
+                <option value="false">Não</option>
+                <option value="true">Sim</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Ordem na home</span>
+              <input type="number" name="displayOrder" />
+            </label>
+
+            <label>
+              <span>Modo de cobrança</span>
+              <select name="billingMode">
+                <option value="free">Gratuito</option>
+                <option value="fixed">Plano mensal</option>
+                <option value="annual">Plano anual</option>
+                <option value="per_service">Por serviço concluído</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Preço mensal</span>
+              <input type="number" step="0.01" name="price" />
+            </label>
+
+            <label>
+              <span>Preço anual</span>
+              <input type="number" step="0.01" name="annualPrice" />
+            </label>
+
+            <label>
+              <span>Preço por serviço concluído</span>
+              <input type="number" step="0.01" name="pricePerExecutedService" />
+            </label>
+
+            <label>
+              <span>Página pública habilitada?</span>
+              <select name="publicPageEnabled">
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Relatórios habilitados?</span>
+              <select name="reportsEnabled">
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Quantidade máxima de serviços</span>
+              <input type="number" name="maxServices" />
+            </label>
+
+            <label>
+              <span>Quantidade máxima de clientes finais</span>
+              <input type="number" name="maxCustomers" />
+            </label>
+
+            <label>
+              <span>Quantidade máxima de agendamentos por mês</span>
+              <input type="number" name="maxAppointmentsPerMonth" />
+            </label>
+
+            <div class="admin-form-actions admin-form-actions-full">
+              <button type="submit" class="admin-primary-button">
+                Salvar plano
+              </button>
+              <button
+                type="button"
+                id="plan-cancel-edit-button"
+                class="admin-secondary-button"
+              >
+                Cancelar edição
+              </button>
+            </div>
+          </form>
+
+          <div id="plan-feedback" class="admin-feedback-slot"></div>
+        </section>
+
+        <section class="admin-panel-card">
+          <ul id="plans-list" class="admin-entity-grid"></ul>
+        </section>
+      </section>
+
+      <section
+        id="billing-tab"
+        class="tab-panel"
+        data-admin-tab-panel
+        hidden
+      >
+        <div class="admin-section-heading">
+          <div>
+            <p class="admin-eyebrow">Cobrança</p>
+            <h3>Gere cobrança, filtre por mês/status e envie mensagem pronta</h3>
+          </div>
+        </div>
+
+        <section class="admin-panel-card">
+          <div class="admin-panel-card-header">
+            <div>
+              <p class="admin-eyebrow">Operações</p>
+              <h4>Ciclo de cobrança</h4>
             </div>
 
-            <div class="card">
-              <div class="table-wrapper admin-scroll-panel">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Empresa</th>
-                      <th>Plano</th>
-                      <th>Cobrança</th>
-                      <th>Status</th>
-                      <th>Concluídos no mês</th>
-                      <th>Valor do mês</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tenants-table-body"></tbody>
-                </table>
-              </div>
+            <div class="admin-header-actions">
+              <button
+                type="button"
+                id="generate-billing-button"
+                class="admin-primary-button"
+              >
+                Gerar cobrança do mês atual
+              </button>
+
+              <button
+                type="button"
+                id="reload-billing-button"
+                class="admin-secondary-button"
+              >
+                Recarregar cobrança
+              </button>
+            </div>
+          </div>
+
+          <div class="admin-filters-grid">
+            <label>
+              <span>Mês</span>
+              <input type="month" id="billing-month-filter" />
+            </label>
+
+            <label>
+              <span>Status</span>
+              <select id="billing-status-filter">
+                <option value="">Todos</option>
+                <option value="pending">Pendente</option>
+                <option value="paid">Pago</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="admin-inline-stats">
+            <div>
+              <span>Total previsto</span>
+              <strong id="billing-total-expected">R$ 0,00</strong>
+            </div>
+            <div>
+              <span>Total pago</span>
+              <strong id="billing-total-paid">R$ 0,00</strong>
+            </div>
+            <div>
+              <span>Total pendente</span>
+              <strong id="billing-total-pending">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <ul id="billing-list" class="admin-entity-grid"></ul>
+        </section>
+      </section>
+
+      <section
+        id="settings-tab"
+        class="tab-panel"
+        data-admin-tab-panel
+        hidden
+      >
+        <div class="admin-section-heading">
+          <div>
+            <p class="admin-eyebrow">Configurações da plataforma</p>
+            <h3>Edite parâmetros funcionais usados no restante do app</h3>
+          </div>
+        </div>
+
+        <section class="admin-panel-card">
+          <form id="platform-settings-form" class="admin-form-grid">
+            <label>
+              <span>Nome da plataforma</span>
+              <input type="text" name="platformName" />
+            </label>
+
+            <label>
+              <span>Logo da plataforma (URL)</span>
+              <input type="text" name="platformLogoUrl" />
+            </label>
+
+            <label class="admin-form-span-2">
+              <span>Texto público padrão</span>
+              <textarea name="publicDescription" rows="3"></textarea>
+            </label>
+
+            <label>
+              <span>WhatsApp de suporte</span>
+              <input type="text" name="supportWhatsapp" />
+            </label>
+
+            <label class="admin-form-span-2">
+              <span>Mensagem padrão do suporte</span>
+              <textarea name="supportWhatsappMessage" rows="3"></textarea>
+            </label>
+
+            <label>
+              <span>URL base do WhatsApp</span>
+              <input type="text" name="whatsappBaseUrl" />
+            </label>
+
+            <label class="admin-form-span-2">
+              <span>Mensagem padrão para cobrança</span>
+              <textarea name="defaultBillingMessage" rows="3"></textarea>
+            </label>
+
+            <div class="admin-form-actions admin-form-actions-full">
+              <button type="submit" class="admin-primary-button">
+                Salvar configurações
+              </button>
+            </div>
+          </form>
+
+          <div id="platform-settings-feedback" class="admin-feedback-slot"></div>
+        </section>
+
+        <section class="admin-panel-card">
+          <div class="admin-settings-preview">
+            <div>
+              <span>WhatsApp de suporte:</span>
+              <strong id="platform-settings-support-whatsapp">-</strong>
+            </div>
+            <div>
+              <span>Mensagem padrão:</span>
+              <strong id="platform-settings-support-message">-</strong>
+            </div>
+            <div>
+              <span>Nome da plataforma:</span>
+              <strong id="platform-settings-platform-name">-</strong>
+            </div>
+            <div>
+              <span>Logo URL:</span>
+              <strong id="platform-settings-logo-url">-</strong>
+            </div>
+            <div>
+              <span>Descrição pública:</span>
+              <strong id="platform-settings-public-description">-</strong>
+            </div>
+            <div>
+              <span>URL base WhatsApp:</span>
+              <strong id="platform-settings-whatsapp-base-url">-</strong>
+            </div>
+            <div>
+              <span>Mensagem cobrança:</span>
+              <strong id="platform-settings-billing-message">-</strong>
             </div>
           </div>
         </section>
-
-        <section id="companies-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Empresas clientes</h3>
-              <p class="muted">
-                Gerencie plano, status, cobrança, trial e contato das empresas clientes.
-              </p>
-            </div>
-
-            <div class="admin-two-columns">
-              <div class="card">
-                <form id="new-company-form" class="stack">
-                  <h4>Nova empresa cliente</h4>
-
-                  <label>
-                    <span>Nome da empresa</span>
-                    <input id="new-company-business-name" type="text" required>
-                  </label>
-
-                  <label>
-                    <span>Nome do responsável</span>
-                    <input id="new-company-owner-name" type="text" required>
-                  </label>
-
-                  <label>
-                    <span>E-mail de acesso</span>
-                    <input id="new-company-email" type="email" required>
-                  </label>
-
-                  <label>
-                    <span>Senha inicial</span>
-                    <input id="new-company-password" type="password" required>
-                  </label>
-
-                  <label>
-                    <span>WhatsApp</span>
-                    <input id="new-company-whatsapp" type="text" required>
-                  </label>
-
-                  <label>
-                    <span>Slug público</span>
-                    <input id="new-company-slug" type="text" required>
-                  </label>
-
-                  <label>
-                    <span>Plano</span>
-                    <select id="new-company-plan-id"></select>
-                  </label>
-
-                  <label>
-                    <span>Status</span>
-                    <select id="new-company-status">
-                      <option value="trial">Trial</option>
-                      <option value="active">Ativo</option>
-                      <option value="blocked">Bloqueado</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Modo de cobrança</span>
-                    <select id="new-company-billing-mode">
-                      <option value="free">Gratuito</option>
-                      <option value="fixed_plan">Plano mensal</option>
-                      <option value="annual_plan">Plano anual</option>
-                      <option value="per_service">Por serviço</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Preço mensal</span>
-                    <input id="new-company-fixed-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Preço anual</span>
-                    <input id="new-company-annual-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Mês da cobrança anual</span>
-                    <select id="new-company-annual-billing-month">
-                      <option value="">Selecione</option>
-                      <option value="1">Janeiro</option>
-                      <option value="2">Fevereiro</option>
-                      <option value="3">Março</option>
-                      <option value="4">Abril</option>
-                      <option value="5">Maio</option>
-                      <option value="6">Junho</option>
-                      <option value="7">Julho</option>
-                      <option value="8">Agosto</option>
-                      <option value="9">Setembro</option>
-                      <option value="10">Outubro</option>
-                      <option value="11">Novembro</option>
-                      <option value="12">Dezembro</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Preço por serviço concluído</span>
-                    <input id="new-company-price-per-service" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Página pública habilitada?</span>
-                    <select id="new-company-public-page-enabled">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Relatórios habilitados?</span>
-                    <select id="new-company-reports-enabled">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Data final do trial</span>
-                    <input id="new-company-trial-ends-at" type="date">
-                  </label>
-
-                  <button class="button primary" type="submit">Criar empresa cliente</button>
-                  <p id="new-company-feedback" class="feedback"></p>
-                </form>
-              </div>
-
-              <div class="card">
-                <form id="company-admin-form" class="stack">
-                  <input id="company-admin-edit-id" type="hidden">
-
-                  <h4>Editar empresa cliente</h4>
-
-                  <label>
-                    <span>Nome da empresa</span>
-                    <input id="company-admin-business-name" type="text">
-                  </label>
-
-                  <label>
-                    <span>Slug público</span>
-                    <input id="company-admin-slug" type="text">
-                  </label>
-
-                  <label>
-                    <span>WhatsApp</span>
-                    <input id="company-admin-whatsapp" type="text">
-                  </label>
-
-                  <label>
-                    <span>Status</span>
-                    <select id="company-admin-status">
-                      <option value="trial">Trial</option>
-                      <option value="active">Ativo</option>
-                      <option value="blocked">Bloqueado</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Plano</span>
-                    <select id="company-admin-plan-id"></select>
-                  </label>
-
-                  <label>
-                    <span>Modo de cobrança</span>
-                    <select id="company-admin-billing-mode">
-                      <option value="free">Gratuito</option>
-                      <option value="fixed_plan">Plano mensal</option>
-                      <option value="annual_plan">Plano anual</option>
-                      <option value="per_service">Por serviço</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Preço mensal</span>
-                    <input id="company-admin-fixed-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Preço anual</span>
-                    <input id="company-admin-annual-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Mês da cobrança anual</span>
-                    <select id="company-admin-annual-billing-month">
-                      <option value="">Selecione</option>
-                      <option value="1">Janeiro</option>
-                      <option value="2">Fevereiro</option>
-                      <option value="3">Março</option>
-                      <option value="4">Abril</option>
-                      <option value="5">Maio</option>
-                      <option value="6">Junho</option>
-                      <option value="7">Julho</option>
-                      <option value="8">Agosto</option>
-                      <option value="9">Setembro</option>
-                      <option value="10">Outubro</option>
-                      <option value="11">Novembro</option>
-                      <option value="12">Dezembro</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Preço por serviço concluído</span>
-                    <input id="company-admin-price-per-service" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Página pública habilitada?</span>
-                    <select id="company-admin-public-page-enabled">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Data final do trial</span>
-                    <input id="company-admin-trial-ends-at" type="date">
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar empresa cliente</button>
-                    <button class="button" id="company-admin-cancel-edit-button" type="button">
-                      Cancelar edição
-                    </button>
-                    <a
-                      class="button"
-                      id="company-admin-whatsapp-button"
-                      href="#"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Falar no WhatsApp
-                    </a>
-                  </div>
-
-                  <p id="company-admin-feedback" class="feedback"></p>
-                </form>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="stack">
-                <div class="filter-row">
-                  <label>
-                    <span>Buscar empresa</span>
-                    <input id="company-search-input" type="text" placeholder="Digite o nome da empresa">
-                  </label>
-
-                  <label>
-                    <span>Filtrar por plano</span>
-                    <select id="company-plan-filter">
-                      <option value="">Todos</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Filtrar por status</span>
-                    <select id="company-status-filter">
-                      <option value="">Todos</option>
-                      <option value="trial">Trial</option>
-                      <option value="active">Ativo</option>
-                      <option value="blocked">Bloqueado</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Filtrar cobrança</span>
-                    <select id="company-billing-filter">
-                      <option value="">Todos</option>
-                      <option value="free">Gratuito</option>
-                      <option value="fixed_plan">Plano mensal</option>
-                      <option value="annual_plan">Plano anual</option>
-                      <option value="per_service">Por serviço</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div class="admin-scroll-panel">
-                  <ul class="simple-list" id="companies-list"></ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="plans-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Planos</h3>
-              <p class="muted">Crie e edite os planos usados pelas empresas clientes.</p>
-            </div>
-
-            <div class="admin-two-columns">
-              <div class="card">
-                <form id="plan-form" class="stack">
-                  <input id="plan-edit-id" type="hidden">
-
-                  <h4>Novo plano ou edição</h4>
-
-                  <label>
-                    <span>Nome do plano</span>
-                    <input id="plan-form-name" type="text" required>
-                  </label>
-
-                  <label>
-                    <span>Descrição curta para a home</span>
-                    <input
-                      id="plan-form-description"
-                      type="text"
-                      placeholder="Ex.: Ideal para quem está começando"
-                    >
-                  </label>
-
-                  <label>
-                    <span>Destaque visual na home?</span>
-                    <select id="plan-form-featured">
-                      <option value="false">Não</option>
-                      <option value="true">Sim</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Ordem na home</span>
-                    <input id="plan-form-display-order" type="number" min="0" step="1">
-                  </label>
-
-                  <label>
-                    <span>Modo de cobrança</span>
-                    <select id="plan-form-billing-mode" required>
-                      <option value="free">Gratuito</option>
-                      <option value="fixed_plan">Plano mensal</option>
-                      <option value="annual_plan">Plano anual</option>
-                      <option value="per_service">Por serviço concluído</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Preço mensal</span>
-                    <input id="plan-form-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Preço anual</span>
-                    <input id="plan-form-annual-price" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Preço por serviço concluído</span>
-                    <input id="plan-form-price-per-service" type="number" min="0" step="0.01">
-                  </label>
-
-                  <label>
-                    <span>Página pública habilitada?</span>
-                    <select id="plan-form-public-page-enabled">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Relatórios habilitados?</span>
-                    <select id="plan-form-reports-enabled">
-                      <option value="true">Sim</option>
-                      <option value="false">Não</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Quantidade máxima de serviços</span>
-                    <input id="plan-form-max-services" type="number" min="0" step="1">
-                  </label>
-
-                  <label>
-                    <span>Quantidade máxima de clientes finais</span>
-                    <input id="plan-form-max-customers" type="number" min="0" step="1">
-                  </label>
-
-                  <label>
-                    <span>Quantidade máxima de agendamentos por mês</span>
-                    <input id="plan-form-max-appointments-month" type="number" min="0" step="1">
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar plano</button>
-                    <button class="button" id="plan-cancel-edit-button" type="button">
-                      Cancelar edição
-                    </button>
-                  </div>
-
-                  <p id="plan-feedback" class="feedback"></p>
-                </form>
-              </div>
-
-              <div class="card">
-                <div class="admin-scroll-panel">
-                  <ul class="simple-list" id="plans-list"></ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="billing-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Cobrança</h3>
-              <p class="muted">
-                Gere cobrança, filtre por mês/status e envie mensagem pronta.
-              </p>
-            </div>
-
-            <div class="admin-two-columns">
-              <div class="card">
-                <div class="stack">
-                  <div class="billing-actions">
-                    <button class="button primary" id="generate-month-billing-button" type="button">
-                      Gerar cobrança do mês atual
-                    </button>
-                    <button class="button" id="reload-billing-button" type="button">
-                      Recarregar cobrança
-                    </button>
-                  </div>
-
-                  <div class="filter-row">
-                    <label>
-                      <span>Mês</span>
-                      <input id="billing-month-filter" type="month">
-                    </label>
-
-                    <label>
-                      <span>Status</span>
-                      <select id="billing-status-filter">
-                        <option value="">Todos</option>
-                        <option value="pending">Pendente</option>
-                        <option value="paid">Pago</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  <div class="summary-inline" id="billing-summary-inline">
-                    <div>
-                      <strong>Total previsto:</strong>
-                      <span id="billing-summary-total">R$ 0,00</span>
-                    </div>
-                    <div>
-                      <strong>Total pago:</strong>
-                      <span id="billing-summary-paid">R$ 0,00</span>
-                    </div>
-                    <div>
-                      <strong>Total pendente:</strong>
-                      <span id="billing-summary-pending">R$ 0,00</span>
-                    </div>
-                  </div>
-
-                  <p id="billing-feedback" class="feedback"></p>
-
-                  <div class="admin-scroll-panel">
-                    <ul class="simple-list" id="billing-list"></ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card">
-                <form id="billing-message-form" class="stack">
-                  <label>
-                    <span>Empresa cliente</span>
-                    <input id="billing-message-company-name" type="text" readonly>
-                  </label>
-
-                  <label>
-                    <span>WhatsApp</span>
-                    <input id="billing-message-whatsapp" type="text" readonly>
-                  </label>
-
-                  <label>
-                    <span>Mês de referência</span>
-                    <input id="billing-message-month-ref" type="text" readonly>
-                  </label>
-
-                  <label>
-                    <span>Mensagem pronta</span>
-                    <textarea id="billing-message-text" rows="10"></textarea>
-                  </label>
-
-                  <div class="form-actions">
-                    <a
-                      class="button primary"
-                      id="billing-message-whatsapp-button"
-                      href="#"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Enviar cobrança no WhatsApp
-                    </a>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="settings-tab" class="section tab-panel" hidden>
-          <div class="panel-shell">
-            <div class="section-heading">
-              <h3>Configurações da plataforma</h3>
-              <p class="muted">Edite configurações funcionais usadas no restante do app.</p>
-            </div>
-
-            <div class="admin-two-columns">
-              <div class="card">
-                <form id="platform-settings-form" class="stack">
-                  <label>
-                    <span>Nome da plataforma</span>
-                    <input id="settings-platform-name" type="text">
-                  </label>
-
-                  <label>
-                    <span>Logo da plataforma (URL)</span>
-                    <input id="settings-platform-logo-url" type="text">
-                  </label>
-
-                  <label>
-                    <span>Texto público padrão</span>
-                    <input id="settings-public-description" type="text">
-                  </label>
-
-                  <label>
-                    <span>WhatsApp de suporte</span>
-                    <input id="settings-support-whatsapp" type="text">
-                  </label>
-
-                  <label>
-                    <span>Mensagem padrão do suporte</span>
-                    <textarea id="settings-support-message" rows="4"></textarea>
-                  </label>
-
-                  <label>
-                    <span>URL base do WhatsApp</span>
-                    <input
-                      id="settings-whatsapp-base-url"
-                      type="text"
-                      placeholder="https://wa.me/"
-                    >
-                  </label>
-
-                  <label>
-                    <span>Mensagem padrão para cobrança</span>
-                    <textarea id="settings-billing-message-template" rows="4"></textarea>
-                  </label>
-
-                  <div class="form-actions">
-                    <button class="button primary" type="submit">Salvar configurações</button>
-                  </div>
-
-                  <p id="settings-feedback" class="feedback"></p>
-                </form>
-              </div>
-
-              <div class="card">
-                <div class="settings-grid">
-                  <p><strong>WhatsApp de suporte:</strong> <span id="support-whatsapp">-</span></p>
-                  <p><strong>Mensagem padrão:</strong> <span id="support-message">-</span></p>
-                  <p><strong>Nome da plataforma:</strong> <span id="platform-name-view">-</span></p>
-                  <p><strong>Logo URL:</strong> <span id="platform-logo-url-view">-</span></p>
-                  <p><strong>Descrição pública:</strong> <span id="platform-public-description-view">-</span></p>
-                  <p><strong>URL base WhatsApp:</strong> <span id="platform-whatsapp-base-url-view">-</span></p>
-                  <p><strong>Mensagem cobrança:</strong> <span id="platform-billing-template-view">-</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
+      </section>
     </main>
   </div>
 
   <script type="module" src="./assets/js/modules/admin-dashboard.js"></script>
+  <script type="module" src="./assets/js/modules/admin-companies.js"></script>
+  <script type="module" src="./assets/js/modules/admin-billing.js"></script>
+  <script type="module" src="./assets/js/modules/admin-tabs.js"></script>
 </body>
 </html>
