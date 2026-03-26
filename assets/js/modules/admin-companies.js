@@ -10,7 +10,8 @@ import {
   listPlans
 } from '../services/plan-service.js';
 import {
-  saveBillingSettingsForTenant
+  saveBillingSettingsForTenant,
+  listBillingRecordsByTenant
 } from '../services/billing-service.js';
 import {
   createPendingTenantUserAccount,
@@ -18,6 +19,14 @@ import {
   finalizePendingTenantUserAccount,
   rollbackPendingTenantUserAccount
 } from '../services/tenant-user-service.js';
+import {
+  listCustomersByTenant,
+  listRecentCustomersByTenant
+} from '../services/customer-service.js';
+import {
+  listAppointmentsByTenant,
+  listRecentAppointmentsByTenant
+} from '../services/appointment-service.js';
 import {
   clearElement,
   showFeedback
@@ -90,10 +99,10 @@ function getNewFormField(name) {
 
 function getCompanyFilterState() {
   return {
-    search: getElementByIds('companies-search-input', 'company-search-input')?.value?.trim()?.toLowerCase() || '',
-    planId: getElementByIds('companies-plan-filter', 'company-plan-filter')?.value || '',
-    status: getElementByIds('companies-status-filter', 'company-status-filter')?.value || '',
-    billingMode: getElementByIds('companies-billing-filter', 'company-billing-filter')?.value || ''
+    search: getElementByIds('companies-search-input')?.value?.trim()?.toLowerCase() || '',
+    planId: getElementByIds('companies-plan-filter')?.value || '',
+    status: getElementByIds('companies-status-filter')?.value || '',
+    billingMode: getElementByIds('companies-billing-filter')?.value || ''
   };
 }
 
@@ -113,6 +122,20 @@ function normalizeBooleanString(value, fallback = 'false') {
   return fallback;
 }
 
+function normalizeDate(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString('pt-BR');
+}
+
 function slugify(value) {
   return String(value || '')
     .normalize('NFD')
@@ -121,6 +144,10 @@ function slugify(value) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function emitAdminDataChanged() {
+  window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
 }
 
 function setEditFieldValue(name, value) {
@@ -149,10 +176,6 @@ function setNewFieldValue(name, value) {
 
 function getNewFieldValue(name) {
   return getNewFormField(name)?.value ?? '';
-}
-
-function emitAdminDataChanged() {
-  window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
 }
 
 function setCompanyMode(mode) {
@@ -207,6 +230,8 @@ function resetEditCompanyForm() {
   if (whatsappLink) {
     whatsappLink.href = '#';
   }
+
+  renderCompanyInsights(null);
 }
 
 function resetNewCompanyForm() {
@@ -240,9 +265,9 @@ export async function populateCompanyPlanFilters() {
   cachedPlans = await listPlans();
 
   populatePlanSelect(getElementByIds('new-company-plan-select'));
-  populatePlanSelect(getElementByIds('edit-company-plan-select', 'company-admin-plan-id'));
+  populatePlanSelect(getElementByIds('edit-company-plan-select'));
 
-  const planFilter = getElementByIds('companies-plan-filter', 'company-plan-filter');
+  const planFilter = getElementByIds('companies-plan-filter');
 
   if (planFilter) {
     planFilter.innerHTML = '<option value="">Todos</option>';
@@ -418,6 +443,213 @@ function fillCompanyEditForm(company) {
   }
 }
 
+function setInsightsText(id, value) {
+  const element = document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent = value;
+}
+
+function renderListIntoElement(id, values = []) {
+  const element = document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+  if (!values.length) {
+    element.innerHTML = '<li class="admin-company-mini-empty">Nenhum dado encontrado.</li>';
+    return;
+  }
+
+  element.innerHTML = values.map((item) => `<li>${item}</li>`).join('');
+}
+
+function renderSignals(values = []) {
+  const element = document.getElementById('company-insight-signals');
+
+  if (!element) {
+    return;
+  }
+
+  if (!values.length) {
+    element.innerHTML = '<li class="admin-company-mini-empty">Sem alertas relevantes no momento.</li>';
+    return;
+  }
+
+  element.innerHTML = values
+    .map((item) => `<li class="admin-company-signal-item ${item.level}">${item.label}</li>`)
+    .join('');
+}
+
+function renderCompanyInsights(state) {
+  const empty = document.getElementById('company-insights-empty');
+  const panel = document.getElementById('company-insights-panel');
+
+  if (!state) {
+    empty?.removeAttribute('hidden');
+    if (panel) {
+      panel.hidden = true;
+    }
+
+    setInsightsText('company-insights-title', 'Selecione uma empresa');
+    return;
+  }
+
+  empty?.setAttribute('hidden', 'hidden');
+  if (panel) {
+    panel.hidden = false;
+  }
+
+  setInsightsText('company-insights-title', state.businessName || 'Empresa');
+  setInsightsText('company-insight-plan', state.planName || '-');
+  setInsightsText('company-insight-status', state.subscriptionStatus || '-');
+  setInsightsText('company-insight-customers', String(state.customersCount || 0));
+  setInsightsText('company-insight-appointments-30d', String(state.appointments30d || 0));
+  setInsightsText('company-insight-completed-30d', String(state.completed30d || 0));
+  setInsightsText('company-insight-billing-month', formatCurrencyBRL(state.billingMonthAmount || 0));
+
+  renderSignals(state.signals || []);
+  renderListIntoElement('company-insight-last-customers', state.lastCustomers || []);
+  renderListIntoElement('company-insight-last-appointments', state.lastAppointments || []);
+}
+
+function buildCompanySignals({ company, customers, appointments, billingRecords }) {
+  const signals = [];
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const recentAppointments = appointments.filter((appointment) => {
+    const date = new Date(appointment.startAt || appointment.createdAt || '');
+
+    return !Number.isNaN(date.getTime()) && date >= thirtyDaysAgo;
+  });
+
+  const completedAppointments = recentAppointments.filter(
+    (appointment) => String(appointment.status || '').toLowerCase() === 'completed'
+  );
+
+  const pendingBilling = billingRecords.find(
+    (record) => String(record.status || 'pending').toLowerCase() === 'pending'
+  );
+
+  if (recentAppointments.length === 0) {
+    signals.push({
+      level: 'danger',
+      label: 'Sem agendamentos nos últimos 30 dias'
+    });
+  } else {
+    signals.push({
+      level: 'success',
+      label: `${recentAppointments.length} agendamentos nos últimos 30 dias`
+    });
+  }
+
+  if (customers.length >= 10) {
+    signals.push({
+      level: 'info',
+      label: `${customers.length} clientes cadastrados`
+    });
+  }
+
+  if (pendingBilling) {
+    signals.push({
+      level: 'warning',
+      label: `Cobrança pendente na referência ${pendingBilling.monthRef || pendingBilling.reference || '-'}`
+    });
+  }
+
+  if (company.publicPageEnabled === false) {
+    signals.push({
+      level: 'warning',
+      label: 'Página pública desativada'
+    });
+  }
+
+  if (company.subscriptionStatus === 'blocked') {
+    signals.push({
+      level: 'danger',
+      label: 'Empresa bloqueada'
+    });
+  }
+
+  if (completedAppointments.length > 0) {
+    signals.push({
+      level: 'success',
+      label: `${completedAppointments.length} atendimentos concluídos recentemente`
+    });
+  }
+
+  return signals;
+}
+
+async function loadCompanyInsights(company) {
+  if (!company?.id) {
+    renderCompanyInsights(null);
+    return;
+  }
+
+  const [customers, recentCustomers, appointments, recentAppointments, billingRecords] = await Promise.all([
+    listCustomersByTenant(company.id),
+    listRecentCustomersByTenant(company.id, 5),
+    listAppointmentsByTenant(company.id),
+    listRecentAppointmentsByTenant(company.id, 5),
+    listBillingRecordsByTenant(company.id)
+  ]);
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const appointments30d = appointments.filter((appointment) => {
+    const date = new Date(appointment.startAt || appointment.createdAt || '');
+
+    return !Number.isNaN(date.getTime()) && date >= thirtyDaysAgo;
+  });
+
+  const completed30d = appointments30d.filter(
+    (appointment) => String(appointment.status || '').toLowerCase() === 'completed'
+  );
+
+  const currentMonthReference = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+  })();
+
+  const currentMonthBilling = billingRecords.find(
+    (record) => String(record.monthRef || record.reference || '') === currentMonthReference
+  );
+
+  renderCompanyInsights({
+    businessName: company.businessName,
+    planName: getPlanName(company.planId),
+    subscriptionStatus: formatSubscriptionStatus(company.subscriptionStatus),
+    customersCount: customers.length,
+    appointments30d: appointments30d.length,
+    completed30d: completed30d.length,
+    billingMonthAmount: currentMonthBilling?.amount ?? currentMonthBilling?.totalAmount ?? 0,
+    signals: buildCompanySignals({
+      company,
+      customers,
+      appointments,
+      billingRecords
+    }),
+    lastCustomers: recentCustomers.map((customer) => {
+      const name = customer.name || 'Cliente';
+      const createdAt = normalizeDate(customer.createdAt);
+      return `${name} · cadastro em ${createdAt}`;
+    }),
+    lastAppointments: recentAppointments.map((appointment) => {
+      const customerName = appointment.customerName || 'Cliente';
+      const serviceName = appointment.serviceName || 'Serviço';
+      const when = normalizeDate(appointment.startAt || appointment.createdAt);
+      return `${customerName} · ${serviceName} · ${when}`;
+    })
+  });
+}
+
 function openCompanyForEdit(companyId) {
   const company = cachedCompanies.find((item) => item.id === companyId);
 
@@ -429,6 +661,9 @@ function openCompanyForEdit(companyId) {
   setCompanyMode('edit');
   showFeedback(getEditCompanyFeedbackElement(), 'Empresa carregada para edição.', 'success');
   scrollToEditCompanyForm();
+  loadCompanyInsights(company).catch((error) => {
+    console.error('Erro ao carregar visão 360 da empresa.', error);
+  });
 }
 
 function bindCompanyActions(elementId = 'companies-list') {
@@ -661,6 +896,11 @@ async function submitEditCompanyForm(event) {
     await renderAdminCompaniesList();
     emitAdminDataChanged();
 
+    const updatedCompany = cachedCompanies.find((item) => item.id === tenantId);
+    if (updatedCompany) {
+      await loadCompanyInsights(updatedCompany);
+    }
+
     showFeedback(feedbackElement, 'Empresa atualizada com sucesso.', 'success');
   } catch (error) {
     console.error(error);
@@ -674,10 +914,10 @@ async function submitEditCompanyForm(event) {
 
 function bindCompanyFilters() {
   [
-    getElementByIds('companies-search-input', 'company-search-input'),
-    getElementByIds('companies-plan-filter', 'company-plan-filter'),
-    getElementByIds('companies-status-filter', 'company-status-filter'),
-    getElementByIds('companies-billing-filter', 'company-billing-filter')
+    getElementByIds('companies-search-input'),
+    getElementByIds('companies-plan-filter'),
+    getElementByIds('companies-status-filter'),
+    getElementByIds('companies-billing-filter')
   ].forEach((element) => {
     element?.addEventListener('input', () => renderAdminCompaniesList());
     element?.addEventListener('change', () => renderAdminCompaniesList());
