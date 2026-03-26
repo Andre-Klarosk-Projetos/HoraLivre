@@ -65,6 +65,10 @@ function getPlanEditField(name) {
   return getPlanEditForm()?.querySelector(`[name="${name}"]`) || null;
 }
 
+function emitAdminDataChanged() {
+  window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
+}
+
 function setPlanMode(mode) {
   const createButton = getElementByIds('plan-mode-create-button');
   const editButton = getElementByIds('plan-mode-edit-button');
@@ -99,21 +103,17 @@ function getEditFieldValue(name) {
 function setCreateFieldValue(name, value) {
   const field = getPlanCreateField(name);
 
-  if (!field) {
-    return;
+  if (field) {
+    field.value = value ?? '';
   }
-
-  field.value = value ?? '';
 }
 
 function setEditFieldValue(name, value) {
   const field = getPlanEditField(name);
 
-  if (!field) {
-    return;
+  if (field) {
+    field.value = value ?? '';
   }
-
-  field.value = value ?? '';
 }
 
 function toBooleanString(value, fallback = 'false') {
@@ -242,61 +242,6 @@ export async function renderAdminPlansList(elementId = 'plans-list') {
   bindPlanActions(elementId);
 }
 
-function bindPlanActions(elementId = 'plans-list') {
-  const container = getPlanListElement(elementId);
-  const feedbackElement = getPlanEditFeedbackElement();
-
-  if (!container) {
-    return;
-  }
-
-  container
-    .querySelectorAll('[data-plan-action][data-plan-id]')
-    .forEach((button) => {
-      button.addEventListener('click', async () => {
-        const action = button.getAttribute('data-plan-action');
-        const planId = button.getAttribute('data-plan-id');
-        const plan = cachedPlans.find((item) => item.id === planId);
-
-        if (!plan) {
-          return;
-        }
-
-        try {
-          if (action === 'edit') {
-            fillPlanEditForm(plan);
-            setPlanMode('edit');
-            showFeedback(feedbackElement, 'Plano carregado para edição.', 'success');
-            return;
-          }
-
-          if (action === 'delete') {
-            const shouldDelete = window.confirm(
-              `Deseja excluir o plano "${plan.name}"?`
-            );
-
-            if (!shouldDelete) {
-              return;
-            }
-
-            await deletePlan(planId);
-            resetPlanEditForm();
-            await renderAdminPlansList(elementId);
-
-            showFeedback(feedbackElement, 'Plano excluído com sucesso.', 'success');
-          }
-        } catch (error) {
-          console.error(error);
-          showFeedback(
-            feedbackElement,
-            error.message || 'Não foi possível executar a ação no plano.',
-            'error'
-          );
-        }
-      });
-    });
-}
-
 function fillPlanEditForm(plan) {
   const editIdElement = getPlanEditIdElement();
 
@@ -395,6 +340,7 @@ async function submitCreatePlan(feedbackElement = getPlanCreateFeedbackElement()
   showFeedback(feedbackElement, 'Plano criado com sucesso.', 'success');
   resetPlanCreateForm();
   await renderAdminPlansList();
+  emitAdminDataChanged();
 
   return true;
 }
@@ -446,8 +392,61 @@ async function submitEditPlan(feedbackElement = getPlanEditFeedbackElement()) {
   resetPlanEditForm();
   setPlanMode('create');
   await renderAdminPlansList();
+  emitAdminDataChanged();
 
   return true;
+}
+
+function bindPlanActions(elementId = 'plans-list') {
+  const container = getPlanListElement(elementId);
+  const feedbackElement = getPlanEditFeedbackElement();
+
+  if (!container) {
+    return;
+  }
+
+  container.querySelectorAll('[data-plan-action][data-plan-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const action = button.getAttribute('data-plan-action');
+      const planId = button.getAttribute('data-plan-id');
+      const plan = cachedPlans.find((item) => item.id === planId);
+
+      if (!plan) {
+        return;
+      }
+
+      try {
+        if (action === 'edit') {
+          fillPlanEditForm(plan);
+          setPlanMode('edit');
+          showFeedback(feedbackElement, 'Plano carregado para edição.', 'success');
+          return;
+        }
+
+        if (action === 'delete') {
+          const shouldDelete = window.confirm(`Deseja excluir o plano "${plan.name}"?`);
+
+          if (!shouldDelete) {
+            return;
+          }
+
+          await deletePlan(planId);
+          resetPlanEditForm();
+          await renderAdminPlansList(elementId);
+          emitAdminDataChanged();
+
+          showFeedback(feedbackElement, 'Plano excluído com sucesso.', 'success');
+        }
+      } catch (error) {
+        console.error(error);
+        showFeedback(
+          feedbackElement,
+          error.message || 'Não foi possível executar a ação no plano.',
+          'error'
+        );
+      }
+    });
+  });
 }
 
 function bindPlanModeSwitcher() {
@@ -506,16 +505,43 @@ function bindPlanForms() {
     showFeedback(editFeedback, 'Edição de plano cancelada.', 'success');
   });
 
-  getPlanCreateForm()?.querySelector('[name="billingMode"]')
+  getPlanCreateForm()
+    ?.querySelector('[name="billingMode"]')
     ?.addEventListener('change', () => refreshPlanBillingModeVisibility(getPlanCreateForm()));
 
-  getPlanEditForm()?.querySelector('[name="billingMode"]')
+  getPlanEditForm()
+    ?.querySelector('[name="billingMode"]')
     ?.addEventListener('change', () => refreshPlanBillingModeVisibility(getPlanEditForm()));
+}
+
+function bindOpenPlanFromSearchEvent() {
+  window.addEventListener('horalivre:open-admin-plan', async (event) => {
+    const planId = event?.detail?.planId;
+
+    if (!planId) {
+      return;
+    }
+
+    if (!cachedPlans.length) {
+      cachedPlans = await listPlans();
+    }
+
+    const plan = cachedPlans.find((item) => item.id === planId);
+
+    if (!plan) {
+      return;
+    }
+
+    fillPlanEditForm(plan);
+    setPlanMode('edit');
+    showFeedback(getPlanEditFeedbackElement(), 'Plano carregado para edição.', 'success');
+  });
 }
 
 function initAdminPlans() {
   bindPlanModeSwitcher();
   bindPlanForms();
+  bindOpenPlanFromSearchEvent();
   resetPlanCreateForm();
   resetPlanEditForm();
   setPlanMode('create');
