@@ -12,7 +12,7 @@ import {
 } from '../utils/dom-utils.js';
 import * as billingService from '../services/billing-service.js';
 import { listTenants } from '../services/tenant-service.js';
-import { getPlatformSettings } from '../services/admin-service.js';
+import { openAdminCompanyDetails } from './admin-tabs.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -20,18 +20,9 @@ if (!requireAdmin()) {
 
 let cachedBillingRecords = [];
 let cachedTenants = [];
-let cachedPlatformSettings = null;
 
-function getElementByIds(...ids) {
-  for (const id of ids) {
-    const element = document.getElementById(id);
-
-    if (element) {
-      return element;
-    }
-  }
-
-  return null;
+function getElement(id) {
+  return document.getElementById(id);
 }
 
 function normalizeNumber(value, fallback = 0) {
@@ -50,80 +41,69 @@ function getCurrentMonthReference() {
   return `${year}-${month}`;
 }
 
-function toBillingServiceMonthRef(value) {
+function toMonthRef(value) {
   return String(value || getCurrentMonthReference()).replace('-', '/');
 }
 
 function getMonthFilterValue() {
-  const element = getElementByIds('billing-month-filter');
-  return element?.value || getCurrentMonthReference();
+  return getElement('billing-month-filter')?.value || getCurrentMonthReference();
 }
 
 function getStatusFilterValue() {
-  return getElementByIds('billing-status-filter')?.value || '';
+  return getElement('billing-status-filter')?.value || '';
 }
 
 function getModeFilterValue() {
-  return getElementByIds('billing-mode-filter')?.value || '';
+  return getElement('billing-mode-filter')?.value || '';
 }
 
 function getSearchFilterValue() {
-  return normalizeString(getElementByIds('billing-search-input')?.value || '').toLowerCase();
+  return normalizeString(getElement('billing-search-input')?.value).toLowerCase();
 }
 
-function setMonthFilterDefaultIfNeeded() {
-  const element = getElementByIds('billing-month-filter');
-
-  if (!element) {
-    return;
-  }
-
-  if (!element.value) {
-    element.value = getCurrentMonthReference();
-  }
-}
-
-function getBillingFeedbackElement() {
-  return getElementByIds('billing-feedback');
+function getFeedbackElement() {
+  return getElement('billing-feedback');
 }
 
 function getBillingListElement(elementId = 'billing-list') {
   return document.getElementById(elementId);
 }
 
+function setMonthFilterDefaultIfNeeded() {
+  const element = getElement('billing-month-filter');
+
+  if (element && !element.value) {
+    element.value = getCurrentMonthReference();
+  }
+}
+
 function getTenantMap() {
   return new Map(
-    (Array.isArray(cachedTenants) ? cachedTenants : []).map((tenant) => [tenant.id, tenant])
+    cachedTenants.map((tenant) => [tenant.id, tenant])
   );
 }
 
 function resolveBillingTenant(record) {
-  const tenantMap = getTenantMap();
   const tenantId = record?.tenantId || record?.companyId || record?.customerId || null;
+  const tenantMap = getTenantMap();
 
   return tenantId ? tenantMap.get(tenantId) || null : null;
 }
 
-function resolveBillingRecordId(record) {
+function resolveRecordId(record) {
   return record?.id || '';
 }
 
-function resolveBillingReferenceMonth(record) {
+function resolveReferenceMonth(record) {
   const raw = record?.referenceMonth || record?.monthReference || record?.billingMonth || record?.monthRef || record?.reference || '';
-  const normalized = String(raw || '').trim().replace('/', '-');
-
-  if (!normalized) {
-    return '';
-  }
-
-  if (/^\d{4}-\d{2}$/.test(normalized)) {
-    return normalized;
-  }
-
-  return normalized.slice(0, 7);
+  return String(raw || '').trim().replace('/', '-').slice(0, 7);
 }
 
-function resolveBillingStatus(record) {
+function resolveReferenceLabel(record) {
+  return record?.referenceMonth || record?.monthReference || record?.billingMonth || record?.monthRef || record?.reference || '-';
+}
+
+function resolveStatus(record) {
   return String(record?.status || 'pending').trim().toLowerCase();
 }
 
@@ -155,20 +135,17 @@ function resolveExpectedAmount(record) {
 function resolvePaidAmount(record) {
   return normalizeNumber(
     record?.paidAmount ??
-    (resolveBillingStatus(record) === 'paid' ? resolveExpectedAmount(record) : 0),
+    (resolveStatus(record) === 'paid' ? resolveExpectedAmount(record) : 0),
     0
   );
 }
 
 function resolvePendingAmount(record) {
-  const expected = resolveExpectedAmount(record);
-  const paid = resolvePaidAmount(record);
-
-  if (resolveBillingStatus(record) === 'paid') {
+  if (resolveStatus(record) === 'paid') {
     return 0;
   }
 
-  return Math.max(expected - paid, 0);
+  return Math.max(resolveExpectedAmount(record) - resolvePaidAmount(record), 0);
 }
 
 function resolveAnnualBillingMonth(record, tenant) {
@@ -177,24 +154,6 @@ function resolveAnnualBillingMonth(record, tenant) {
 
 function resolveWhatsapp(record, tenant) {
   return tenant?.whatsapp || record?.companyWhatsappSnapshot || record?.whatsapp || '';
-}
-
-function buildDefaultBillingMessage(record, tenant) {
-  const platformMessage = normalizeString(cachedPlatformSettings?.defaultBillingMessage, '');
-  const businessName = tenant?.businessName || record?.companyNameSnapshot || 'sua empresa';
-  const referenceMonth = resolveBillingReferenceMonth(record);
-  const expectedAmount = formatCurrencyBRL(resolveExpectedAmount(record));
-  const pendingAmount = formatCurrencyBRL(resolvePendingAmount(record));
-
-  const fallbackMessage =
-    `Olá! Segue a cobrança do HoraLivre para ${businessName}.\n` +
-    `Referência: ${referenceMonth || '-'}\n` +
-    `Valor total: ${expectedAmount}\n` +
-    `Valor pendente: ${pendingAmount}`;
-
-  return platformMessage
-    ? `${platformMessage}\n\nEmpresa: ${businessName}\nReferência: ${referenceMonth || '-'}\nValor: ${expectedAmount}`
-    : fallbackMessage;
 }
 
 function getStatusBadgeText(status) {
@@ -229,16 +188,25 @@ function getStatusBadgeClass(status) {
   return 'default';
 }
 
+function buildDefaultBillingMessage(record, tenant) {
+  const businessName = tenant?.businessName || record?.companyNameSnapshot || 'sua empresa';
+  const reference = resolveReferenceLabel(record);
+  const expected = formatCurrencyBRL(resolveExpectedAmount(record));
+  const pending = formatCurrencyBRL(resolvePendingAmount(record));
+
+  return (
+    `Olá! Segue a cobrança do HoraLivre.\n` +
+    `Empresa: ${businessName}\n` +
+    `Referência: ${reference}\n` +
+    `Valor total: ${expected}\n` +
+    `Valor pendente: ${pending}`
+  );
+}
+
 function buildBillingCardHtml(record) {
   const tenant = resolveBillingTenant(record);
-  const referenceMonth = resolveBillingReferenceMonth(record);
-  const status = resolveBillingStatus(record);
+  const status = resolveStatus(record);
   const billingMode = resolveBillingMode(record, tenant);
-  const completedAppointments = resolveCompletedAppointments(record);
-  const expectedAmount = resolveExpectedAmount(record);
-  const paidAmount = resolvePaidAmount(record);
-  const pendingAmount = resolvePendingAmount(record);
-  const annualBillingMonth = resolveAnnualBillingMonth(record, tenant);
   const whatsapp = resolveWhatsapp(record, tenant);
   const whatsappLink = buildWhatsAppLink(
     whatsapp,
@@ -256,7 +224,7 @@ function buildBillingCardHtml(record) {
     </div>
 
     <div class="admin-company-card-meta">
-      <span><strong>Referência:</strong> ${referenceMonth || '-'}</span>
+      <span><strong>Referência:</strong> ${resolveReferenceLabel(record)}</span>
       <span><strong>Tipo:</strong> ${formatBillingMode(billingMode)}</span>
       <span><strong>WhatsApp:</strong> ${formatPhone(whatsapp || '-')}</span>
     </div>
@@ -264,19 +232,19 @@ function buildBillingCardHtml(record) {
     <div class="admin-compact-metrics-grid">
       <div class="admin-compact-metric">
         <span>Concluídos no mês</span>
-        <strong>${completedAppointments}</strong>
+        <strong>${resolveCompletedAppointments(record)}</strong>
       </div>
       <div class="admin-compact-metric">
         <span>Total previsto</span>
-        <strong>${formatCurrencyBRL(expectedAmount)}</strong>
+        <strong>${formatCurrencyBRL(resolveExpectedAmount(record))}</strong>
       </div>
       <div class="admin-compact-metric">
         <span>Total pago</span>
-        <strong>${formatCurrencyBRL(paidAmount)}</strong>
+        <strong>${formatCurrencyBRL(resolvePaidAmount(record))}</strong>
       </div>
       <div class="admin-compact-metric">
         <span>Total pendente</span>
-        <strong>${formatCurrencyBRL(pendingAmount)}</strong>
+        <strong>${formatCurrencyBRL(resolvePendingAmount(record))}</strong>
       </div>
     </div>
 
@@ -284,8 +252,10 @@ function buildBillingCardHtml(record) {
       <span class="admin-flag ${status === 'paid' ? 'on' : 'off'}">
         Status: ${getStatusBadgeText(status)}
       </span>
-      <span class="admin-flag ${annualBillingMonth ? 'on' : 'off'}">
-        Mês anual: ${annualBillingMonth ? formatMonthNumberToName(annualBillingMonth) : '-'}
+      <span class="admin-flag ${resolveAnnualBillingMonth(record, tenant) ? 'on' : 'off'}">
+        Mês anual: ${resolveAnnualBillingMonth(record, tenant)
+          ? formatMonthNumberToName(resolveAnnualBillingMonth(record, tenant))
+          : '-'}
       </span>
     </div>
 
@@ -293,7 +263,7 @@ function buildBillingCardHtml(record) {
       <a href="${whatsappLink}" target="_blank" rel="noopener noreferrer">
         Cobrar no WhatsApp
       </a>
-      <button type="button" data-billing-action="mark-paid" data-billing-id="${resolveBillingRecordId(record)}">
+      <button type="button" data-billing-action="mark-paid" data-billing-id="${resolveRecordId(record)}">
         Marcar como pago
       </button>
       <button type="button" data-billing-action="open-company" data-billing-tenant-id="${tenant?.id || ''}">
@@ -311,22 +281,19 @@ function applyBillingFilters(records = []) {
 
   return records.filter((record) => {
     const tenant = resolveBillingTenant(record);
-    const recordMonth = resolveBillingReferenceMonth(record);
-    const recordStatus = resolveBillingStatus(record);
-    const recordMode = resolveBillingMode(record, tenant);
     const searchableText = [
       tenant?.businessName || '',
       tenant?.slug || '',
       tenant?.whatsapp || '',
       record?.companyNameSnapshot || '',
-      recordMonth
+      resolveReferenceLabel(record)
     ]
       .join(' ')
       .toLowerCase();
 
-    const matchesMonth = !monthFilter || recordMonth === monthFilter;
-    const matchesStatus = !statusFilter || recordStatus === statusFilter;
-    const matchesMode = !modeFilter || recordMode === modeFilter;
+    const matchesMonth = !monthFilter || resolveReferenceMonth(record) === monthFilter;
+    const matchesStatus = !statusFilter || resolveStatus(record) === statusFilter;
+    const matchesMode = !modeFilter || resolveBillingMode(record, tenant) === modeFilter;
     const matchesSearch = !searchFilter || searchableText.includes(searchFilter);
 
     return matchesMonth && matchesStatus && matchesMode && matchesSearch;
@@ -334,55 +301,125 @@ function applyBillingFilters(records = []) {
 }
 
 function updateBillingTotals(records = []) {
-  const expected = records.reduce(
-    (total, record) => total + resolveExpectedAmount(record),
-    0
-  );
-
-  const paid = records.reduce(
-    (total, record) => total + resolvePaidAmount(record),
-    0
-  );
-
-  const pending = records.reduce(
-    (total, record) => total + resolvePendingAmount(record),
-    0
-  );
+  const expected = records.reduce((total, record) => total + resolveExpectedAmount(record), 0);
+  const paid = records.reduce((total, record) => total + resolvePaidAmount(record), 0);
+  const pending = records.reduce((total, record) => total + resolvePendingAmount(record), 0);
 
   const countAll = records.length;
-  const countPending = records.filter((record) => resolveBillingStatus(record) === 'pending').length;
-  const countPaid = records.filter((record) => resolveBillingStatus(record) === 'paid').length;
+  const countPending = records.filter((record) => resolveStatus(record) === 'pending').length;
+  const countPaid = records.filter((record) => resolveStatus(record) === 'paid').length;
 
-  const expectedElement = getElementByIds('billing-total-expected');
-  const paidElement = getElementByIds('billing-total-paid');
-  const pendingElement = getElementByIds('billing-total-pending');
-  const countAllElement = getElementByIds('billing-count-all');
-  const countPendingElement = getElementByIds('billing-count-pending');
-  const countPaidElement = getElementByIds('billing-count-paid');
+  const mappings = [
+    ['billing-total-expected', formatCurrencyBRL(expected)],
+    ['billing-total-paid', formatCurrencyBRL(paid)],
+    ['billing-total-pending', formatCurrencyBRL(pending)],
+    ['billing-count-all', String(countAll)],
+    ['billing-count-pending', String(countPending)],
+    ['billing-count-paid', String(countPaid)]
+  ];
 
-  if (expectedElement) {
-    expectedElement.textContent = formatCurrencyBRL(expected);
+  mappings.forEach(([id, value]) => {
+    const element = getElement(id);
+
+    if (element) {
+      element.textContent = value;
+    }
+  });
+}
+
+async function safeListBillingRecords() {
+  if (typeof billingService.listBillingRecords === 'function') {
+    return billingService.listBillingRecords();
   }
 
-  if (paidElement) {
-    paidElement.textContent = formatCurrencyBRL(paid);
+  if (typeof billingService.listBillingRecordsByMonth === 'function') {
+    return billingService.listBillingRecordsByMonth(toMonthRef(getMonthFilterValue()));
   }
 
-  if (pendingElement) {
-    pendingElement.textContent = formatCurrencyBRL(pending);
+  return [];
+}
+
+async function safeGenerateCurrentMonthBilling() {
+  if (typeof billingService.generateBillingForCurrentMonth === 'function') {
+    return billingService.generateBillingForCurrentMonth();
   }
 
-  if (countAllElement) {
-    countAllElement.textContent = String(countAll);
+  if (typeof billingService.generateMonthlyBilling === 'function') {
+    return billingService.generateMonthlyBilling(toMonthRef(getMonthFilterValue()));
   }
 
-  if (countPendingElement) {
-    countPendingElement.textContent = String(countPending);
+  if (typeof billingService.generateBillingForMonth === 'function') {
+    return billingService.generateBillingForMonth(toMonthRef(getMonthFilterValue()));
   }
 
-  if (countPaidElement) {
-    countPaidElement.textContent = String(countPaid);
+  throw new Error('O billing-service.js não possui uma função compatível para gerar cobrança.');
+}
+
+async function safeMarkBillingAsPaid(recordId) {
+  if (!recordId) {
+    throw new Error('Registro de cobrança inválido.');
   }
+
+  if (typeof billingService.markBillingRecordAsPaid === 'function') {
+    return billingService.markBillingRecordAsPaid(recordId);
+  }
+
+  if (typeof billingService.markBillingAsPaid === 'function') {
+    return billingService.markBillingAsPaid(recordId);
+  }
+
+  if (typeof billingService.updateBillingRecord === 'function') {
+    return billingService.updateBillingRecord(recordId, { status: 'paid' });
+  }
+
+  throw new Error('O billing-service.js não possui uma função compatível para marcar cobrança como paga.');
+}
+
+function bindBillingActions(elementId = 'billing-list') {
+  const container = getBillingListElement(elementId);
+  const feedbackElement = getFeedbackElement();
+
+  if (!container) {
+    return;
+  }
+
+  container.querySelectorAll('[data-billing-action="mark-paid"]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const recordId = button.getAttribute('data-billing-id');
+
+      if (!recordId) {
+        return;
+      }
+
+      try {
+        await safeMarkBillingAsPaid(recordId);
+        await loadBillingData();
+        await renderAdminBillingList();
+        window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
+
+        showFeedback(feedbackElement, 'Cobrança marcada como paga.', 'success');
+      } catch (error) {
+        console.error(error);
+        showFeedback(
+          feedbackElement,
+          error.message || 'Não foi possível marcar a cobrança como paga.',
+          'error'
+        );
+      }
+    });
+  });
+
+  container.querySelectorAll('[data-billing-action="open-company"]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const tenantId = button.getAttribute('data-billing-tenant-id');
+
+      if (!tenantId) {
+        return;
+      }
+
+      openAdminCompanyDetails(tenantId);
+    });
+  });
 }
 
 export async function renderAdminBillingList(elementId = 'billing-list') {
@@ -418,169 +455,22 @@ export async function renderAdminBillingList(elementId = 'billing-list') {
   bindBillingActions(elementId);
 }
 
-async function safeListBillingRecords() {
-  if (typeof billingService.listBillingRecords === 'function') {
-    return billingService.listBillingRecords();
-  }
-
-  if (typeof billingService.listBillingRecordsByMonth === 'function') {
-    return billingService.listBillingRecordsByMonth(toBillingServiceMonthRef(getMonthFilterValue()));
-  }
-
-  return [];
-}
-
-async function generateMissingMonthlyBilling() {
-  const tenants = await listTenants();
-  const monthReference = toBillingServiceMonthRef(getMonthFilterValue());
-
-  for (const tenant of tenants) {
-    const existing = cachedBillingRecords.find((record) => {
-      const sameTenant = String(record.tenantId || '') === String(tenant.id || '');
-      const sameMonth = String(record.monthRef || record.reference || '') === monthReference;
-      return sameTenant && sameMonth;
-    });
-
-    if (existing) {
-      continue;
-    }
-
-    await billingService.generateBillingRecordForTenant({
-      tenantId: tenant.id,
-      monthReference,
-      billingMode: tenant.billingMode || 'free',
-      completedAppointments: 0,
-      fixedMonthlyPrice: tenant.fixedMonthlyPrice || 0,
-      annualPrice: tenant.annualPrice || 0,
-      annualBillingMonth: tenant.annualBillingMonth || null,
-      pricePerExecutedService: tenant.pricePerExecutedService || 0,
-      notes: `Cobrança gerada automaticamente para ${tenant.businessName || 'empresa'}`
-    });
-  }
-}
-
-async function safeGenerateCurrentMonthBilling() {
-  if (typeof billingService.generateBillingForCurrentMonth === 'function') {
-    return billingService.generateBillingForCurrentMonth();
-  }
-
-  if (typeof billingService.generateMonthlyBilling === 'function') {
-    return billingService.generateMonthlyBilling(toBillingServiceMonthRef(getMonthFilterValue()));
-  }
-
-  if (typeof billingService.generateBillingForMonth === 'function') {
-    return billingService.generateBillingForMonth(toBillingServiceMonthRef(getMonthFilterValue()));
-  }
-
-  if (typeof billingService.generateBillingRecordForTenant === 'function') {
-    return generateMissingMonthlyBilling();
-  }
-
-  throw new Error('O billing-service.js não possui uma função de geração de cobrança compatível.');
-}
-
-async function safeMarkBillingAsPaid(recordId) {
-  if (!recordId) {
-    throw new Error('Registro de cobrança inválido.');
-  }
-
-  if (typeof billingService.markBillingRecordAsPaid === 'function') {
-    return billingService.markBillingRecordAsPaid(recordId);
-  }
-
-  if (typeof billingService.markBillingAsPaid === 'function') {
-    return billingService.markBillingAsPaid(recordId);
-  }
-
-  if (typeof billingService.updateBillingRecord === 'function') {
-    return billingService.updateBillingRecord(recordId, {
-      status: 'paid'
-    });
-  }
-
-  throw new Error('O billing-service.js não possui uma função para marcar cobrança como paga.');
-}
-
-function bindBillingActions(elementId = 'billing-list') {
-  const container = getBillingListElement(elementId);
-  const feedbackElement = getBillingFeedbackElement();
-
-  if (!container) {
-    return;
-  }
-
-  container
-    .querySelectorAll('[data-billing-action="mark-paid"][data-billing-id]')
-    .forEach((button) => {
-      button.addEventListener('click', async () => {
-        const recordId = button.getAttribute('data-billing-id');
-
-        if (!recordId) {
-          return;
-        }
-
-        try {
-          await safeMarkBillingAsPaid(recordId);
-          await loadBillingData();
-          await renderAdminBillingList(elementId);
-          window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
-
-          if (feedbackElement) {
-            showFeedback(feedbackElement, 'Cobrança marcada como paga.', 'success');
-          }
-        } catch (error) {
-          console.error(error);
-
-          if (feedbackElement) {
-            showFeedback(
-              feedbackElement,
-              error.message || 'Não foi possível marcar a cobrança como paga.',
-              'error'
-            );
-          }
-        }
-      });
-    });
-
-  container
-    .querySelectorAll('[data-billing-action="open-company"][data-billing-tenant-id]')
-    .forEach((button) => {
-      button.addEventListener('click', () => {
-        const tenantId = button.getAttribute('data-billing-tenant-id');
-
-        if (!tenantId) {
-          return;
-        }
-
-        window.dispatchEvent(
-          new CustomEvent('horalivre:open-admin-company', {
-            detail: { tenantId }
-          })
-        );
-      });
-    });
-}
-
 async function loadBillingData() {
-  const [records, tenants, platformSettings] = await Promise.all([
+  const [records, tenants] = await Promise.all([
     safeListBillingRecords(),
-    listTenants(),
-    typeof getPlatformSettings === 'function'
-      ? getPlatformSettings()
-      : Promise.resolve(null)
+    listTenants()
   ]);
 
   cachedBillingRecords = Array.isArray(records) ? records : [];
   cachedTenants = Array.isArray(tenants) ? tenants : [];
-  cachedPlatformSettings = platformSettings || null;
 }
 
 function bindBillingFilters() {
   [
-    getElementByIds('billing-month-filter'),
-    getElementByIds('billing-status-filter'),
-    getElementByIds('billing-mode-filter'),
-    getElementByIds('billing-search-input')
+    getElement('billing-month-filter'),
+    getElement('billing-status-filter'),
+    getElement('billing-mode-filter'),
+    getElement('billing-search-input')
   ].forEach((element) => {
     element?.addEventListener('change', async () => {
       await renderAdminBillingList();
@@ -593,9 +483,9 @@ function bindBillingFilters() {
 }
 
 function bindBillingButtons() {
-  const generateButton = getElementByIds('generate-billing-button');
-  const reloadButton = getElementByIds('reload-billing-button');
-  const feedbackElement = getBillingFeedbackElement();
+  const generateButton = getElement('generate-billing-button');
+  const reloadButton = getElement('reload-billing-button');
+  const feedbackElement = getFeedbackElement();
 
   generateButton?.addEventListener('click', async () => {
     try {
@@ -604,19 +494,14 @@ function bindBillingButtons() {
       await renderAdminBillingList();
       window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
 
-      if (feedbackElement) {
-        showFeedback(feedbackElement, 'Cobrança do mês gerada com sucesso.', 'success');
-      }
+      showFeedback(feedbackElement, 'Cobrança do mês gerada com sucesso.', 'success');
     } catch (error) {
       console.error(error);
-
-      if (feedbackElement) {
-        showFeedback(
-          feedbackElement,
-          error.message || 'Não foi possível gerar a cobrança do mês.',
-          'error'
-        );
-      }
+      showFeedback(
+        feedbackElement,
+        error.message || 'Não foi possível gerar a cobrança do mês.',
+        'error'
+      );
     }
   });
 
@@ -624,20 +509,14 @@ function bindBillingButtons() {
     try {
       await loadBillingData();
       await renderAdminBillingList();
-
-      if (feedbackElement) {
-        showFeedback(feedbackElement, 'Cobrança recarregada com sucesso.', 'success');
-      }
+      showFeedback(feedbackElement, 'Cobrança recarregada com sucesso.', 'success');
     } catch (error) {
       console.error(error);
-
-      if (feedbackElement) {
-        showFeedback(
-          feedbackElement,
-          error.message || 'Não foi possível recarregar a cobrança.',
-          'error'
-        );
-      }
+      showFeedback(
+        feedbackElement,
+        error.message || 'Não foi possível recarregar a cobrança.',
+        'error'
+      );
     }
   });
 }
@@ -658,15 +537,12 @@ async function initAdminBilling() {
   } catch (error) {
     console.error('Erro ao inicializar o módulo de cobrança.', error);
 
-    const feedbackElement = getBillingFeedbackElement();
-
-    if (feedbackElement) {
-      showFeedback(
-        feedbackElement,
-        error.message || 'Não foi possível carregar o módulo de cobrança.',
-        'error'
-      );
-    }
+    const feedbackElement = getFeedbackElement();
+    showFeedback(
+      feedbackElement,
+      error.message || 'Não foi possível carregar o módulo de cobrança.',
+      'error'
+    );
   }
 }
 
