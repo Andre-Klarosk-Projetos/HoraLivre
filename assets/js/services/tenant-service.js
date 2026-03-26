@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -27,7 +28,6 @@ function normalizeNullableString(value) {
 
 function normalizeNumber(value, fallback = 0) {
   const parsed = Number(value);
-
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
@@ -37,7 +37,6 @@ function normalizeNullableNumber(value) {
   }
 
   const parsed = Number(value);
-
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -101,13 +100,15 @@ function normalizeBusinessHours(value = {}) {
 function buildTenantCreatePayload(data = {}) {
   return {
     businessName: normalizeString(data.businessName),
+    contactName: normalizeString(data.contactName),
+    ownerEmail: normalizeString(data.ownerEmail || data.email),
+    ownerUid: normalizeNullableString(data.ownerUid),
     slug: normalizeString(data.slug),
     whatsapp: normalizeString(data.whatsapp),
     description: normalizeString(data.description),
     logoUrl: normalizeString(data.logoUrl),
     instagram: normalizeString(data.instagram),
     address: normalizeString(data.address),
-
     planId: normalizeString(data.planId),
     billingMode: normalizeString(data.billingMode, 'free') || 'free',
     fixedMonthlyPrice: normalizeNumber(data.fixedMonthlyPrice, 0),
@@ -115,14 +116,11 @@ function buildTenantCreatePayload(data = {}) {
     annualBillingMonth: normalizeNullableNumber(data.annualBillingMonth),
     pricePerExecutedService: normalizeNumber(data.pricePerExecutedService, 0),
     subscriptionStatus: normalizeString(data.subscriptionStatus, 'trial') || 'trial',
-
     publicPageEnabled: normalizeBoolean(data.publicPageEnabled, true),
     reportsEnabled: normalizeBoolean(data.reportsEnabled, true),
     trialEndsAt: normalizeNullableString(data.trialEndsAt),
     isBlocked: normalizeBoolean(data.isBlocked, false),
-
     businessHours: normalizeBusinessHours(data.businessHours),
-
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -133,6 +131,18 @@ function buildTenantUpdatePayload(data = {}) {
 
   if ('businessName' in data) {
     payload.businessName = normalizeString(data.businessName);
+  }
+
+  if ('contactName' in data) {
+    payload.contactName = normalizeString(data.contactName);
+  }
+
+  if ('ownerEmail' in data || 'email' in data) {
+    payload.ownerEmail = normalizeString(data.ownerEmail || data.email);
+  }
+
+  if ('ownerUid' in data) {
+    payload.ownerUid = normalizeNullableString(data.ownerUid);
   }
 
   if ('slug' in data) {
@@ -288,4 +298,12 @@ export async function updateTenant(tenantId, data) {
   const payload = buildTenantUpdatePayload(data);
 
   await updateDoc(reference, payload);
+}
+
+export async function deleteTenant(tenantId) {
+  if (!tenantId) {
+    throw new Error('Tenant inválido para exclusão.');
+  }
+
+  await deleteDoc(doc(db, 'tenants', tenantId));
 }
