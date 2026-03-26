@@ -350,7 +350,7 @@
           </p>
         </div>
 
-        <div class="admin-workspace-grid">
+        <div class="admin-workspace-grid admin-workspace-grid-wide">
           <div class="admin-workspace-sidebar">
             <section class="admin-panel-card admin-sticky-card">
               <div class="admin-panel-card-header">
@@ -624,7 +624,66 @@
             </section>
           </div>
 
-          <div class="admin-workspace-content">
+          <div class="admin-workspace-content admin-workspace-content-stack">
+            <section class="admin-panel-card">
+              <div class="admin-panel-card-header">
+                <div>
+                  <p class="admin-eyebrow">Visão 360 da empresa</p>
+                  <h4 id="company-insights-title">Selecione uma empresa</h4>
+                </div>
+              </div>
+
+              <div id="company-insights-empty" class="admin-company-insights-empty">
+                Escolha uma empresa para ver métricas, atividade, clientes e cobrança.
+              </div>
+
+              <div id="company-insights-panel" class="admin-company-insights-panel" hidden>
+                <div class="admin-company-insights-grid">
+                  <div class="admin-insight-card">
+                    <span>Plano atual</span>
+                    <strong id="company-insight-plan">-</strong>
+                  </div>
+                  <div class="admin-insight-card">
+                    <span>Status</span>
+                    <strong id="company-insight-status">-</strong>
+                  </div>
+                  <div class="admin-insight-card">
+                    <span>Clientes</span>
+                    <strong id="company-insight-customers">0</strong>
+                  </div>
+                  <div class="admin-insight-card">
+                    <span>Agendamentos 30d</span>
+                    <strong id="company-insight-appointments-30d">0</strong>
+                  </div>
+                  <div class="admin-insight-card">
+                    <span>Concluídos 30d</span>
+                    <strong id="company-insight-completed-30d">0</strong>
+                  </div>
+                  <div class="admin-insight-card">
+                    <span>Cobrança do mês</span>
+                    <strong id="company-insight-billing-month">R$ 0,00</strong>
+                  </div>
+                </div>
+
+                <div class="admin-company-insights-sections">
+                  <section class="admin-company-insights-block">
+                    <h5>Sinais operacionais</h5>
+                    <ul id="company-insight-signals" class="admin-company-signals-list"></ul>
+                  </section>
+
+                  <section class="admin-company-insights-block">
+                    <h5>Últimos clientes</h5>
+                    <ul id="company-insight-last-customers" class="admin-company-mini-list"></ul>
+                  </section>
+
+                  <section class="admin-company-insights-block">
+                    <h5>Últimos agendamentos</h5>
+                    <ul id="company-insight-last-appointments" class="admin-company-mini-list"></ul>
+                  </section>
+                </div>
+              </div>
+            </section>
+
             <section class="admin-panel-card admin-scroll-card">
               <div class="admin-panel-card-header admin-sticky-toolbar">
                 <div>
@@ -968,7 +1027,7 @@
             </div>
           </div>
 
-          <div class="admin-filters-grid">
+          <div class="admin-filters-grid admin-filters-grid-compact">
             <label>
               <span>Mês</span>
               <input type="month" id="billing-month-filter" />
@@ -981,6 +1040,22 @@
                 <option value="pending">Pendente</option>
                 <option value="paid">Pago</option>
               </select>
+            </label>
+
+            <label>
+              <span>Tipo de cobrança</span>
+              <select id="billing-mode-filter">
+                <option value="">Todos</option>
+                <option value="free">Gratuito</option>
+                <option value="fixed">Plano mensal</option>
+                <option value="annual">Plano anual</option>
+                <option value="per_service">Por serviço</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Buscar empresa</span>
+              <input type="text" id="billing-search-input" placeholder="Nome da empresa..." />
             </label>
           </div>
 
@@ -998,6 +1073,23 @@
               <strong id="billing-total-pending">R$ 0,00</strong>
             </div>
           </div>
+
+          <div class="admin-billing-summary-grid">
+            <div class="admin-billing-summary-card">
+              <span>Cobranças do mês</span>
+              <strong id="billing-count-all">0</strong>
+            </div>
+            <div class="admin-billing-summary-card">
+              <span>Pendentes</span>
+              <strong id="billing-count-pending">0</strong>
+            </div>
+            <div class="admin-billing-summary-card">
+              <span>Pagas</span>
+              <strong id="billing-count-paid">0</strong>
+            </div>
+          </div>
+
+          <div id="billing-feedback" class="admin-feedback-slot"></div>
 
           <ul id="billing-list" class="admin-entity-grid"></ul>
         </section>
