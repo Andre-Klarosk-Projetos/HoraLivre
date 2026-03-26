@@ -124,6 +124,40 @@
         </div>
       </header>
 
+      <section class="admin-global-search-card">
+        <div class="admin-global-search-header">
+          <div>
+            <p class="admin-eyebrow">Busca global</p>
+            <h3>Encontre empresa, plano ou cobrança</h3>
+          </div>
+          <p class="admin-section-support-text">
+            Pesquise por nome, slug, WhatsApp, plano ou referência.
+          </p>
+        </div>
+
+        <div class="admin-global-search-box">
+          <input
+            type="text"
+            id="admin-global-search-input"
+            placeholder="Buscar empresa, plano, slug, WhatsApp, referência de cobrança..."
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            id="admin-global-search-clear"
+            class="admin-secondary-button"
+          >
+            Limpar
+          </button>
+        </div>
+
+        <div
+          id="admin-global-search-results"
+          class="admin-global-search-results"
+          hidden
+        ></div>
+      </section>
+
       <section
         id="dashboard-tab"
         class="tab-panel active"
@@ -1070,5 +1104,6 @@
   <script type="module" src="./assets/js/modules/admin-plans.js"></script>
   <script type="module" src="./assets/js/modules/admin-billing.js"></script>
   <script type="module" src="./assets/js/modules/admin-tabs.js"></script>
+  <script type="module" src="./assets/js/modules/admin-search.js"></script>
 </body>
 </html>
