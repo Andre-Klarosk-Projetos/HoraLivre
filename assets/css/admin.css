@@ -69,7 +69,8 @@ body {
 .admin-sidebar-brand h1,
 .admin-page-header h2,
 .admin-section-heading h3,
-.admin-panel-card-header h4 {
+.admin-panel-card-header h4,
+.admin-global-search-header h3 {
   margin: 0;
 }
 
@@ -157,7 +158,8 @@ body {
 
 .admin-page-header,
 .admin-section-heading,
-.admin-panel-card-header {
+.admin-panel-card-header,
+.admin-global-search-header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -199,6 +201,105 @@ body {
   background: var(--admin-surface-soft);
   color: var(--admin-text);
   border: 1px solid var(--admin-border);
+}
+
+.admin-global-search-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 22px;
+  box-shadow: var(--admin-shadow);
+  position: relative;
+}
+
+.admin-global-search-box {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.admin-global-search-box input {
+  width: 100%;
+  border: 1px solid var(--admin-border);
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font: inherit;
+}
+
+.admin-global-search-results {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: calc(100% - 8px);
+  z-index: 20;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.16);
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.admin-search-result-group {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-search-result-group h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--admin-text-soft);
+}
+
+.admin-search-result-group-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-search-result-item {
+  width: 100%;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-search-result-item:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.admin-search-result-main,
+.admin-search-result-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-search-result-main span,
+.admin-search-result-meta span {
+  color: var(--admin-text-soft);
+  font-size: 0.88rem;
+}
+
+.admin-search-result-meta {
+  text-align: right;
+}
+
+.admin-search-empty {
+  display: grid;
+  gap: 6px;
+  padding: 8px 4px;
 }
 
 .tab-panel {
@@ -339,21 +440,25 @@ body {
   padding-right: 6px;
 }
 
-.admin-list-scroll-area::-webkit-scrollbar {
+.admin-list-scroll-area::-webkit-scrollbar,
+.admin-global-search-results::-webkit-scrollbar {
   width: 10px;
 }
 
-.admin-list-scroll-area::-webkit-scrollbar-track {
+.admin-list-scroll-area::-webkit-scrollbar-track,
+.admin-global-search-results::-webkit-scrollbar-track {
   background: #eef2f7;
   border-radius: 999px;
 }
 
-.admin-list-scroll-area::-webkit-scrollbar-thumb {
+.admin-list-scroll-area::-webkit-scrollbar-thumb,
+.admin-global-search-results::-webkit-scrollbar-thumb {
   background: #c7d2e0;
   border-radius: 999px;
 }
 
-.admin-list-scroll-area::-webkit-scrollbar-thumb:hover {
+.admin-list-scroll-area::-webkit-scrollbar-thumb:hover,
+.admin-global-search-results::-webkit-scrollbar-thumb:hover {
   background: #aeb9c8;
 }
 
@@ -874,8 +979,13 @@ body {
 
   .admin-page-header,
   .admin-section-heading,
-  .admin-panel-card-header {
+  .admin-panel-card-header,
+  .admin-global-search-header {
     flex-direction: column;
+  }
+
+  .admin-global-search-box {
+    grid-template-columns: 1fr;
   }
 
   .admin-inline-stats,
@@ -891,10 +1001,24 @@ body {
   .admin-form-switcher {
     grid-template-columns: 1fr;
   }
+
+  .admin-search-result-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-search-result-meta {
+    text-align: left;
+  }
 }
 
 @media (max-width: 720px) {
   .admin-compact-metrics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-global-search-results {
+    left: 14px;
+    right: 14px;
   }
 }
