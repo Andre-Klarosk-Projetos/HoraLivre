@@ -1,7 +1,10 @@
 import { requireAdmin } from '../utils/guards.js';
 import {
+  createTenant,
+  deleteTenant,
   listTenants,
-  updateTenant
+  updateTenant,
+  getTenantBySlug
 } from '../services/tenant-service.js';
 import {
   listPlans
@@ -9,6 +12,12 @@ import {
 import {
   saveBillingSettingsForTenant
 } from '../services/billing-service.js';
+import {
+  createPendingTenantUserAccount,
+  saveTenantUserProfile,
+  finalizePendingTenantUserAccount,
+  rollbackPendingTenantUserAccount
+} from '../services/tenant-user-service.js';
 import {
   clearElement,
   showFeedback
@@ -104,6 +113,16 @@ function normalizeBooleanString(value, fallback = 'false') {
   return fallback;
 }
 
+function slugify(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function setEditFieldValue(name, value) {
   const field = getEditFormField(name);
 
@@ -126,6 +145,14 @@ function setNewFieldValue(name, value) {
   }
 
   field.value = value ?? '';
+}
+
+function getNewFieldValue(name) {
+  return getNewFormField(name)?.value ?? '';
+}
+
+function emitAdminDataChanged() {
+  window.dispatchEvent(new CustomEvent('horalivre:admin-data-changed'));
 }
 
 function setCompanyMode(mode) {
@@ -426,6 +453,158 @@ function bindCompanyActions(elementId = 'companies-list') {
     });
 }
 
+async function validateNewTenantPayload(payload) {
+  if (!payload.businessName) {
+    throw new Error('Informe o nome da empresa.');
+  }
+
+  if (!payload.email) {
+    throw new Error('Informe o e-mail de acesso da empresa.');
+  }
+
+  if (!payload.password || payload.password.length < 6) {
+    throw new Error('A senha inicial deve ter pelo menos 6 caracteres.');
+  }
+
+  if (!payload.planId) {
+    throw new Error('Selecione um plano para a empresa.');
+  }
+
+  if (!payload.slug) {
+    throw new Error('Não foi possível gerar o slug da empresa.');
+  }
+
+  const tenantBySlug = await getTenantBySlug(payload.slug);
+
+  if (tenantBySlug) {
+    throw new Error('Já existe uma empresa usando este slug. Ajuste o slug e tente novamente.');
+  }
+}
+
+async function submitNewCompanyForm(event) {
+  event.preventDefault();
+
+  const feedbackElement = getNewCompanyFeedbackElement();
+
+  const businessName = getNewFieldValue('businessName').trim();
+  const contactName = getNewFieldValue('contactName').trim();
+  const email = getNewFieldValue('email').trim().toLowerCase();
+  const password = getNewFieldValue('password').trim();
+  const slug = slugify(getNewFieldValue('slug').trim() || businessName);
+
+  const payload = {
+    businessName,
+    contactName,
+    email,
+    password,
+    slug,
+    whatsapp: getNewFieldValue('whatsapp').trim(),
+    planId: getNewFieldValue('planId'),
+    subscriptionStatus: getNewFieldValue('subscriptionStatus') || 'trial',
+    billingMode: getNewFieldValue('billingMode') || 'free',
+    fixedMonthlyPrice: Number(getNewFieldValue('fixedMonthlyPrice') || 0),
+    annualPrice: Number(getNewFieldValue('annualPrice') || 0),
+    annualBillingMonth: Number(getNewFieldValue('annualBillingMonth') || 0) || null,
+    pricePerExecutedService: Number(getNewFieldValue('pricePerExecutedService') || 0),
+    publicPageEnabled: getNewFieldValue('publicPageEnabled') === 'true',
+    reportsEnabled: getNewFieldValue('reportsEnabled') === 'true',
+    trialEndsAt: getNewFieldValue('trialEndsAt') || null
+  };
+
+  let createdTenantRef = null;
+  let createdTenantUserUid = null;
+
+  try {
+    await validateNewTenantPayload(payload);
+
+    showFeedback(feedbackElement, 'Criando tenant...', 'success');
+
+    createdTenantRef = await createTenant({
+      businessName: payload.businessName,
+      contactName: payload.contactName,
+      ownerEmail: payload.email,
+      slug: payload.slug,
+      whatsapp: payload.whatsapp,
+      planId: payload.planId,
+      billingMode: payload.billingMode,
+      fixedMonthlyPrice: payload.fixedMonthlyPrice,
+      annualPrice: payload.annualPrice,
+      annualBillingMonth: payload.annualBillingMonth,
+      pricePerExecutedService: payload.pricePerExecutedService,
+      subscriptionStatus: payload.subscriptionStatus,
+      publicPageEnabled: payload.publicPageEnabled,
+      reportsEnabled: payload.reportsEnabled,
+      trialEndsAt: payload.trialEndsAt
+    });
+
+    const createdAuthUser = await createPendingTenantUserAccount({
+      email: payload.email,
+      password: payload.password
+    });
+
+    createdTenantUserUid = createdAuthUser.uid;
+
+    await saveTenantUserProfile(createdTenantUserUid, {
+      tenantId: createdTenantRef.id,
+      email: createdAuthUser.email,
+      name: payload.contactName || payload.businessName,
+      contactName: payload.contactName,
+      businessName: payload.businessName,
+      whatsapp: payload.whatsapp
+    });
+
+    await updateTenant(createdTenantRef.id, {
+      ownerUid: createdTenantUserUid,
+      ownerEmail: createdAuthUser.email,
+      contactName: payload.contactName,
+      slug: payload.slug
+    });
+
+    await saveBillingSettingsForTenant(createdTenantRef.id, {
+      tenantId: createdTenantRef.id,
+      billingMode: payload.billingMode,
+      fixedMonthlyPrice: payload.fixedMonthlyPrice,
+      annualPrice: payload.annualPrice,
+      annualBillingMonth: payload.annualBillingMonth,
+      pricePerExecutedService: payload.pricePerExecutedService
+    });
+
+    await finalizePendingTenantUserAccount();
+
+    resetNewCompanyForm();
+    await renderAdminCompaniesList();
+    emitAdminDataChanged();
+
+    showFeedback(
+      feedbackElement,
+      'Empresa cliente criada com sucesso. O acesso do cliente já está habilitado.',
+      'success'
+    );
+
+    openCompanyForEdit(createdTenantRef.id);
+  } catch (error) {
+    console.error(error);
+
+    if (createdTenantUserUid) {
+      await rollbackPendingTenantUserAccount(createdTenantUserUid);
+    }
+
+    if (createdTenantRef?.id) {
+      try {
+        await deleteTenant(createdTenantRef.id);
+      } catch (rollbackError) {
+        console.error('Falha ao desfazer criação do tenant.', rollbackError);
+      }
+    }
+
+    showFeedback(
+      feedbackElement,
+      error.message || 'Não foi possível criar a empresa cliente.',
+      'error'
+    );
+  }
+}
+
 async function submitEditCompanyForm(event) {
   event.preventDefault();
 
@@ -439,7 +618,7 @@ async function submitEditCompanyForm(event) {
 
   const payload = {
     businessName: getEditFieldValue('businessName').trim(),
-    slug: getEditFieldValue('slug').trim(),
+    slug: slugify(getEditFieldValue('slug').trim()),
     whatsapp: getEditFieldValue('whatsapp').trim(),
     subscriptionStatus: getEditFieldValue('subscriptionStatus') || 'trial',
     planId: getEditFieldValue('planId'),
@@ -454,6 +633,20 @@ async function submitEditCompanyForm(event) {
   };
 
   try {
+    if (!payload.businessName) {
+      throw new Error('Informe o nome da empresa.');
+    }
+
+    if (!payload.slug) {
+      throw new Error('Informe um slug válido para a empresa.');
+    }
+
+    const tenantBySlug = await getTenantBySlug(payload.slug);
+
+    if (tenantBySlug && tenantBySlug.id !== tenantId) {
+      throw new Error('Já existe outra empresa usando este slug.');
+    }
+
     await updateTenant(tenantId, payload);
 
     await saveBillingSettingsForTenant(tenantId, {
@@ -466,6 +659,8 @@ async function submitEditCompanyForm(event) {
     });
 
     await renderAdminCompaniesList();
+    emitAdminDataChanged();
+
     showFeedback(feedbackElement, 'Empresa atualizada com sucesso.', 'success');
   } catch (error) {
     console.error(error);
@@ -503,6 +698,12 @@ function bindCompanyEditForm() {
   });
 }
 
+function bindCompanyCreateForm() {
+  const form = getNewCompanyFormElement();
+
+  form?.addEventListener('submit', submitNewCompanyForm);
+}
+
 function bindCompanyModeSwitcher() {
   const createButton = getElementByIds('company-mode-create-button');
   const editButton = getElementByIds('company-mode-edit-button');
@@ -513,25 +714,6 @@ function bindCompanyModeSwitcher() {
 
   editButton?.addEventListener('click', () => {
     setCompanyMode('edit');
-  });
-}
-
-function bindNewCompanyFormPlaceholder() {
-  const form = getNewCompanyFormElement();
-  const feedbackElement = getNewCompanyFeedbackElement();
-
-  if (!form) {
-    return;
-  }
-
-  form.addEventListener('submit', () => {
-    if (feedbackElement && !feedbackElement.textContent?.trim()) {
-      showFeedback(
-        feedbackElement,
-        'O formulário de criação está pronto para integração com o fluxo de cadastro completo.',
-        'success'
-      );
-    }
   });
 }
 
@@ -556,8 +738,8 @@ async function initAdminCompanies() {
     await populateCompanyPlanFilters();
     bindCompanyFilters();
     bindCompanyEditForm();
+    bindCompanyCreateForm();
     bindCompanyModeSwitcher();
-    bindNewCompanyFormPlaceholder();
     bindOpenCompanyFromDashboardEvent();
     resetNewCompanyForm();
     resetEditCompanyForm();
