@@ -7,7 +7,10 @@ import {
   formatCurrencyBRL,
   formatSubscriptionStatus
 } from '../utils/formatters.js';
-import { activateAdminTab, openAdminCompanyDetails } from './admin-tabs.js';
+import {
+  activateAdminTab,
+  openAdminCompanyDetails
+} from './admin-tabs.js';
 
 if (!requireAdmin()) {
   throw new Error('Acesso negado.');
@@ -82,6 +85,8 @@ function buildBillingSearchIndex(record) {
     tenant?.slug,
     tenant?.whatsapp,
     record.referenceMonth,
+    record.monthRef,
+    record.reference,
     record.status,
     record.billingMode
   ].join(' '));
@@ -104,7 +109,7 @@ function searchPlans(query) {
 
   return cachedSearchData.plans
     .filter((plan) => buildPlanSearchIndex(plan).includes(query))
-    .slice(0, 5);
+    .slice(0, 6);
 }
 
 function searchBilling(query) {
@@ -167,17 +172,17 @@ function buildBillingResultHtml(record) {
       type="button"
       class="admin-search-result-item"
       data-search-action="open-billing"
-      data-reference-month="${escapeHtml(record.referenceMonth || '')}"
+      data-reference-month="${escapeHtml(record.referenceMonth || record.monthRef || record.reference || '')}"
       data-billing-status="${escapeHtml(record.status || '')}"
       data-tenant-id="${escapeHtml(record.tenantId || record.companyId || '')}"
     >
       <div class="admin-search-result-main">
         <strong>${escapeHtml(tenant?.businessName || 'Cobrança sem empresa')}</strong>
-        <span>Referência: ${escapeHtml(record.referenceMonth || '-')}</span>
+        <span>Referência: ${escapeHtml(record.referenceMonth || record.monthRef || record.reference || '-')}</span>
       </div>
       <div class="admin-search-result-meta">
         <span>${escapeHtml(record.status || 'pending')}</span>
-        <span>${escapeHtml(formatCurrencyBRL(record.amount ?? record.expectedAmount ?? 0))}</span>
+        <span>${escapeHtml(formatCurrencyBRL(record.amount ?? record.expectedAmount ?? record.totalAmount ?? 0))}</span>
       </div>
     </button>
   `;
@@ -196,6 +201,17 @@ function buildSearchSectionHtml(title, itemsHtml) {
       </div>
     </section>
   `;
+}
+
+function hideResults() {
+  const container = getResultsContainer();
+
+  if (!container) {
+    return;
+  }
+
+  container.hidden = true;
+  container.innerHTML = '';
 }
 
 function bindSearchResultActions() {
@@ -242,14 +258,15 @@ function bindSearchResultActions() {
     button.addEventListener('click', () => {
       const referenceMonth = button.getAttribute('data-reference-month') || '';
       const status = button.getAttribute('data-billing-status') || '';
+      const normalizedReference = referenceMonth.replace('/', '-').slice(0, 7);
 
       activateAdminTab('billing-tab');
 
       const monthInput = document.getElementById('billing-month-filter');
       const statusInput = document.getElementById('billing-status-filter');
 
-      if (monthInput && referenceMonth) {
-        monthInput.value = referenceMonth;
+      if (monthInput && normalizedReference) {
+        monthInput.value = normalizedReference;
         monthInput.dispatchEvent(new Event('change'));
       }
 
@@ -261,17 +278,6 @@ function bindSearchResultActions() {
       hideResults();
     });
   });
-}
-
-function hideResults() {
-  const container = getResultsContainer();
-
-  if (!container) {
-    return;
-  }
-
-  container.hidden = true;
-  container.innerHTML = '';
 }
 
 function renderResults(query) {
@@ -366,15 +372,8 @@ function bindSearchUi() {
     const target = event.target;
 
     if (
-      target instanceof Node
-      && getResultsContainer()?.contains(target)
-    ) {
-      return;
-    }
-
-    if (
-      target instanceof Node
-      && getSearchInput()?.contains?.(target)
+      target instanceof Node &&
+      getResultsContainer()?.contains(target)
     ) {
       return;
     }
