@@ -1,5 +1,11 @@
-import { getCustomerById, updateCustomerStats } from './customer-service.js';
-import { listAppointmentsByCustomer } from './appointment-service.js';
+import {
+  getCustomerById,
+  updateCustomerStats
+} from './customer-service.js';
+
+import {
+  listAppointmentsByCustomer
+} from './appointment-service.js';
 
 function normalizeNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -74,6 +80,7 @@ export async function syncCustomerStats(customerId) {
   }
 
   const stats = await getCustomerStats(customerId);
+
   await updateCustomerStats(customerId, stats);
 
   return {
