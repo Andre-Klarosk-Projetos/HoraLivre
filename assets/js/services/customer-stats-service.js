@@ -29,11 +29,9 @@ function normalizeStatus(value, fallback = 'pending') {
 }
 
 function mapAppointmentDocument(documentItem) {
-  const data = documentItem.data();
-
   return {
     id: documentItem.id,
-    ...data
+    ...documentItem.data()
   };
 }
 
@@ -141,14 +139,13 @@ export async function listAppointmentsByTenantAndPeriod(tenantId, startIso, endI
     return [];
   }
 
-  let appointmentsQuery = query(
+  const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
     where('tenantId', '==', tenantId),
     orderBy('startAt', 'desc')
   );
 
   const snapshot = await getDocs(appointmentsQuery);
-
   const appointments = snapshot.docs.map(mapAppointmentDocument);
 
   return appointments.filter((appointment) => {
