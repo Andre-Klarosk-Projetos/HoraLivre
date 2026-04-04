@@ -4,24 +4,25 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   updateDoc,
-  where
-} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+  where,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-import { db } from '../config/firebase-init.js';
+import { db } from "../config/firebase-init.js";
 
-const APPOINTMENTS_COLLECTION = 'appointments';
-const BUSY_STATUSES = ['scheduled', 'confirmed', 'completed'];
-const COMPLETED_STATUS = 'completed';
+const APPOINTMENTS_COLLECTION = "appointments";
+const BUSY_STATUSES = ["scheduled", "confirmed", "completed"];
+const COMPLETED_STATUS = "completed";
 
-function normalizeString(value, fallback = '') {
-  return typeof value === 'string' ? value.trim() : fallback;
+function normalizeString(value, fallback = "") {
+  return typeof value === "string" ? value.trim() : fallback;
 }
 
 function normalizeNullableString(value) {
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === "") {
     return null;
   }
 
@@ -33,7 +34,7 @@ function normalizeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeStatus(value, fallback = 'scheduled') {
+function normalizeStatus(value, fallback = "scheduled") {
   const normalized = normalizeString(value, fallback);
 
   if (!normalized) {
@@ -43,7 +44,7 @@ function normalizeStatus(value, fallback = 'scheduled') {
   return normalized;
 }
 
-function normalizeSource(value, fallback = 'panel') {
+function normalizeSource(value, fallback = "panel") {
   const normalized = normalizeString(value, fallback);
 
   if (!normalized) {
@@ -51,6 +52,13 @@ function normalizeSource(value, fallback = 'panel') {
   }
 
   return normalized;
+}
+
+function mapAppointmentDocument(documentItem) {
+  return {
+    id: documentItem.id,
+    ...documentItem.data(),
+  };
 }
 
 function buildAppointmentCreatePayload(data = {}) {
@@ -63,58 +71,58 @@ function buildAppointmentCreatePayload(data = {}) {
     startAt: normalizeString(data.startAt),
     endAt: normalizeString(data.endAt),
     price: normalizeNumber(data.price, 0),
-    status: normalizeStatus(data.status, 'scheduled'),
-    source: normalizeSource(data.source, 'panel'),
+    status: normalizeStatus(data.status, "scheduled"),
+    source: normalizeSource(data.source, "panel"),
     notes: normalizeString(data.notes),
     createdAt: data.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }
 
 function buildAppointmentUpdatePayload(data = {}) {
   const payload = {};
 
-  if ('tenantId' in data) {
+  if ("tenantId" in data) {
     payload.tenantId = normalizeString(data.tenantId);
   }
 
-  if ('customerId' in data) {
+  if ("customerId" in data) {
     payload.customerId = normalizeNullableString(data.customerId);
   }
 
-  if ('customerName' in data) {
+  if ("customerName" in data) {
     payload.customerName = normalizeString(data.customerName);
   }
 
-  if ('serviceId' in data) {
+  if ("serviceId" in data) {
     payload.serviceId = normalizeNullableString(data.serviceId);
   }
 
-  if ('serviceName' in data) {
+  if ("serviceName" in data) {
     payload.serviceName = normalizeString(data.serviceName);
   }
 
-  if ('startAt' in data) {
+  if ("startAt" in data) {
     payload.startAt = normalizeString(data.startAt);
   }
 
-  if ('endAt' in data) {
+  if ("endAt" in data) {
     payload.endAt = normalizeString(data.endAt);
   }
 
-  if ('price' in data) {
+  if ("price" in data) {
     payload.price = normalizeNumber(data.price, 0);
   }
 
-  if ('status' in data) {
-    payload.status = normalizeStatus(data.status, 'scheduled');
+  if ("status" in data) {
+    payload.status = normalizeStatus(data.status, "scheduled");
   }
 
-  if ('source' in data) {
-    payload.source = normalizeSource(data.source, 'panel');
+  if ("source" in data) {
+    payload.source = normalizeSource(data.source, "panel");
   }
 
-  if ('notes' in data) {
+  if ("notes" in data) {
     payload.notes = normalizeString(data.notes);
   }
 
@@ -138,37 +146,59 @@ export async function listAppointmentsByTenant(tenantId) {
 
   const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
-    where('tenantId', '==', tenantId),
-    orderBy('startAt', 'asc')
+    where("tenantId", "==", tenantId),
+    orderBy("startAt", "asc"),
   );
 
   const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map((documentItem) => ({
-    id: documentItem.id,
-    ...documentItem.data()
-  }));
+  return snapshot.docs.map(mapAppointmentDocument);
 }
 
-export async function listAppointmentsByTenantAndPeriod(tenantId, startIso, endIso) {
+export async function listRecentAppointmentsByTenant(
+  tenantId,
+  maxResults = 5,
+) {
+  if (!tenantId) {
+    return [];
+  }
+
+  const safeLimit = Number.isFinite(Number(maxResults))
+    ? Math.max(1, Number(maxResults))
+    : 5;
+
+  const appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
+    where("tenantId", "==", tenantId),
+    orderBy("startAt", "desc"),
+    limit(safeLimit),
+  );
+
+  const snapshot = await getDocs(appointmentsQuery);
+
+  return snapshot.docs.map(mapAppointmentDocument);
+}
+
+export async function listAppointmentsByTenantAndPeriod(
+  tenantId,
+  startIso,
+  endIso,
+) {
   if (!tenantId || !startIso || !endIso) {
     return [];
   }
 
   const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
-    where('tenantId', '==', tenantId),
-    where('startAt', '>=', startIso),
-    where('startAt', '<=', endIso),
-    orderBy('startAt', 'asc')
+    where("tenantId", "==", tenantId),
+    where("startAt", ">=", startIso),
+    where("startAt", "<=", endIso),
+    orderBy("startAt", "asc"),
   );
 
   const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map((documentItem) => ({
-    id: documentItem.id,
-    ...documentItem.data()
-  }));
+  return snapshot.docs.map(mapAppointmentDocument);
 }
 
 export async function listAppointmentsByCustomer(customerId) {
@@ -178,16 +208,13 @@ export async function listAppointmentsByCustomer(customerId) {
 
   const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
-    where('customerId', '==', customerId),
-    orderBy('startAt', 'asc')
+    where("customerId", "==", customerId),
+    orderBy("startAt", "asc"),
   );
 
   const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map((documentItem) => ({
-    id: documentItem.id,
-    ...documentItem.data()
-  }));
+  return snapshot.docs.map(mapAppointmentDocument);
 }
 
 export async function getAppointmentById(appointmentId) {
@@ -204,15 +231,19 @@ export async function getAppointmentById(appointmentId) {
 
   return {
     id: snapshot.id,
-    ...snapshot.data()
+    ...snapshot.data(),
   };
 }
 
-export async function listBusyAppointmentsByTenantAndDay(tenantId, startIso, endIso) {
+export async function listBusyAppointmentsByTenantAndDay(
+  tenantId,
+  startIso,
+  endIso,
+) {
   const appointments = await listAppointmentsByTenantAndPeriod(
     tenantId,
     startIso,
-    endIso
+    endIso,
   );
 
   return appointments.filter((appointment) => isBusyStatus(appointment.status));
@@ -225,7 +256,7 @@ export async function createAppointment(data) {
 
 export async function updateAppointment(appointmentId, data) {
   if (!appointmentId) {
-    throw new Error('Agendamento inválido para atualização.');
+    throw new Error("Agendamento inválido para atualização.");
   }
 
   const reference = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
@@ -236,14 +267,14 @@ export async function updateAppointment(appointmentId, data) {
 
 export async function updateAppointmentStatus(appointmentId, status) {
   if (!appointmentId) {
-    throw new Error('Agendamento inválido para atualização de status.');
+    throw new Error("Agendamento inválido para atualização de status.");
   }
 
   const reference = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
 
   await updateDoc(reference, {
-    status: normalizeStatus(status, 'scheduled'),
-    updatedAt: new Date().toISOString()
+    status: normalizeStatus(status, "scheduled"),
+    updatedAt: new Date().toISOString(),
   });
 }
 
@@ -251,35 +282,44 @@ export async function countCompletedAppointments(tenantId, startIso, endIso) {
   const appointments = await listAppointmentsByTenantAndPeriod(
     tenantId,
     startIso,
-    endIso
+    endIso,
   );
 
-  return appointments.filter((appointment) => isCompletedStatus(appointment.status)).length;
+  return appointments.filter((appointment) =>
+    isCompletedStatus(appointment.status),
+  ).length;
 }
 
-export async function sumCompletedAppointmentsAmount(tenantId, startIso, endIso) {
+export async function sumCompletedAppointmentsAmount(
+  tenantId,
+  startIso,
+  endIso,
+) {
   const appointments = await listAppointmentsByTenantAndPeriod(
     tenantId,
     startIso,
-    endIso
+    endIso,
   );
 
   return appointments
     .filter((appointment) => isCompletedStatus(appointment.status))
-    .reduce((total, appointment) => total + normalizeNumber(appointment.price, 0), 0);
+    .reduce(
+      (total, appointment) => total + normalizeNumber(appointment.price, 0),
+      0,
+    );
 }
 
 export async function calculateCustomerStatsFromAppointments(customerId) {
   const appointments = await listAppointmentsByCustomer(customerId);
 
   const completedAppointments = appointments.filter((appointment) =>
-    isCompletedStatus(appointment.status)
+    isCompletedStatus(appointment.status),
   );
 
   const totalAppointments = completedAppointments.length;
   const totalSpent = completedAppointments.reduce(
     (total, appointment) => total + normalizeNumber(appointment.price, 0),
-    0
+    0,
   );
 
   const lastAppointmentAt = completedAppointments.length
@@ -289,6 +329,6 @@ export async function calculateCustomerStatsFromAppointments(customerId) {
   return {
     totalAppointments,
     totalSpent,
-    lastAppointmentAt
+    lastAppointmentAt,
   };
 }
