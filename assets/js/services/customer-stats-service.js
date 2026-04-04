@@ -1,7 +1,6 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -14,7 +13,7 @@ import {
 
 import { db } from '../config/firebase-init.js';
 
-const CUSTOMERS_COLLECTION = 'customers';
+const APPOINTMENTS_COLLECTION = 'appointments';
 
 function normalizeString(value, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
@@ -25,175 +24,220 @@ function normalizeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeNullableString(value) {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-
-  return String(value).trim();
+function normalizeStatus(value, fallback = 'pending') {
+  return normalizeString(value, fallback) || fallback;
 }
 
-function resolvePhone(data = {}) {
-  return normalizeString(data.phone || data.whatsapp);
-}
-
-function mapCustomerDocument(documentItem) {
+function mapAppointmentDocument(documentItem) {
   const data = documentItem.data();
 
   return {
     id: documentItem.id,
-    ...data,
-    phone: data.phone || data.whatsapp || '',
-    whatsapp: data.whatsapp || data.phone || '',
-    totalAppointments: normalizeNumber(data.totalAppointments, 0),
-    completedAppointments: normalizeNumber(data.completedAppointments, 0),
-    totalSpent: normalizeNumber(data.totalSpent, 0),
-    lastAppointmentAt: data.lastAppointmentAt || null
+    ...data
   };
 }
 
-function buildCustomerCreatePayload(data = {}) {
-  const phone = resolvePhone(data);
-
+function buildAppointmentCreatePayload(data = {}) {
   return {
     tenantId: normalizeString(data.tenantId),
-    name: normalizeString(data.name),
-    email: normalizeString(data.email),
-    phone,
-    whatsapp: phone,
+    customerId: normalizeString(data.customerId),
+    customerName: normalizeString(data.customerName),
+    serviceId: normalizeString(data.serviceId),
+    serviceName: normalizeString(data.serviceName),
+    status: normalizeStatus(data.status, 'pending'),
+    startAt: normalizeString(data.startAt),
+    endAt: normalizeString(data.endAt),
+    price: normalizeNumber(data.price, 0),
+    source: normalizeString(data.source),
     notes: normalizeString(data.notes),
-    totalAppointments: normalizeNumber(data.totalAppointments, 0),
-    completedAppointments: normalizeNumber(data.completedAppointments, 0),
-    totalSpent: normalizeNumber(data.totalSpent, 0),
-    lastAppointmentAt: normalizeNullableString(data.lastAppointmentAt),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 }
 
-function buildCustomerUpdatePayload(data = {}) {
+function buildAppointmentUpdatePayload(data = {}) {
   const payload = {
     updatedAt: new Date().toISOString()
   };
 
-  if ('name' in data) {
-    payload.name = normalizeString(data.name);
+  if ('customerId' in data) {
+    payload.customerId = data.customerId ? normalizeString(data.customerId) : null;
   }
 
-  if ('email' in data) {
-    payload.email = normalizeString(data.email);
+  if ('customerName' in data) {
+    payload.customerName = normalizeString(data.customerName);
+  }
+
+  if ('serviceId' in data) {
+    payload.serviceId = data.serviceId ? normalizeString(data.serviceId) : null;
+  }
+
+  if ('serviceName' in data) {
+    payload.serviceName = normalizeString(data.serviceName);
+  }
+
+  if ('startAt' in data) {
+    payload.startAt = normalizeString(data.startAt);
+  }
+
+  if ('endAt' in data) {
+    payload.endAt = normalizeString(data.endAt);
+  }
+
+  if ('price' in data) {
+    payload.price = normalizeNumber(data.price, 0);
+  }
+
+  if ('status' in data) {
+    payload.status = normalizeStatus(data.status, 'pending');
+  }
+
+  if ('source' in data) {
+    payload.source = normalizeString(data.source);
   }
 
   if ('notes' in data) {
     payload.notes = normalizeString(data.notes);
   }
 
-  if ('phone' in data || 'whatsapp' in data) {
-    const phone = resolvePhone(data);
-    payload.phone = phone;
-    payload.whatsapp = phone;
-  }
-
-  if ('totalAppointments' in data) {
-    payload.totalAppointments = normalizeNumber(data.totalAppointments, 0);
-  }
-
-  if ('completedAppointments' in data) {
-    payload.completedAppointments = normalizeNumber(data.completedAppointments, 0);
-  }
-
-  if ('totalSpent' in data) {
-    payload.totalSpent = normalizeNumber(data.totalSpent, 0);
-  }
-
-  if ('lastAppointmentAt' in data) {
-    payload.lastAppointmentAt = normalizeNullableString(data.lastAppointmentAt);
-  }
-
   return payload;
 }
 
-export async function listCustomersByTenant(tenantId) {
+export async function listAppointmentsByTenant(tenantId) {
   if (!tenantId) {
     return [];
   }
 
-  const customersQuery = query(
-    collection(db, CUSTOMERS_COLLECTION),
+  const appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('createdAt', 'desc')
+    orderBy('startAt', 'desc')
   );
 
-  const snapshot = await getDocs(customersQuery);
+  const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map(mapCustomerDocument);
+  return snapshot.docs.map(mapAppointmentDocument);
 }
 
-export async function listRecentCustomersByTenant(tenantId, maxResults = 5) {
+export async function listRecentAppointmentsByTenant(tenantId, maxResults = 5) {
   if (!tenantId) {
     return [];
   }
 
-  const customersQuery = query(
-    collection(db, CUSTOMERS_COLLECTION),
+  const appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('createdAt', 'desc'),
+    orderBy('startAt', 'desc'),
     limit(maxResults)
   );
 
-  const snapshot = await getDocs(customersQuery);
+  const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map(mapCustomerDocument);
+  return snapshot.docs.map(mapAppointmentDocument);
 }
 
-export async function getCustomerById(customerId) {
+export async function listAppointmentsByTenantAndPeriod(tenantId, startIso, endIso) {
+  if (!tenantId) {
+    return [];
+  }
+
+  let appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
+    where('tenantId', '==', tenantId),
+    orderBy('startAt', 'desc')
+  );
+
+  const snapshot = await getDocs(appointmentsQuery);
+
+  const appointments = snapshot.docs.map(mapAppointmentDocument);
+
+  return appointments.filter((appointment) => {
+    const startAt = String(appointment.startAt || '').trim();
+
+    if (!startAt) {
+      return false;
+    }
+
+    if (startIso && startAt < startIso) {
+      return false;
+    }
+
+    if (endIso && startAt > endIso) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+export async function listAppointmentsByCustomer(customerId) {
   if (!customerId) {
+    return [];
+  }
+
+  const appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
+    where('customerId', '==', customerId),
+    orderBy('startAt', 'desc')
+  );
+
+  const snapshot = await getDocs(appointmentsQuery);
+
+  return snapshot.docs.map(mapAppointmentDocument);
+}
+
+export async function getAppointmentById(appointmentId) {
+  if (!appointmentId) {
     return null;
   }
 
-  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
+  const reference = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
   const snapshot = await getDoc(reference);
 
   if (!snapshot.exists()) {
     return null;
   }
 
-  return mapCustomerDocument(snapshot);
+  return mapAppointmentDocument(snapshot);
 }
 
-export async function createCustomer(data = {}) {
-  const payload = buildCustomerCreatePayload(data);
-  return addDoc(collection(db, CUSTOMERS_COLLECTION), payload);
-}
-
-export async function updateCustomer(customerId, data = {}) {
-  if (!customerId) {
-    throw new Error('Cliente inválido para atualização.');
+export async function countCompletedAppointmentsByTenant(tenantId) {
+  if (!tenantId) {
+    return 0;
   }
 
-  const payload = buildCustomerUpdatePayload(data);
+  const appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
+    where('tenantId', '==', tenantId),
+    where('status', '==', 'completed')
+  );
 
-  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), payload);
+  const snapshot = await getDocs(appointmentsQuery);
+  return snapshot.size;
 }
 
-export async function updateCustomerStats(customerId, stats = {}) {
-  if (!customerId) {
-    throw new Error('Cliente inválido para atualização de estatísticas.');
+export async function createAppointment(data = {}) {
+  const payload = buildAppointmentCreatePayload(data);
+  return addDoc(collection(db, APPOINTMENTS_COLLECTION), payload);
+}
+
+export async function updateAppointment(appointmentId, data = {}) {
+  if (!appointmentId) {
+    throw new Error('Agendamento inválido para atualização.');
   }
 
-  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), {
-    totalAppointments: normalizeNumber(stats.totalAppointments, 0),
-    completedAppointments: normalizeNumber(stats.completedAppointments, 0),
-    totalSpent: normalizeNumber(stats.totalSpent, 0),
-    lastAppointmentAt: normalizeNullableString(stats.lastAppointmentAt),
+  const payload = buildAppointmentUpdatePayload(data);
+
+  await updateDoc(doc(db, APPOINTMENTS_COLLECTION, appointmentId), payload);
+}
+
+export async function updateAppointmentStatus(appointmentId, status) {
+  if (!appointmentId) {
+    throw new Error('Agendamento inválido para atualização de status.');
+  }
+
+  await updateDoc(doc(db, APPOINTMENTS_COLLECTION, appointmentId), {
+    status: normalizeStatus(status, 'pending'),
     updatedAt: new Date().toISOString()
   });
-}
-
-export async function deleteCustomer(customerId) {
-  if (!customerId) {
-    throw new Error('Cliente inválido para exclusão.');
-  }
-
-  await deleteDoc(doc(db, CUSTOMERS_COLLECTION, customerId));
 }
