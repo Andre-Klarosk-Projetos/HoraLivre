@@ -9,7 +9,7 @@ import {
   orderBy,
   query,
   updateDoc,
-  where
+  where,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 import { db } from '../config/firebase-init.js';
@@ -37,6 +37,13 @@ function normalizeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function mapCustomerDocument(documentItem) {
+  return {
+    id: documentItem.id,
+    ...documentItem.data(),
+  };
+}
+
 function buildCustomerCreatePayload(data = {}) {
   const phone = normalizeString(data.phone);
 
@@ -52,7 +59,7 @@ function buildCustomerCreatePayload(data = {}) {
     totalSpent: normalizeNumber(data.totalSpent, 0),
     lastAppointmentAt: normalizeNullableString(data.lastAppointmentAt),
     createdAt: data.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -69,7 +76,6 @@ function buildCustomerUpdatePayload(data = {}) {
 
   if ('phone' in data) {
     const phone = normalizeString(data.phone);
-
     payload.phone = phone;
     payload.phoneNormalized = normalizePhone(phone);
   }
@@ -135,15 +141,33 @@ export async function listTenantCustomers(tenantId) {
   const customersQuery = query(
     collection(db, CUSTOMERS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('name')
+    orderBy('name'),
   );
 
   const snapshot = await getDocs(customersQuery);
 
-  return snapshot.docs.map((documentItem) => ({
-    id: documentItem.id,
-    ...documentItem.data()
-  }));
+  return snapshot.docs.map(mapCustomerDocument);
+}
+
+export async function listRecentCustomersByTenant(tenantId, maxResults = 5) {
+  if (!tenantId) {
+    return [];
+  }
+
+  const safeLimit = Number.isFinite(Number(maxResults))
+    ? Math.max(1, Number(maxResults))
+    : 5;
+
+  const customersQuery = query(
+    collection(db, CUSTOMERS_COLLECTION),
+    where('tenantId', '==', tenantId),
+    orderBy('createdAt', 'desc'),
+    limit(safeLimit),
+  );
+
+  const snapshot = await getDocs(customersQuery);
+
+  return snapshot.docs.map(mapCustomerDocument);
 }
 
 export async function listTenantCustomersForSelect(tenantId) {
@@ -164,7 +188,7 @@ export async function getTenantCustomerById(customerId) {
 
   return {
     id: snapshot.id,
-    ...snapshot.data()
+    ...snapshot.data(),
   };
 }
 
@@ -183,7 +207,7 @@ export async function findCustomerByPhone(tenantId, phone) {
     collection(db, CUSTOMERS_COLLECTION),
     where('tenantId', '==', tenantId),
     where('phoneNormalized', '==', normalizedPhone),
-    limit(1)
+    limit(1),
   );
 
   const snapshot = await getDocs(customersQuery);
@@ -192,12 +216,7 @@ export async function findCustomerByPhone(tenantId, phone) {
     return null;
   }
 
-  const documentItem = snapshot.docs[0];
-
-  return {
-    id: documentItem.id,
-    ...documentItem.data()
-  };
+  return mapCustomerDocument(snapshot.docs[0]);
 }
 
 export async function createTenantCustomer(data) {
