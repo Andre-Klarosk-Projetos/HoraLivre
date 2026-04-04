@@ -4,7 +4,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
   updateDoc,
@@ -14,9 +13,19 @@ import {
 import { db } from '../config/firebase-init.js';
 
 const APPOINTMENTS_COLLECTION = 'appointments';
+const BUSY_STATUSES = ['scheduled', 'confirmed', 'completed'];
+const COMPLETED_STATUS = 'completed';
 
 function normalizeString(value, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeNullableString(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return String(value).trim();
 }
 
 function normalizeNumber(value, fallback = 0) {
@@ -24,46 +33,53 @@ function normalizeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeStatus(value, fallback = 'pending') {
-  return normalizeString(value, fallback) || fallback;
+function normalizeStatus(value, fallback = 'scheduled') {
+  const normalized = normalizeString(value, fallback);
+
+  if (!normalized) {
+    return fallback;
+  }
+
+  return normalized;
 }
 
-function mapAppointmentDocument(documentItem) {
-  const data = typeof documentItem.data === 'function'
-    ? documentItem.data()
-    : documentItem;
+function normalizeSource(value, fallback = 'panel') {
+  const normalized = normalizeString(value, fallback);
 
-  return {
-    id: documentItem.id,
-    ...data
-  };
+  if (!normalized) {
+    return fallback;
+  }
+
+  return normalized;
 }
 
 function buildAppointmentCreatePayload(data = {}) {
   return {
     tenantId: normalizeString(data.tenantId),
-    customerId: normalizeString(data.customerId),
+    customerId: normalizeNullableString(data.customerId),
     customerName: normalizeString(data.customerName),
-    serviceId: normalizeString(data.serviceId),
+    serviceId: normalizeNullableString(data.serviceId),
     serviceName: normalizeString(data.serviceName),
-    status: normalizeStatus(data.status, 'scheduled'),
     startAt: normalizeString(data.startAt),
     endAt: normalizeString(data.endAt),
     price: normalizeNumber(data.price, 0),
-    source: normalizeString(data.source),
+    status: normalizeStatus(data.status, 'scheduled'),
+    source: normalizeSource(data.source, 'panel'),
     notes: normalizeString(data.notes),
-    createdAt: new Date().toISOString(),
+    createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 }
 
 function buildAppointmentUpdatePayload(data = {}) {
-  const payload = {
-    updatedAt: new Date().toISOString()
-  };
+  const payload = {};
+
+  if ('tenantId' in data) {
+    payload.tenantId = normalizeString(data.tenantId);
+  }
 
   if ('customerId' in data) {
-    payload.customerId = data.customerId ? normalizeString(data.customerId) : null;
+    payload.customerId = normalizeNullableString(data.customerId);
   }
 
   if ('customerName' in data) {
@@ -71,7 +87,7 @@ function buildAppointmentUpdatePayload(data = {}) {
   }
 
   if ('serviceId' in data) {
-    payload.serviceId = data.serviceId ? normalizeString(data.serviceId) : null;
+    payload.serviceId = normalizeNullableString(data.serviceId);
   }
 
   if ('serviceName' in data) {
@@ -95,14 +111,24 @@ function buildAppointmentUpdatePayload(data = {}) {
   }
 
   if ('source' in data) {
-    payload.source = normalizeString(data.source);
+    payload.source = normalizeSource(data.source, 'panel');
   }
 
   if ('notes' in data) {
     payload.notes = normalizeString(data.notes);
   }
 
+  payload.updatedAt = new Date().toISOString();
+
   return payload;
+}
+
+function isBusyStatus(status) {
+  return BUSY_STATUSES.includes(status);
+}
+
+function isCompletedStatus(status) {
+  return status === COMPLETED_STATUS;
 }
 
 export async function listAppointmentsByTenant(tenantId) {
@@ -113,62 +139,36 @@ export async function listAppointmentsByTenant(tenantId) {
   const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('startAt', 'desc')
+    orderBy('startAt', 'asc')
   );
 
   const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map(mapAppointmentDocument);
-}
-
-export async function listRecentAppointmentsByTenant(tenantId, maxResults = 5) {
-  if (!tenantId) {
-    return [];
-  }
-
-  const appointmentsQuery = query(
-    collection(db, APPOINTMENTS_COLLECTION),
-    where('tenantId', '==', tenantId),
-    orderBy('startAt', 'desc'),
-    limit(maxResults)
-  );
-
-  const snapshot = await getDocs(appointmentsQuery);
-
-  return snapshot.docs.map(mapAppointmentDocument);
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
+  }));
 }
 
 export async function listAppointmentsByTenantAndPeriod(tenantId, startIso, endIso) {
-  if (!tenantId) {
+  if (!tenantId || !startIso || !endIso) {
     return [];
   }
 
   const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('startAt', 'desc')
+    where('startAt', '>=', startIso),
+    where('startAt', '<=', endIso),
+    orderBy('startAt', 'asc')
   );
 
   const snapshot = await getDocs(appointmentsQuery);
-  const appointments = snapshot.docs.map(mapAppointmentDocument);
 
-  return appointments.filter((appointment) => {
-    const startAt = String(appointment.startAt || '').trim();
-
-    if (!startAt) {
-      return false;
-    }
-
-    if (startIso && startAt < startIso) {
-      return false;
-    }
-
-    if (endIso && startAt > endIso) {
-      return false;
-    }
-
-    return true;
-  });
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
+  }));
 }
 
 export async function listAppointmentsByCustomer(customerId) {
@@ -179,12 +179,15 @@ export async function listAppointmentsByCustomer(customerId) {
   const appointmentsQuery = query(
     collection(db, APPOINTMENTS_COLLECTION),
     where('customerId', '==', customerId),
-    orderBy('startAt', 'desc')
+    orderBy('startAt', 'asc')
   );
 
   const snapshot = await getDocs(appointmentsQuery);
 
-  return snapshot.docs.map(mapAppointmentDocument);
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
+  }));
 }
 
 export async function getAppointmentById(appointmentId) {
@@ -199,37 +202,36 @@ export async function getAppointmentById(appointmentId) {
     return null;
   }
 
-  return mapAppointmentDocument(snapshot);
+  return {
+    id: snapshot.id,
+    ...snapshot.data()
+  };
 }
 
-export async function countCompletedAppointmentsByTenant(tenantId) {
-  if (!tenantId) {
-    return 0;
-  }
-
-  const appointmentsQuery = query(
-    collection(db, APPOINTMENTS_COLLECTION),
-    where('tenantId', '==', tenantId),
-    where('status', '==', 'completed')
+export async function listBusyAppointmentsByTenantAndDay(tenantId, startIso, endIso) {
+  const appointments = await listAppointmentsByTenantAndPeriod(
+    tenantId,
+    startIso,
+    endIso
   );
 
-  const snapshot = await getDocs(appointmentsQuery);
-  return snapshot.size;
+  return appointments.filter((appointment) => isBusyStatus(appointment.status));
 }
 
-export async function createAppointment(data = {}) {
+export async function createAppointment(data) {
   const payload = buildAppointmentCreatePayload(data);
   return addDoc(collection(db, APPOINTMENTS_COLLECTION), payload);
 }
 
-export async function updateAppointment(appointmentId, data = {}) {
+export async function updateAppointment(appointmentId, data) {
   if (!appointmentId) {
     throw new Error('Agendamento inválido para atualização.');
   }
 
+  const reference = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
   const payload = buildAppointmentUpdatePayload(data);
 
-  await updateDoc(doc(db, APPOINTMENTS_COLLECTION, appointmentId), payload);
+  await updateDoc(reference, payload);
 }
 
 export async function updateAppointmentStatus(appointmentId, status) {
@@ -237,8 +239,56 @@ export async function updateAppointmentStatus(appointmentId, status) {
     throw new Error('Agendamento inválido para atualização de status.');
   }
 
-  await updateDoc(doc(db, APPOINTMENTS_COLLECTION, appointmentId), {
+  const reference = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
+
+  await updateDoc(reference, {
     status: normalizeStatus(status, 'scheduled'),
     updatedAt: new Date().toISOString()
   });
+}
+
+export async function countCompletedAppointments(tenantId, startIso, endIso) {
+  const appointments = await listAppointmentsByTenantAndPeriod(
+    tenantId,
+    startIso,
+    endIso
+  );
+
+  return appointments.filter((appointment) => isCompletedStatus(appointment.status)).length;
+}
+
+export async function sumCompletedAppointmentsAmount(tenantId, startIso, endIso) {
+  const appointments = await listAppointmentsByTenantAndPeriod(
+    tenantId,
+    startIso,
+    endIso
+  );
+
+  return appointments
+    .filter((appointment) => isCompletedStatus(appointment.status))
+    .reduce((total, appointment) => total + normalizeNumber(appointment.price, 0), 0);
+}
+
+export async function calculateCustomerStatsFromAppointments(customerId) {
+  const appointments = await listAppointmentsByCustomer(customerId);
+
+  const completedAppointments = appointments.filter((appointment) =>
+    isCompletedStatus(appointment.status)
+  );
+
+  const totalAppointments = completedAppointments.length;
+  const totalSpent = completedAppointments.reduce(
+    (total, appointment) => total + normalizeNumber(appointment.price, 0),
+    0
+  );
+
+  const lastAppointmentAt = completedAppointments.length
+    ? completedAppointments[completedAppointments.length - 1].startAt
+    : null;
+
+  return {
+    totalAppointments,
+    totalSpent,
+    lastAppointmentAt
+  };
 }
