@@ -61,6 +61,26 @@ service cloud.firestore {
       return value is string && value.size() >= 19;
     }
 
+    function validOptionalStringField(field) {
+      return !(field in request.resource.data) || request.resource.data[field] is string;
+    }
+
+    function validOptionalBoolField(field) {
+      return !(field in request.resource.data) || request.resource.data[field] is bool;
+    }
+
+    function validOptionalNumberField(field) {
+      return !(field in request.resource.data) || request.resource.data[field] is number;
+    }
+
+    function validOptionalListField(field) {
+      return !(field in request.resource.data) || request.resource.data[field] is list;
+    }
+
+    function validOptionalMapField(field) {
+      return !(field in request.resource.data) || request.resource.data[field] is map;
+    }
+
     function tenantUserOwnDocumentIsValid() {
       return request.resource.data.uid == request.auth.uid
         && request.resource.data.uid == resource.data.uid
@@ -76,27 +96,33 @@ service cloud.firestore {
 
     function tenantSafeUpdate() {
       return
-        unchanged("planId") &&
-        unchanged("billingMode") &&
-        unchanged("fixedMonthlyPrice") &&
-        unchanged("annualPrice") &&
-        unchanged("annualBillingMonth") &&
-        unchanged("pricePerExecutedService") &&
-        unchanged("subscriptionStatus") &&
-        unchanged("trialEndsAt") &&
-        unchanged("isBlocked") &&
-        unchanged("createdAt") &&
+        unchanged("planId")
+        && unchanged("billingMode")
+        && unchanged("fixedMonthlyPrice")
+        && unchanged("annualPrice")
+        && unchanged("annualBillingMonth")
+        && unchanged("pricePerExecutedService")
+        && unchanged("subscriptionStatus")
+        && unchanged("trialEndsAt")
+        && unchanged("isBlocked")
+        && unchanged("createdAt")
 
-        request.resource.data.updatedAt is string &&
-        request.resource.data.businessName is string &&
-        request.resource.data.slug is string &&
-        request.resource.data.whatsapp is string &&
-        request.resource.data.description is string &&
-        request.resource.data.logoUrl is string &&
-        request.resource.data.instagram is string &&
-        request.resource.data.address is string &&
-        request.resource.data.publicPageEnabled is bool &&
-        request.resource.data.reportsEnabled is bool;
+        && validOptionalStringField("businessName")
+        && validOptionalStringField("slug")
+        && validOptionalStringField("whatsapp")
+        && validOptionalStringField("description")
+        && validOptionalStringField("logoUrl")
+        && validOptionalStringField("instagram")
+        && validOptionalStringField("address")
+        && validOptionalBoolField("publicPageEnabled")
+        && validOptionalBoolField("reportsEnabled")
+        && validOptionalMapField("businessHours")
+        && validOptionalNumberField("slotIntervalMinutes")
+        && validOptionalMapField("specialBusinessHours")
+        && validOptionalListField("holidayDates")
+        && validOptionalListField("closedDates")
+        && validOptionalListField("unavailableDates")
+        && request.resource.data.updatedAt is string;
     }
 
     function publicTenantReadAllowed() {
@@ -110,7 +136,8 @@ service cloud.firestore {
         && isTenantPublicAndActive(request.resource.data.tenantId)
         && isNonEmptyString(request.resource.data.name)
         && isNonEmptyString(request.resource.data.phone)
-        && (!("email" in request.resource.data) || request.resource.data.email is string)
+        && validOptionalStringField("email")
+        && validOptionalStringField("notes")
         && request.resource.data.createdAt is string
         && request.resource.data.updatedAt is string;
     }
@@ -137,12 +164,18 @@ service cloud.firestore {
         && request.resource.data.status == "scheduled"
         && request.resource.data.source == "public_page"
         && request.resource.data.price is number
+        && validOptionalStringField("notes")
+        && (
+          !("customerId" in request.resource.data)
+          || request.resource.data.customerId == null
+          || request.resource.data.customerId is string
+        )
         && request.resource.data.createdAt is string
         && request.resource.data.updatedAt is string;
     }
 
     match /platformAdmins/{adminId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAdmin() || (signedIn() && request.auth.uid == adminId);
     }
 
     match /platformSettings/{documentId} {
@@ -201,7 +234,10 @@ service cloud.firestore {
     match /services/{serviceId} {
       allow read: if isAdmin()
         || (isTenantUser() && resource.data.tenantId == currentTenantId())
-        || (resource.data.isActive == true && isTenantPublicAndActive(resource.data.tenantId));
+        || (
+          resource.data.isActive == true
+          && isTenantPublicAndActive(resource.data.tenantId)
+        );
 
       allow create: if isAdmin()
         || (isTenantUser() && request.resource.data.tenantId == currentTenantId());
