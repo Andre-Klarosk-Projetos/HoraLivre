@@ -177,12 +177,11 @@ documentar autenticação e perfis
 mapear módulos JavaScript
 separar ambiente de desenvolvimento e produção
 criar pipeline de deploy
-Licença
 ## Licença
 
-Este projeto está licenciado sob a licença MIT.
-Consulte o arquivo `LICENSE` para mais detalhes.
-Desenvolvido para centralizar agendamento, operação e gestão de empresas no HoraLivre.
+Licença Proprietária.
+
+Este projeto não pode ser utilizado, copiado, modificado ou distribuído sem autorização prévia, expressa e por escrito do autor.
 
 Para publicar o README no GitHub, você pode fazer de dois jeitos.
 
