@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -137,6 +138,21 @@ export async function listRecentCustomersByTenant(tenantId, maxResults = 5) {
   const snapshot = await getDocs(customersQuery);
 
   return snapshot.docs.map(mapCustomerDocument);
+}
+
+export async function getCustomerById(customerId) {
+  if (!customerId) {
+    return null;
+  }
+
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
+  const snapshot = await getDoc(reference);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return mapCustomerDocument(snapshot);
 }
 
 export async function createCustomer(data = {}) {
