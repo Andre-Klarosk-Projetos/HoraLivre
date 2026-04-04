@@ -65,6 +65,22 @@ export async function listRecentAppointmentsByTenant(tenantId, maxResults = 5) {
   return snapshot.docs.map(mapAppointmentDocument);
 }
 
+export async function listAppointmentsByCustomer(customerId) {
+  if (!customerId) {
+    return [];
+  }
+
+  const appointmentsQuery = query(
+    collection(db, APPOINTMENTS_COLLECTION),
+    where('customerId', '==', customerId),
+    orderBy('startAt', 'desc')
+  );
+
+  const snapshot = await getDocs(appointmentsQuery);
+
+  return snapshot.docs.map(mapAppointmentDocument);
+}
+
 export async function countCompletedAppointmentsByTenant(tenantId) {
   if (!tenantId) {
     return 0;
