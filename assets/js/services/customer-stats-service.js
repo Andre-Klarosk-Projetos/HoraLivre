@@ -1,109 +1,199 @@
 import {
-  getCustomerById,
-  updateCustomerStats
-} from './customer-service.js';
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  updateDoc,
+  where
+} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
-import {
-  listAppointmentsByCustomer
-} from './appointment-service.js';
+import { db } from '../config/firebase-init.js';
+
+const CUSTOMERS_COLLECTION = 'customers';
+
+function normalizeString(value, fallback = '') {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
 
 function normalizeNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function isCompletedStatus(status) {
-  return status === 'completed';
-}
-
-function buildEmptyCustomerStats() {
-  return {
-    totalAppointments: 0,
-    completedAppointments: 0,
-    totalSpent: 0,
-    lastAppointmentAt: null
-  };
-}
-
-function calculateCustomerStatsFromAppointments(appointments = []) {
-  if (!Array.isArray(appointments) || !appointments.length) {
-    return buildEmptyCustomerStats();
-  }
-
-  const sortedAppointments = [...appointments].sort((a, b) => {
-    const first = String(a?.startAt || '');
-    const second = String(b?.startAt || '');
-    return first.localeCompare(second);
-  });
-
-  const completedAppointments = sortedAppointments.filter((appointment) =>
-    isCompletedStatus(appointment?.status)
-  );
-
-  const totalAppointments = sortedAppointments.length;
-  const completedAppointmentsCount = completedAppointments.length;
-  const totalSpent = completedAppointments.reduce(
-    (total, appointment) => total + normalizeNumber(appointment?.price, 0),
-    0
-  );
-
-  const lastAppointmentAt = sortedAppointments.length
-    ? sortedAppointments[sortedAppointments.length - 1].startAt || null
-    : null;
-
-  return {
-    totalAppointments,
-    completedAppointments: completedAppointmentsCount,
-    totalSpent,
-    lastAppointmentAt
-  };
-}
-
-export async function getCustomerStats(customerId) {
-  if (!customerId) {
-    return buildEmptyCustomerStats();
-  }
-
-  const appointments = await listAppointmentsByCustomer(customerId);
-  return calculateCustomerStatsFromAppointments(appointments);
-}
-
-export async function syncCustomerStats(customerId) {
-  if (!customerId) {
+function normalizeNullableString(value) {
+  if (value === null || value === undefined || value === '') {
     return null;
   }
 
-  const customer = await getCustomerById(customerId);
+  return String(value).trim();
+}
 
-  if (!customer) {
-    return null;
-  }
+function resolvePhone(data = {}) {
+  return normalizeString(data.phone || data.whatsapp);
+}
 
-  const stats = await getCustomerStats(customerId);
-
-  await updateCustomerStats(customerId, stats);
+function mapCustomerDocument(documentItem) {
+  const data = documentItem.data();
 
   return {
-    customerId,
-    ...stats
+    id: documentItem.id,
+    ...data,
+    phone: data.phone || data.whatsapp || '',
+    whatsapp: data.whatsapp || data.phone || '',
+    totalAppointments: normalizeNumber(data.totalAppointments, 0),
+    completedAppointments: normalizeNumber(data.completedAppointments, 0),
+    totalSpent: normalizeNumber(data.totalSpent, 0),
+    lastAppointmentAt: data.lastAppointmentAt || null
   };
 }
 
-export async function syncManyCustomersStats(customerIds = []) {
-  if (!Array.isArray(customerIds) || !customerIds.length) {
+function buildCustomerCreatePayload(data = {}) {
+  const phone = resolvePhone(data);
+
+  return {
+    tenantId: normalizeString(data.tenantId),
+    name: normalizeString(data.name),
+    email: normalizeString(data.email),
+    phone,
+    whatsapp: phone,
+    notes: normalizeString(data.notes),
+    totalAppointments: normalizeNumber(data.totalAppointments, 0),
+    completedAppointments: normalizeNumber(data.completedAppointments, 0),
+    totalSpent: normalizeNumber(data.totalSpent, 0),
+    lastAppointmentAt: normalizeNullableString(data.lastAppointmentAt),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function buildCustomerUpdatePayload(data = {}) {
+  const payload = {
+    updatedAt: new Date().toISOString()
+  };
+
+  if ('name' in data) {
+    payload.name = normalizeString(data.name);
+  }
+
+  if ('email' in data) {
+    payload.email = normalizeString(data.email);
+  }
+
+  if ('notes' in data) {
+    payload.notes = normalizeString(data.notes);
+  }
+
+  if ('phone' in data || 'whatsapp' in data) {
+    const phone = resolvePhone(data);
+    payload.phone = phone;
+    payload.whatsapp = phone;
+  }
+
+  if ('totalAppointments' in data) {
+    payload.totalAppointments = normalizeNumber(data.totalAppointments, 0);
+  }
+
+  if ('completedAppointments' in data) {
+    payload.completedAppointments = normalizeNumber(data.completedAppointments, 0);
+  }
+
+  if ('totalSpent' in data) {
+    payload.totalSpent = normalizeNumber(data.totalSpent, 0);
+  }
+
+  if ('lastAppointmentAt' in data) {
+    payload.lastAppointmentAt = normalizeNullableString(data.lastAppointmentAt);
+  }
+
+  return payload;
+}
+
+export async function listCustomersByTenant(tenantId) {
+  if (!tenantId) {
     return [];
   }
 
-  const uniqueCustomerIds = [...new Set(customerIds.filter(Boolean))];
-  const results = [];
+  const customersQuery = query(
+    collection(db, CUSTOMERS_COLLECTION),
+    where('tenantId', '==', tenantId),
+    orderBy('createdAt', 'desc')
+  );
 
-  for (const customerId of uniqueCustomerIds) {
-    const result = await syncCustomerStats(customerId);
+  const snapshot = await getDocs(customersQuery);
 
-    if (result) {
-      results.push(result);
-    }
+  return snapshot.docs.map(mapCustomerDocument);
+}
+
+export async function listRecentCustomersByTenant(tenantId, maxResults = 5) {
+  if (!tenantId) {
+    return [];
   }
 
-  return results;
+  const customersQuery = query(
+    collection(db, CUSTOMERS_COLLECTION),
+    where('tenantId', '==', tenantId),
+    orderBy('createdAt', 'desc'),
+    limit(maxResults)
+  );
+
+  const snapshot = await getDocs(customersQuery);
+
+  return snapshot.docs.map(mapCustomerDocument);
+}
+
+export async function getCustomerById(customerId) {
+  if (!customerId) {
+    return null;
+  }
+
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
+  const snapshot = await getDoc(reference);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return mapCustomerDocument(snapshot);
+}
+
+export async function createCustomer(data = {}) {
+  const payload = buildCustomerCreatePayload(data);
+  return addDoc(collection(db, CUSTOMERS_COLLECTION), payload);
+}
+
+export async function updateCustomer(customerId, data = {}) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para atualização.');
+  }
+
+  const payload = buildCustomerUpdatePayload(data);
+
+  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), payload);
+}
+
+export async function updateCustomerStats(customerId, stats = {}) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para atualização de estatísticas.');
+  }
+
+  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), {
+    totalAppointments: normalizeNumber(stats.totalAppointments, 0),
+    completedAppointments: normalizeNumber(stats.completedAppointments, 0),
+    totalSpent: normalizeNumber(stats.totalSpent, 0),
+    lastAppointmentAt: normalizeNullableString(stats.lastAppointmentAt),
+    updatedAt: new Date().toISOString()
+  });
+}
+
+export async function deleteCustomer(customerId) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para exclusão.');
+  }
+
+  await deleteDoc(doc(db, CUSTOMERS_COLLECTION, customerId));
 }
