@@ -46,6 +46,7 @@ function mapCustomerDocument(documentItem) {
     phone: data.phone || data.whatsapp || '',
     whatsapp: data.whatsapp || data.phone || '',
     totalAppointments: normalizeNumber(data.totalAppointments, 0),
+    completedAppointments: normalizeNumber(data.completedAppointments, 0),
     totalSpent: normalizeNumber(data.totalSpent, 0),
     lastAppointmentAt: data.lastAppointmentAt || null
   };
@@ -62,6 +63,7 @@ function buildCustomerCreatePayload(data = {}) {
     whatsapp: phone,
     notes: normalizeString(data.notes),
     totalAppointments: normalizeNumber(data.totalAppointments, 0),
+    completedAppointments: normalizeNumber(data.completedAppointments, 0),
     totalSpent: normalizeNumber(data.totalSpent, 0),
     lastAppointmentAt: normalizeNullableString(data.lastAppointmentAt),
     createdAt: new Date().toISOString(),
@@ -94,6 +96,10 @@ function buildCustomerUpdatePayload(data = {}) {
 
   if ('totalAppointments' in data) {
     payload.totalAppointments = normalizeNumber(data.totalAppointments, 0);
+  }
+
+  if ('completedAppointments' in data) {
+    payload.completedAppointments = normalizeNumber(data.completedAppointments, 0);
   }
 
   if ('totalSpent' in data) {
@@ -168,6 +174,20 @@ export async function updateCustomer(customerId, data = {}) {
   const payload = buildCustomerUpdatePayload(data);
 
   await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), payload);
+}
+
+export async function updateCustomerStats(customerId, stats = {}) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para atualização de estatísticas.');
+  }
+
+  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), {
+    totalAppointments: normalizeNumber(stats.totalAppointments, 0),
+    completedAppointments: normalizeNumber(stats.completedAppointments, 0),
+    totalSpent: normalizeNumber(stats.totalSpent, 0),
+    lastAppointmentAt: normalizeNullableString(stats.lastAppointmentAt),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 export async function deleteCustomer(customerId) {
