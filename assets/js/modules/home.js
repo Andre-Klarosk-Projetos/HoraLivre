@@ -29,45 +29,105 @@ let currentAccessProfile = {
   email: ''
 };
 
-function ensurePlansSectionStructure() {
-  const pricingGrid = document.querySelector('.pricing-grid');
+function getCarouselStep(pricingGrid) {
+  const firstCard = pricingGrid?.querySelector('.pricing-card, .dynamic-plan-card');
 
-  if (!pricingGrid || pricingGrid.dataset.dynamicReady === 'true') {
+  if (!firstCard) {
+    return 320;
+  }
+
+  const gridStyles = window.getComputedStyle(pricingGrid);
+  const gap = Number.parseFloat(gridStyles.columnGap || gridStyles.gap || '0') || 0;
+  return Math.ceil(firstCard.getBoundingClientRect().width + gap);
+}
+
+function updatePlansCarouselState(pricingGrid, leftButton, rightButton) {
+  if (!pricingGrid || !leftButton || !rightButton) {
     return;
   }
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'plans-carousel-wrapper';
+  const maxScrollLeft = Math.max(0, pricingGrid.scrollWidth - pricingGrid.clientWidth);
+  const hasOverflow = maxScrollLeft > 4;
+  const isAtStart = pricingGrid.scrollLeft <= 4;
+  const isAtEnd = pricingGrid.scrollLeft >= maxScrollLeft - 4;
 
-  const leftButton = document.createElement('button');
-  leftButton.className = 'plans-carousel-arrow';
-  leftButton.id = 'plans-carousel-prev';
-  leftButton.type = 'button';
-  leftButton.setAttribute('aria-label', 'Mostrar planos anteriores');
-  leftButton.textContent = '‹';
+  leftButton.hidden = !hasOverflow;
+  rightButton.hidden = !hasOverflow;
 
-  const rightButton = document.createElement('button');
-  rightButton.className = 'plans-carousel-arrow';
-  rightButton.id = 'plans-carousel-next';
-  rightButton.type = 'button';
-  rightButton.setAttribute('aria-label', 'Mostrar próximos planos');
-  rightButton.textContent = '›';
+  leftButton.disabled = !hasOverflow || isAtStart;
+  rightButton.disabled = !hasOverflow || isAtEnd;
+}
 
-  pricingGrid.parentNode.insertBefore(wrapper, pricingGrid);
-  wrapper.appendChild(leftButton);
-  wrapper.appendChild(pricingGrid);
-  wrapper.appendChild(rightButton);
+function ensurePlansSectionStructure() {
+  const pricingGrid = document.querySelector('.pricing-grid');
+
+  if (!pricingGrid) {
+    return null;
+  }
+
+  let wrapper = pricingGrid.closest('.plans-carousel-wrapper');
+  let leftButton = document.getElementById('plans-carousel-prev');
+  let rightButton = document.getElementById('plans-carousel-next');
+
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.className = 'plans-carousel-wrapper';
+
+    leftButton = document.createElement('button');
+    leftButton.className = 'plans-carousel-arrow';
+    leftButton.id = 'plans-carousel-prev';
+    leftButton.type = 'button';
+    leftButton.setAttribute('aria-label', 'Mostrar planos anteriores');
+    leftButton.textContent = '‹';
+
+    rightButton = document.createElement('button');
+    rightButton.className = 'plans-carousel-arrow';
+    rightButton.id = 'plans-carousel-next';
+    rightButton.type = 'button';
+    rightButton.setAttribute('aria-label', 'Mostrar próximos planos');
+    rightButton.textContent = '›';
+
+    pricingGrid.parentNode.insertBefore(wrapper, pricingGrid);
+    wrapper.appendChild(leftButton);
+    wrapper.appendChild(pricingGrid);
+    wrapper.appendChild(rightButton);
+  }
 
   pricingGrid.classList.add('plans-carousel-track');
-  pricingGrid.dataset.dynamicReady = 'true';
 
-  leftButton.addEventListener('click', () => {
-    pricingGrid.scrollBy({ left: -320, behavior: 'smooth' });
-  });
+  if (pricingGrid.dataset.carouselBound !== 'true') {
+    leftButton.addEventListener('click', () => {
+      pricingGrid.scrollBy({
+        left: -getCarouselStep(pricingGrid),
+        behavior: 'smooth'
+      });
+    });
 
-  rightButton.addEventListener('click', () => {
-    pricingGrid.scrollBy({ left: 320, behavior: 'smooth' });
-  });
+    rightButton.addEventListener('click', () => {
+      pricingGrid.scrollBy({
+        left: getCarouselStep(pricingGrid),
+        behavior: 'smooth'
+      });
+    });
+
+    pricingGrid.addEventListener('scroll', () => {
+      updatePlansCarouselState(pricingGrid, leftButton, rightButton);
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      updatePlansCarouselState(pricingGrid, leftButton, rightButton);
+    });
+
+    pricingGrid.dataset.carouselBound = 'true';
+  }
+
+  updatePlansCarouselState(pricingGrid, leftButton, rightButton);
+
+  return {
+    pricingGrid,
+    leftButton,
+    rightButton
+  };
 }
 
 function buildPlanPriceText(plan) {
@@ -90,14 +150,22 @@ function buildPlanPriceText(plan) {
   return formatBillingMode(plan.billingMode);
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function renderHomePlans() {
-  const pricingGrid = document.querySelector('.pricing-grid');
+  const carousel = ensurePlansSectionStructure();
+  const pricingGrid = carousel?.pricingGrid || document.querySelector('.pricing-grid');
 
   if (!pricingGrid) {
     return;
   }
-
-  ensurePlansSectionStructure();
 
   const plans = await listPlans();
 
@@ -115,15 +183,15 @@ async function renderHomePlans() {
     })
     .forEach((plan) => {
       const article = document.createElement('article');
-      article.className = `pricing-card dynamic-plan-card ${plan.featured ? 'featured' : ''}`;
+      article.className = `pricing-card dynamic-plan-card ${plan.featured ? 'featured' : ''}`.trim();
 
       article.innerHTML = `
         ${plan.featured ? '<span class="mini-badge">Destaque</span>' : ''}
-        <h3>${plan.name || '-'}</h3>
-        <p class="plan-price-line">${buildPlanPriceText(plan)}</p>
-        <p class="pricing-description">${plan.description || 'Plano configurado no painel admin do HoraLivre.'}</p>
+        <h3>${escapeHtml(plan.name || '-')}</h3>
+        <p class="plan-price-line">${escapeHtml(buildPlanPriceText(plan))}</p>
+        <p class="pricing-description">${escapeHtml(plan.description || 'Plano configurado no painel admin do HoraLivre.')}</p>
         <ul class="feature-bullets">
-          <li>Cobrança: ${formatBillingMode(plan.billingMode)}</li>
+          <li>Cobrança: ${escapeHtml(formatBillingMode(plan.billingMode))}</li>
           <li>Página pública: ${plan.publicPageEnabled ? 'Sim' : 'Não'}</li>
           <li>Relatórios: ${plan.reportsEnabled ? 'Sim' : 'Não'}</li>
           <li>Máx. serviços: ${Number(plan.maxServices || 0)}</li>
@@ -134,6 +202,13 @@ async function renderHomePlans() {
 
       pricingGrid.appendChild(article);
     });
+
+  requestAnimationFrame(() => {
+    const controls = ensurePlansSectionStructure();
+    if (controls) {
+      updatePlansCarouselState(controls.pricingGrid, controls.leftButton, controls.rightButton);
+    }
+  });
 }
 
 function showHomeFeedback(message, type = 'info') {
@@ -226,9 +301,8 @@ function handleAdminAccess() {
 
   if (currentAccessProfile.isCompanyUser) {
     const companyName = currentAccessProfile.companyName || 'sua empresa';
-
     showHomeFeedback(
-      `A conta ligada está vinculada à empresa "${companyName}" e não possui perfil de administrador da plataforma. Use o painel da empresa para continuar.`,
+      `A conta ligada está vinculada à empresa "${companyName}" e não possui perfil de administrador da plataforma.\nUse o painel da empresa para continuar.`,
       'error'
     );
     return;
@@ -255,7 +329,7 @@ function handleCompanyPanelAccess() {
 
   if (currentAccessProfile.isPlatformAdmin) {
     showHomeFeedback(
-      'A conta ligada é um administrador da plataforma. Para acessar uma empresa, use o painel admin e entre pela gestão da empresa cliente.',
+      'A conta ligada é um administrador da plataforma.\nPara acessar uma empresa, use o painel admin e entre pela gestão da empresa cliente.',
       'info'
     );
     return;
@@ -281,7 +355,7 @@ function handlePublicPageAccess() {
 
     if (!companySlug) {
       showHomeFeedback(
-        `A conta ligada está vinculada à empresa "${companyName}", mas essa empresa ainda não possui um slug público configurado. Defina o slug no painel da empresa para abrir a página pública.`,
+        `A conta ligada está vinculada à empresa "${companyName}", mas essa empresa ainda não possui um slug público configurado.\nDefina o slug no painel da empresa para abrir a página pública.`,
         'error'
       );
       return;
@@ -293,7 +367,7 @@ function handlePublicPageAccess() {
 
   if (currentAccessProfile.isPlatformAdmin) {
     showHomeFeedback(
-      'A conta ligada é um administrador da plataforma. A página pública pertence a uma empresa cliente específica. Abra a empresa pelo admin ou use o slug correto.',
+      'A conta ligada é um administrador da plataforma. A página pública pertence a uma empresa cliente específica.\nAbra a empresa pelo admin ou use o slug correto.',
       'info'
     );
     return;
