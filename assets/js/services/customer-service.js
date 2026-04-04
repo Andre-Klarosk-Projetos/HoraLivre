@@ -20,11 +20,6 @@ function normalizeString(value, fallback = '') {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
-function normalizeNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 function normalizeNullableString(value) {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -33,51 +28,50 @@ function normalizeNullableString(value) {
   return String(value).trim();
 }
 
-function resolvePhone(data = {}) {
-  return normalizeString(data.phone || data.whatsapp);
+function normalizePhone(value) {
+  return String(value || '').replace(/\D/g, '');
 }
 
-function mapCustomerDocument(documentItem) {
-  const data = documentItem.data();
-
-  return {
-    id: documentItem.id,
-    ...data,
-    phone: data.phone || data.whatsapp || '',
-    whatsapp: data.whatsapp || data.phone || '',
-    totalAppointments: normalizeNumber(data.totalAppointments, 0),
-    completedAppointments: normalizeNumber(data.completedAppointments, 0),
-    totalSpent: normalizeNumber(data.totalSpent, 0),
-    lastAppointmentAt: data.lastAppointmentAt || null
-  };
+function normalizeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function buildCustomerCreatePayload(data = {}) {
-  const phone = resolvePhone(data);
+  const phone = normalizeString(data.phone);
 
   return {
     tenantId: normalizeString(data.tenantId),
     name: normalizeString(data.name),
-    email: normalizeString(data.email),
     phone,
-    whatsapp: phone,
+    phoneNormalized: normalizePhone(phone),
+    email: normalizeString(data.email),
     notes: normalizeString(data.notes),
     totalAppointments: normalizeNumber(data.totalAppointments, 0),
     completedAppointments: normalizeNumber(data.completedAppointments, 0),
     totalSpent: normalizeNumber(data.totalSpent, 0),
     lastAppointmentAt: normalizeNullableString(data.lastAppointmentAt),
-    createdAt: new Date().toISOString(),
+    createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 }
 
 function buildCustomerUpdatePayload(data = {}) {
-  const payload = {
-    updatedAt: new Date().toISOString()
-  };
+  const payload = {};
+
+  if ('tenantId' in data) {
+    payload.tenantId = normalizeString(data.tenantId);
+  }
 
   if ('name' in data) {
     payload.name = normalizeString(data.name);
+  }
+
+  if ('phone' in data) {
+    const phone = normalizeString(data.phone);
+
+    payload.phone = phone;
+    payload.phoneNormalized = normalizePhone(phone);
   }
 
   if ('email' in data) {
@@ -86,12 +80,6 @@ function buildCustomerUpdatePayload(data = {}) {
 
   if ('notes' in data) {
     payload.notes = normalizeString(data.notes);
-  }
-
-  if ('phone' in data || 'whatsapp' in data) {
-    const phone = resolvePhone(data);
-    payload.phone = phone;
-    payload.whatsapp = phone;
   }
 
   if ('totalAppointments' in data) {
@@ -110,10 +98,36 @@ function buildCustomerUpdatePayload(data = {}) {
     payload.lastAppointmentAt = normalizeNullableString(data.lastAppointmentAt);
   }
 
+  payload.updatedAt = new Date().toISOString();
+
   return payload;
 }
 
-export async function listCustomersByTenant(tenantId) {
+function buildCustomerStatsPayload(stats = {}) {
+  const payload = {};
+
+  if ('totalAppointments' in stats) {
+    payload.totalAppointments = normalizeNumber(stats.totalAppointments, 0);
+  }
+
+  if ('completedAppointments' in stats) {
+    payload.completedAppointments = normalizeNumber(stats.completedAppointments, 0);
+  }
+
+  if ('totalSpent' in stats) {
+    payload.totalSpent = normalizeNumber(stats.totalSpent, 0);
+  }
+
+  if ('lastAppointmentAt' in stats) {
+    payload.lastAppointmentAt = normalizeNullableString(stats.lastAppointmentAt);
+  }
+
+  payload.updatedAt = new Date().toISOString();
+
+  return payload;
+}
+
+export async function listTenantCustomers(tenantId) {
   if (!tenantId) {
     return [];
   }
@@ -121,32 +135,22 @@ export async function listCustomersByTenant(tenantId) {
   const customersQuery = query(
     collection(db, CUSTOMERS_COLLECTION),
     where('tenantId', '==', tenantId),
-    orderBy('createdAt', 'desc')
+    orderBy('name')
   );
 
   const snapshot = await getDocs(customersQuery);
 
-  return snapshot.docs.map(mapCustomerDocument);
+  return snapshot.docs.map((documentItem) => ({
+    id: documentItem.id,
+    ...documentItem.data()
+  }));
 }
 
-export async function listRecentCustomersByTenant(tenantId, maxResults = 5) {
-  if (!tenantId) {
-    return [];
-  }
-
-  const customersQuery = query(
-    collection(db, CUSTOMERS_COLLECTION),
-    where('tenantId', '==', tenantId),
-    orderBy('createdAt', 'desc'),
-    limit(maxResults)
-  );
-
-  const snapshot = await getDocs(customersQuery);
-
-  return snapshot.docs.map(mapCustomerDocument);
+export async function listTenantCustomersForSelect(tenantId) {
+  return listTenantCustomers(tenantId);
 }
 
-export async function getCustomerById(customerId) {
+export async function getTenantCustomerById(customerId) {
   if (!customerId) {
     return null;
   }
@@ -158,42 +162,109 @@ export async function getCustomerById(customerId) {
     return null;
   }
 
-  return mapCustomerDocument(snapshot);
+  return {
+    id: snapshot.id,
+    ...snapshot.data()
+  };
 }
 
-export async function createCustomer(data = {}) {
+export async function findCustomerByPhone(tenantId, phone) {
+  if (!tenantId || !phone) {
+    return null;
+  }
+
+  const normalizedPhone = normalizePhone(phone);
+
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const customersQuery = query(
+    collection(db, CUSTOMERS_COLLECTION),
+    where('tenantId', '==', tenantId),
+    where('phoneNormalized', '==', normalizedPhone),
+    limit(1)
+  );
+
+  const snapshot = await getDocs(customersQuery);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const documentItem = snapshot.docs[0];
+
+  return {
+    id: documentItem.id,
+    ...documentItem.data()
+  };
+}
+
+export async function createTenantCustomer(data) {
   const payload = buildCustomerCreatePayload(data);
   return addDoc(collection(db, CUSTOMERS_COLLECTION), payload);
 }
 
-export async function updateCustomer(customerId, data = {}) {
+export async function updateTenantCustomer(customerId, data) {
   if (!customerId) {
     throw new Error('Cliente inválido para atualização.');
   }
 
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
   const payload = buildCustomerUpdatePayload(data);
 
-  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), payload);
+  await updateDoc(reference, payload);
 }
 
-export async function updateCustomerStats(customerId, stats = {}) {
-  if (!customerId) {
-    throw new Error('Cliente inválido para atualização de estatísticas.');
-  }
-
-  await updateDoc(doc(db, CUSTOMERS_COLLECTION, customerId), {
-    totalAppointments: normalizeNumber(stats.totalAppointments, 0),
-    completedAppointments: normalizeNumber(stats.completedAppointments, 0),
-    totalSpent: normalizeNumber(stats.totalSpent, 0),
-    lastAppointmentAt: normalizeNullableString(stats.lastAppointmentAt),
-    updatedAt: new Date().toISOString()
-  });
-}
-
-export async function deleteCustomer(customerId) {
+export async function deleteTenantCustomer(customerId) {
   if (!customerId) {
     throw new Error('Cliente inválido para exclusão.');
   }
 
   await deleteDoc(doc(db, CUSTOMERS_COLLECTION, customerId));
+}
+
+export async function updateCustomerStats(customerId, stats = {}) {
+  if (!customerId) {
+    throw new Error('Cliente inválido para atualizar estatísticas.');
+  }
+
+  const reference = doc(db, CUSTOMERS_COLLECTION, customerId);
+  const payload = buildCustomerStatsPayload(stats);
+
+  await updateDoc(reference, payload);
+}
+
+export async function saveTenantCustomer(customerId, data) {
+  if (customerId) {
+    await updateTenantCustomer(customerId, data);
+    return { id: customerId };
+  }
+
+  return createTenantCustomer(data);
+}
+
+/* aliases de compatibilidade */
+export async function listCustomersByTenant(tenantId) {
+  return listTenantCustomers(tenantId);
+}
+
+export async function listCustomersForSelect(tenantId) {
+  return listTenantCustomersForSelect(tenantId);
+}
+
+export async function getCustomerById(customerId) {
+  return getTenantCustomerById(customerId);
+}
+
+export async function createCustomer(data) {
+  return createTenantCustomer(data);
+}
+
+export async function updateCustomer(customerId, data) {
+  return updateTenantCustomer(customerId, data);
+}
+
+export async function deleteCustomer(customerId) {
+  return deleteTenantCustomer(customerId);
 }
